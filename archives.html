@@ -5,18 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Archives Patients - CPMC</title>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background:#f1f5f9; padding:15px; margin:0; }
-        .nav-links { display: flex; gap: 8px; margin-bottom: 15px; }
-        .nav-btn { background: #e2e8f0; color: #1e293b; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; }
+        body { font-family: system-ui, sans-serif; background:#f1f5f9; padding:15px; margin:0; }
+        .nav-links { display: flex; gap: 8px; margin-bottom: 15px; overflow-x:auto; }
+        .nav-btn { background: #e2e8f0; color: #1e293b; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space:nowrap; }
         .nav-btn.active { background: #0284c7; color: white; }
-        .search-box { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; margin-bottom: 15px; box-sizing: border-box; }
-        .archive-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .archive-title { font-weight: bold; color: #0284c7; font-size: 1.1em; }
-        .archive-meta { font-size: 0.85em; color: #64748b; margin-top: 4px; }
+        .container { background: white; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; }
+        input[type="text"] { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+        th { background: #f8fafc; color: #0284c7; }
+        .patient-link { color: #0284c7; font-weight: bold; text-decoration: underline; cursor: pointer; }
+        .btn-action { margin: 2px; padding: 5px 8px; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 0.8em;}
+        .btn-remarque { background: #0284c7; }
+        .btn-restore { background: #16a34a; }
+        .btn-delete { background: #dc2626; }
+        
+        /* Modal pour le dossier */
+        #dossierModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); padding:20px; box-sizing:border-box; z-index:1000;}
+        .modal-content { background:white; padding:20px; border-radius:8px; max-width:600px; margin:auto; max-height:90vh; overflow-y:auto; }
     </style>
 </head>
 <body>
-    <h2>📦 Archives des Patients (Libérés)</h2>
     <div class="nav-links">
         <a href="patients.html" class="nav-btn">🛏️ Hospitalisation</a>
         <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
@@ -24,13 +33,40 @@
         <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
     </div>
 
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Rechercher par Nom, Pathologie, Date..." oninput="filterArchives()">
+    <div class="container">
+        <h2>📦 Patients Archivés</h2>
+        <input type="text" id="searchArchived" placeholder="Rechercher un patient..." onkeyup="filterArchives()">
+        
+        <div style="overflow-x:auto;">
+            <table id="archivesTable">
+                <thead>
+                    <tr>
+                        <th>Date d'archive</th>
+                        <th>Nom du Patient</th>
+                        <th>Dernier Lit</th>
+                        <th>Remarque</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="archivesTableBody">
+                    <tr><td colspan="5" style="text-align:center;">Chargement...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-    <div id="archivesContainer">Chargement des archives...</div>
+    <!-- Modal Dossier -->
+    <div id="dossierModal" onclick="if(event.target==this) this.style.display='none'">
+        <div class="modal-content">
+            <h3 id="modalTitle" style="color:#0284c7; margin-top:0;">Dossier Patient</h3>
+            <pre id="modalContent" style="background:#f1f5f9; padding:10px; border-radius:6px; white-space:pre-wrap; font-size:0.9em;"></pre>
+            <button onclick="document.getElementById('dossierModal').style.display='none'" style="margin-top:10px; padding:8px 15px; cursor:pointer;">Fermer</button>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, onValue, update, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
@@ -41,41 +77,82 @@
             messagingSenderId: "614550756274",
             appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        let archivesList = [];
+        
+        let archivesData = {};
 
         onValue(ref(db, 'archives_patients/'), (snapshot) => {
-            const data = snapshot.val() || {};
-            archivesList = Object.values(data);
-            renderArchives(archivesList);
+            archivesData = snapshot.val() || {};
+            renderArchives();
         });
 
-        function renderArchives(list) {
-            const container = document.getElementById('archivesContainer');
-            if(list.length === 0) {
-                container.innerHTML = '<p>Aucune archive trouvée.</p>';
-                return;
-            }
-            container.innerHTML = list.map(p => `
-                <div class="archive-card">
-                    <div class="archive-title">${p.nom} (${p.age || '-'} ans) - Lit d'origine : ${p.bedId || '-'}</div>
-                    <div class="archive-meta"><b>Diagnostic:</b> ${p.diag || 'Non spécifié'}</div>
-                    <div class="archive-meta"><b>Intervention:</b> Date ${p.dateIntervention || '-'} | Archivé le: ${p.dateArchivage || '-'}</div>
-                    <div class="archive-meta"><b>Résumé / Remarques:</b> ${p.remarques || 'Aucune note'}</div>
-                </div>
-            `).join('');
+        function renderArchives() {
+            const tbody = document.getElementById('archivesTableBody');
+            const term = document.getElementById('searchArchived').value.toLowerCase();
+            let html = '';
+            
+            Object.keys(archivesData).forEach(key => {
+                const p = archivesData[key];
+                if(p.nom && p.nom.toLowerCase().includes(term)) {
+                    html += `
+                    <tr>
+                        <td>${key.split('_')[0] || '-'}</td>
+                        <td><span class="patient-link" onclick="viewDossier('${key}')">${p.nom}</span></td>
+                        <td>${p.ancienLit || '-'}</td>
+                        <td>${p.remarque || 'Aucune remarque'}</td>
+                        <td>
+                            <button class="btn-action btn-remarque" onclick="editRemarque('${key}')">📝 Remarque</button>
+                            <button class="btn-action btn-restore" onclick="restorePatient('${key}')">↩️ Reprendre</button>
+                            <button class="btn-action btn-delete" onclick="deleteArchive('${key}')">🗑️ Supprimer</button>
+                        </td>
+                    </tr>`;
+                }
+            });
+            tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;">Aucun patient trouvé.</td></tr>';
         }
 
-        window.filterArchives = function() {
-            const q = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = archivesList.filter(p => 
-                (p.nom && p.nom.toLowerCase().includes(q)) ||
-                (p.diag && p.diag.toLowerCase().includes(q)) ||
-                (p.remarques && p.remarques.toLowerCase().includes(q))
-            );
-            renderArchives(filtered);
+        window.filterArchives = renderArchives;
+
+        window.viewDossier = function(key) {
+            const data = archivesData[key];
+            document.getElementById('modalTitle').innerText = "Dossier : " + data.nom;
+            
+            // Formatage propre du dossier JSON
+            let details = `Nom: ${data.nom || '-'}\nAge: ${data.age || '-'}\nGroupe Sanguin: ${data.grp || '-'}\nDiagnostic: ${data.diag || '-'}\n\nAntécédents / Histoire:\n${data.histoire || '-'}\n\nExamen Clinique:\n${data.examen || '-'}`;
+            
+            document.getElementById('modalContent').innerText = details;
+            document.getElementById('dossierModal').style.display = 'block';
+        };
+
+        window.editRemarque = function(key) {
+            const currentRem = archivesData[key].remarque || '';
+            const newRem = prompt("Modifier la remarque pour " + archivesData[key].nom + " :", currentRem);
+            if(newRem !== null) {
+                update(ref(db, 'archives_patients/' + key), { remarque: newRem });
+            }
+        };
+
+        window.restorePatient = function(key) {
+            const newBed = prompt("Entrez le numéro du lit (ex: 402F, Réa 1) pour y placer " + archivesData[key].nom + " :");
+            if(newBed) {
+                const data = archivesData[key];
+                // Enregistrer dans les dossiers actifs
+                set(ref(db, 'dossiers_patients/' + newBed), data).then(() => {
+                    // Supprimer des archives
+                    remove(ref(db, 'archives_patients/' + key)).then(() => {
+                        alert("Patient restauré avec succès au lit " + newBed);
+                    });
+                });
+            }
+        };
+
+        window.deleteArchive = function(key) {
+            if(confirm("⚠️ Êtes-vous certain de vouloir supprimer DÉFINITIVEMENT ce patient des archives ? Cette action est irréversible.")) {
+                remove(ref(db, 'archives_patients/' + key)).then(() => {
+                    alert("Patient supprimé définitivement.");
+                });
+            }
         };
     </script>
 </body>
