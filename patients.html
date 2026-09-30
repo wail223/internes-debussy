@@ -70,9 +70,36 @@
         .btn-main { background: var(--primary); color: white; padding: 12px; border-radius: 8px; border: none; font-weight: 600; width: 100%; cursor: pointer; }
         .btn-warning { background: var(--warning); color: white; }
         .btn-danger { background: var(--danger); color: white; }
+
+        /* BOUTON ACCUEIL FLOTTANT AJOUTÉ ICI */
+        .floating-home-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary);
+            color: white;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-decoration: none;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+        .floating-home-btn:hover, .floating-home-btn:active {
+            transform: scale(1.1);
+            background-color: #0369a1;
+        }
     </style>
 </head>
 <body>
+
+    <!-- BOUTON RETOUR À L'ACCUEIL AJOUTÉ ICI -->
+    <a href="index.html" class="floating-home-btn" title="Retour à l'accueil">🏠</a>
 
     <div class="header">
         <div class="top-bar">
@@ -209,55 +236,9 @@
         </div>
     </div>
 
+    <!-- TON SCRIPT JAVASCRIPT FIREBASE VA ICI (Garde ton code existant) -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, remove, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDPXF0x6LTLe code est très propre et bien structuré. L'architecture HTML/CSS est légère, et la gestion du JS en module Firebase v10 est parfaitement adaptée pour une SPA (*Single Page Application*) ultra-réactive.
-
-### 🎯 Les points forts du code :
-* **Exposition globale des fonctions** : L'attachement explicite à `window` (`window.openModal = ...`) est la bonne approche pour conserver les `onclick` HTML inline au sein d'un `<script type="module">`.
-* **Synchro temps réel** : L'écouteur `onValue` sur `dossiers_patients/` garantit que l'état des lits (occupé/libre) et le nom du patient se mettent à jour instantanément sur tous les écrans connectés.
-* **Modale hybride (Lecture / Édition)** : Le basculement dynamique entre `dossierView` et `formView` évite la surcharge du DOM tout en offrant une expérience utilisateur fluide sur mobile.
-* **Calcul automatique du BMI** : L'événement `oninput` sur le poids et la taille assure un retour immédiat sans rechargement.
-* **Deep linking via URL** : La lecture du paramètre `bedId` à l'initialisation permet de lier directement la feuille de soin/intervention au lit correspondant depuis un autre écran.
-
----
-
-### 💡 Pistes d'améliorations / Optimisations possibles :
-
-1. **Calculateur de BMI dans `openModal`**
-   Lorsqu'on ouvre la vue édition d'un patient existant, `calcBMI()` n'est exécuté que si l'utilisateur modifie une valeur. Si `bmi` n'était pas stocké en base, il peut être judicieux de forcer la mise à jour du champ.
-
-2. **Gestion de la photo (`vPhoto`)**
-   Une balise `<img id="vPhoto">` est présente dans le DOM en lecture, mais le formulaire `formView` n'a pas encore le champ d'upload associé (via Firebase Storage ou encodage Base64).
-
-3. **Sécurisation de la suppression/archivage**
-   Lors de l'archivage, `archiveAndFreePatient()` effectue un `push` suivi d'un `remove`. L'utilisation d'une mise à jour atomique (*multi-path update* via `update(ref(db), updates)`) permettrait d'éviter qu'un dossier soit archivé sans être libéré en cas de coupure réseau entre les deux requêtes :
-
-```javascript
-// Alternative d'archivage atomique
-window.archiveAndFreePatient = async function() {
-    const bedId = document.getElementById('currentBedId').value;
-    const patient = patientsDb[bedId];
-    if(!patient) return;
-
-    if(confirm(`Voulez-vous libérer le lit ${bedId} et archiver le dossier de ${patient.nom} ?`)) {
-        const newArchiveKey = push(ref(db, 'archives_patients')).key;
-        const updates = {};
-        updates[`/archives_patients/${newArchiveKey}`] = { 
-            ...patient, 
-            dateArchivage: new Date().toISOString().split('T')[0] 
-        };
-        updates[`/dossiers_patients/${bedId}`] = null; // Libère le lit
-
-        try {
-            await update(ref(db), updates);
-            closeModal();
-            alert("Patient archivé et lit libéré avec succès !");
-        } catch (error) {
-            alert("Erreur lors de l'archivage : " + error.message);
-        }
-    }
-};
+        // Garde tout le code Firebase et JavaScript que tu as déjà pour cette page ici.
+    </script>
+</body>
+</html>
