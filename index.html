@@ -85,22 +85,68 @@
             transform: translateY(0);
         }
 
-        /* Style Bouton 1 : Planning */
+        /* Conteneur pour les 3 versions de planning sur une seule ligne */
+        .planning-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .btn-mini-planning {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 8px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-mini-planning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        .mini-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px;
+            border-radius: 8px;
+            display: inline-flex;
+        }
+
+        .mini-title {
+            font-size: 13px;
+            display: block;
+        }
+
+        /* Style Bouton : V1 Planning */
         .btn-planning {
             background: linear-gradient(135deg, #2563eb, #1d4ed8);
         }
 
-        /* Style Bouton 2 : Planning Semaine On/Off */
+        /* Style Bouton : V2 Planning */
         .btn-planning2 {
             background: linear-gradient(135deg, #8b5cf6, #6d28d9); /* Violet */
         }
 
-        /* Style Bouton 3 : Planning Mix Quotidien */
+        /* Style Bouton : V3 Planning */
         .btn-planning3 {
             background: linear-gradient(135deg, #f97316, #ea580c); /* Orange */
         }
 
-        /* Style Bouton 4 : Calculateur RDV */
+        /* Style Bouton : Hospitalisation Manager (Bleu/Cyan ou Indigo élégant) */
+        .btn-hospitalisation {
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+        }
+
+        /* Style Bouton : Calculateur RDV */
         .btn-rdv {
             background: linear-gradient(135deg, #10b981, #059669); /* Vert */
         }
@@ -153,6 +199,9 @@
             .btn-desc {
                 font-size: 12px;
             }
+            .mini-title {
+                font-size: 11px;
+            }
         }
     </style>
 </head>
@@ -164,34 +213,32 @@
     <p class="subtitle">Outils d'organisation du service</p>
 
     <div class="buttons-grid">
-        <!-- BOUTON 1 -->
-        <a href="planning.html" class="btn-card btn-planning">
-            <div class="icon">📅</div>
+        <!-- 3 VERSIONS DE PLANNING SUR UNE SEULE LIGNE -->
+        <div class="planning-row">
+            <a href="planning.html" class="btn-mini-planning btn-planning" title="V1: Semaine On / Off">
+                <span class="mini-icon">📅</span>
+                <span class="mini-title">V1 Planning</span>
+            </a>
+            <a href="planning2.html" class="btn-mini-planning btn-planning2" title="V2: Échange de groupes">
+                <span class="mini-icon">🔄</span>
+                <span class="mini-title">V2 Groupes</span>
+            </a>
+            <a href="planning3.html" class="btn-mini-planning btn-planning3" title="V3: Mix Quotidien">
+                <span class="mini-icon">🎭</span>
+                <span class="mini-title">V3 Mix</span>
+            </a>
+        </div>
+
+        <!-- BOUTON HOSPITALISATION MANAGER -->
+        <a href="patients.html" class="btn-card btn-hospitalisation">
+            <div class="icon">🛏️</div>
             <div class="btn-text">
-                <span class="btn-title">V1: Planning (Semaine On / Off)</span>
-                <span class="btn-desc">Roulement par blocs de semaines complètes</span>
+                <span class="btn-title">Hospitalisation Manager</span>
+                <span class="btn-desc">Gestion des lits, dossiers patients et étages</span>
             </div>
         </a>
 
-        <!-- BOUTON 2 -->
-        <a href="planning2.html" class="btn-card btn-planning2">
-            <div class="icon">🔄</div>
-            <div class="btn-text">
-                <span class="btn-title">V2: Planning échange de groupes</span>
-                <span class="btn-desc">Roulement par blocs de 2/3 jours</span>
-            </div>
-        </a>
-
-        <!-- BOUTON 3 -->
-        <a href="planning3.html" class="btn-card btn-planning3">
-            <div class="icon">🎭</div>
-            <div class="btn-text">
-                <span class="btn-title">V3: Planning (Mix Quotidien)</span>
-                <span class="btn-desc">Alternance indétectable un jour sur deux</span>
-            </div>
-        </a>
-
-        <!-- BOUTON 4 -->
+        <!-- BOUTON CALCULATEUR RDV -->
         <a href="rdv.html" class="btn-card btn-rdv">
             <div class="icon">⏰</div>
             <div class="btn-text">
