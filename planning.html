@@ -1,288 +1,272 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.4">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Gardes - CPMC (Par Semaine)</title>
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --primary: #2563eb;
+            --border: #e5e7eb;
+            --text-main: #1f2937;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1 { font-size: 24px; text-align: center; margin-top: 0; }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .control-group { flex: 1; min-width: 150px; }
+        label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #4b5563; }
+        input, select, button {
+            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db;
+            font-size: 16px; box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary); color: white; font-weight: bold; border: none;
+            cursor: pointer; transition: 0.2s; margin-top: 24px;
+        }
+        button:hover { background-color: #1d4ed8; }
+        .btn-print { background-color: #10b981; }
+        .btn-print:hover { background-color: #059669; }
+        
+        .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 700px; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid var(--border); }
+        th { background-color: #f8fafc; font-weight: 600; color: #475569; position: sticky; top: 0; }
+        
+        .weekend-row { background-color: #fef9c3; }
+        .semaine-separator { background-color: #1f2937 !important; color: white !important; font-weight: bold; text-align: center; font-size: 14px; padding: 5px !important;}
+        
+        .hl-garde { background-color: #fee2e2 !important; border-left: 5px solid #ef4444; }
+        .hl-present { background-color: #dbeafe !important; border-left: 5px solid #3b82f6; }
+        .hl-repos { background-color: #dcfce7 !important; border-left: 5px solid #10b981; }
+        .badge-garde { background-color: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; display: inline-block;}
+        .post-garde-text { color: #047857; font-weight: bold; }
+        .highlight-text { font-weight: bold; font-size: 1.05em; text-decoration: underline; }
+
+        .print-header { display: none; text-align: center; margin-bottom: 30px; font-family: "Times New Roman", Times, serif; }
+        .print-header h2 { font-size: 18px; text-transform: uppercase; margin: 5px 0; }
+        .print-header h3 { font-size: 16px; margin: 5px 0; font-weight: normal; }
+        .print-header h4 { font-size: 14px; margin: 5px 0; font-weight: normal; font-style: italic; }
+        .print-title { font-size: 22px; font-weight: bold; text-decoration: underline; margin-top: 20px; }
+
+        @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            body { background-color: white; padding: 0; }
+            .container { box-shadow: none; padding: 0; max-width: 100%; border: none; }
+            .controls, h1 { display: none !important; }
+            .print-header { display: block; }
+            table { width: 100%; border: 2px solid #000; }
+            th, td { border: 1px solid #000 !important; color: #000; font-size: 12pt; padding: 8px; }
+            th { background-color: #e5e7eb !important; font-size: 13pt; text-transform: uppercase; }
+            .semaine-separator { background-color: #e5e7eb !important; color: #000 !important; }
+            .hl-garde, .hl-present, .hl-repos { border-left: none !important; background-color: transparent !important; }
+            .weekend-row { background-color: #f3f4f6 !important; }
+        }
+    </style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="fr"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;Générateur de Gardes - CPMC (Par Semaine)&lt;/title&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>:root {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--bg-color: #f3f4f6;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--card-bg: #ffffff;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--primary: #2563eb;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--border: #e5e7eb;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>--text-main: #1f2937;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>body {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: var(--bg-color);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: var(--text-main);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin: 0;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.container {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>max-width: 900px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin: 0 auto;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: var(--card-bg);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 25px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 16px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 4px 15px rgba(0,0,0,0.05);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>h1 { font-size: 24px; text-align: center; margin-top: 0; }</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.controls {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>flex-wrap: wrap;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gap: 15px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 25px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: #f9fafb;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 15px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 12px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border: 1px solid var(--border);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.control-group { flex: 1; min-width: 150px; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #4b5563; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>input, select, button {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 16px; box-sizing: border-box;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>button {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: var(--primary); color: white; font-weight: bold; border: none;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>cursor: pointer; transition: 0.2s; margin-top: 24px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>button:hover { background-color: #1d4ed8; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.btn-print { background-color: #10b981; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.btn-print:hover { background-color: #059669; }</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>table { width: 100%; border-collapse: collapse; text-align: left; min-width: 700px; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>th, td { padding: 12px 15px; border-bottom: 1px solid var(--border); }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>th { background-color: #f8fafc; font-weight: 600; color: #475569; position: sticky; top: 0; }</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.weekend-row { background-color: #fef9c3; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.semaine-separator { background-color: #1f2937 !important; color: white !important; font-weight: bold; text-align: center; font-size: 14px; padding: 5px !important;}</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.hl-garde { background-color: #fee2e2 !important; border-left: 5px solid #ef4444; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.hl-present { background-color: #dbeafe !important; border-left: 5px solid #3b82f6; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.hl-repos { background-color: #dcfce7 !important; border-left: 5px solid #10b981; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.badge-garde { background-color: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; display: inline-block;}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.post-garde-text { color: #047857; font-weight: bold; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.highlight-text { font-weight: bold; font-size: 1.05em; text-decoration: underline; }</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.print-header { display: none; text-align: center; margin-bottom: 30px; font-family: "Times New Roman", Times, serif; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.print-header h2 { font-size: 18px; text-transform: uppercase; margin: 5px 0; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.print-header h3 { font-size: 16px; margin: 5px 0; font-weight: normal; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.print-header h4 { font-size: 14px; margin: 5px 0; font-weight: normal; font-style: italic; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.print-title { font-size: 22px; font-weight: bold; text-decoration: underline; margin-top: 20px; }</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>@media print {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>body { background-color: white; padding: 0; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>.container { box-shadow: none; padding: 0; max-width: 100%; border: none; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>.controls, h1 { display: none !important; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>.print-header { display: block; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>table { width: 100%; border: 2px solid #000; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>th, td { border: 1px solid #000 !important; color: #000; font-size: 12pt; padding: 8px; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>th { background-color: #e5e7eb !important; font-size: 13pt; text-transform: uppercase; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>.semaine-separator { background-color: #e5e7eb !important; color: #000 !important; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>.hl-garde, .hl-present, .hl-repos { border-left: none !important; background-color: transparent !important; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>.weekend-row { background-color: #f3f4f6 !important; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;div class="container"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;h1&gt;🏥 Planning des Gardes (Semaine On / Off)&lt;/h1&gt;</p>
-<p class="p2"><span class="Apple-converted-space">    </span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="print-header"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2&gt;République Algérienne Démocratique et Populaire&lt;/h2&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2&gt;Ministère de la Santé&lt;/h2&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h3&gt;Etablissement Publique Hospitalier Spécialisé&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h3&gt;Centre Pierre et Marie Curie (CPMC) - Alger&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h4&gt;Service de Chirurgie « C » (ex Clinique Debussy)&lt;/h4&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="print-title"&gt;PLANNING DES GARDES ET ROTATIONS - INTERNES&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><span class="Apple-converted-space">    </span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="controls"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="control-group"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;label for="startDate"&gt;Date de début :&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;input type="date" id="startDate"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="control-group"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;label for="weeksCount"&gt;Durée :&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;select id="weeksCount"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;option value="1"&gt;1 Semaine&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;option value="2"&gt;2 Semaines&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;option value="4" selected&gt;1 Mois&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/select&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="control-group" style="background-color: #e5e7eb; padding: 10px; border-radius: 8px; margin-top: -10px;"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;label for="interneFiltre"&gt;👤 Mettre en évidence :&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;select id="interneFiltre"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;option value="-1"&gt;-- Personne --&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;option value="0"&gt;Waël (Grp A)&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;option value="1"&gt;Noussaiba (Grp B)&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;option value="2"&gt;Yassamine (Grp A)&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;option value="3"&gt;Lylia (Grp B)&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;option value="4"&gt;Ikram (Grp A)&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;option value="5"&gt;Baya (Grp B)&lt;/option&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/select&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="control-group" style="display: flex; gap: 10px;"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;button onclick="genererPlanning()"&gt;Générer&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;button class="btn-print" onclick="window.print()"&gt;🖨️ Imprimer&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="table-wrapper"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;table&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;thead&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;tr&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;th&gt;📅 Date&lt;/th&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;th&gt;🚨 Garde&lt;/th&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;th&gt;🩺 Présents (Équipe de la Semaine)&lt;/th&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;th&gt;☕ Libérés (Semaine Off / Repos)&lt;/th&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;/tr&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/thead&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;tbody id="tableBody"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/tbody&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/table&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p1">&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const internes = ['Waël', 'Noussaiba', 'Yassamine', 'Lylia', 'Ikram', 'Baya'];</p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Date de référence des gardes</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const baseDateUTC = Date.UTC(2026, 8, 29);<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>// Dimanche de référence pour déterminer quelle semaine on est</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const refSundayUTC = Date.UTC(2026, 8, 27);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>document.addEventListener("DOMContentLoaded", () =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let today = new Date();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('startDate').value = today.toISOString().split('T')[0];</p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('interneFiltre').addEventListener('change', genererPlanning);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>genererPlanning();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function genererPlanning() {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const startDateInput = document.getElementById('startDate').value;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>if (!startDateInput) return;</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>const weeks = parseInt(document.getElementById('weeksCount').value);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const daysToGenerate = weeks * 7;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const targetInterne = parseInt(document.getElementById('interneFiltre').value);</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>const startParts = startDateInput.split('-');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let currentUTC = Date.UTC(startParts[0], startParts[1] - 1, startParts[2]);</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>let tbody = document.getElementById('tableBody');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>tbody.innerHTML = '';<span class="Apple-converted-space"> </span></p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>const joursSemaine = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>for (let i = 0; i &lt; daysToGenerate; i++) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let loopDate = new Date(currentUTC + i * 86400000);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let diffDays = Math.floor((loopDate.getTime() - baseDateUTC) / 86400000);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let diffFromSunday = Math.floor((loopDate.getTime() - refSundayUTC) / 86400000);</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// Alternance des semaines pour les groupes</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let currentWeekIndex = Math.floor(diffFromSunday / 7);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let isGroupeA = (currentWeekIndex % 2 === 0);</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// LE HACK MATHEMATIQUE : Groupes Impairs (A) et Pairs (B)</p>
-<p class="p1"><span class="Apple-converted-space">            </span>// Groupe A : 0 (Waël), 2 (Yassamine), 4 (Ikram)</p>
-<p class="p1"><span class="Apple-converted-space">            </span>// Groupe B : 1 (Noussaiba), 3 (Lylia), 5 (Baya)</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let groupeActif = isGroupeA ? [0, 2, 4] : [1, 3, 5];</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (loopDate.getUTCDay() === 0 &amp;&amp; i !== 0) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>let sepTr = document.createElement('tr');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>sepTr.innerHTML = `&lt;td colspan="4" class="semaine-separator"&gt;🔽 SEMAINE DU GROUPE ${isGroupeA ? 'A (Waël, Yassamine, Ikram)' : 'B (Noussaiba, Lylia, Baya)'} 🔽&lt;/td&gt;`;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>tbody.appendChild(sepTr);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} else if (i === 0) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>let sepTr = document.createElement('tr');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>sepTr.innerHTML = `&lt;td colspan="4" class="semaine-separator"&gt;SEMAINE EN COURS : GROUPE ${isGroupeA ? 'A (Waël, Yassamine, Ikram)' : 'B (Noussaiba, Lylia, Baya)'}&lt;/td&gt;`;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>tbody.appendChild(sepTr);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let gardeIdx = ((diffDays % 6) + 6) % 6;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let postGardeIdx = (gardeIdx - 1 + 6) % 6;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let dayOfWeek = loopDate.getUTCDay();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let isWeekend = (dayOfWeek === 5 || dayOfWeek === 6);</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let presents = [];</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (!isWeekend) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>// Les présents sont le groupe de la semaine MOINS l'interne de garde et l'interne post-garde</p>
-<p class="p1"><span class="Apple-converted-space">                </span>// (Mathématiquement, ça donnera TOUJOURS exactement 2 présents !)</p>
-<p class="p1"><span class="Apple-converted-space">                </span>presents = groupeActif.filter(idx =&gt; idx !== gardeIdx &amp;&amp; idx !== postGardeIdx);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let repos = [];</p>
-<p class="p1"><span class="Apple-converted-space">            </span>for (let j = 0; j &lt; 6; j++) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (j !== gardeIdx &amp;&amp; !presents.includes(j)) {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>repos.push(j);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let rowClass = "";</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (isWeekend) rowClass = "weekend-row";</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (targetInterne !== -1) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (targetInterne === gardeIdx) rowClass += " hl-garde";</p>
-<p class="p1"><span class="Apple-converted-space">                </span>else if (presents.includes(targetInterne)) rowClass += " hl-present";</p>
-<p class="p1"><span class="Apple-converted-space">                </span>else if (repos.includes(targetInterne)) rowClass += " hl-repos";</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let tr = document.createElement('tr');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>tr.className = rowClass.trim();</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let dateStr = `${joursSemaine[dayOfWeek]} ${loopDate.getUTCDate().toString().padStart(2, '0')}/${(loopDate.getUTCMonth()+1).toString().padStart(2, '0')}`;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const formatName = (idx, baseClass = "") =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>let name = internes[idx];</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (idx === targetInterne) return `&lt;span class="${baseClass} highlight-text"&gt;${name}&lt;/span&gt;`;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>return `&lt;span class="${baseClass}"&gt;${name}&lt;/span&gt;`;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>};</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let gardeStr = `&lt;span class="badge-garde"&gt;${internes[gardeIdx]}&lt;/span&gt;`;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (targetInterne === gardeIdx) gardeStr = `&lt;span class="badge-garde highlight-text"&gt;${internes[gardeIdx]}&lt;/span&gt;`;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let presentsStr = isWeekend ? "&lt;em&gt;- Aucun -&lt;/em&gt;" : presents.map(idx =&gt; formatName(idx)).join(', ');</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let reposStr = repos.map(idx =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>let isPostGarde = (idx === postGardeIdx);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>let cssClass = isPostGarde ? "post-garde-text" : "";</p>
-<p class="p1"><span class="Apple-converted-space">                </span>let nameHtml = formatName(idx, cssClass);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>return isPostGarde ? `${nameHtml} (Post-garde)` : nameHtml;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}).join(', ');</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>tr.innerHTML = `</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;td&gt;&lt;strong&gt;${dateStr}&lt;/strong&gt;&lt;/td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;td&gt;${gardeStr}&lt;/td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;td&gt;${presentsStr}&lt;/td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;td&gt;${reposStr}&lt;/td&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>`;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>tbody.appendChild(tr);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1">&lt;/script&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+
+<div class="container">
+    <h1>🏥 Planning des Gardes (Semaine On / Off)</h1>
+    
+    <div class="print-header">
+        <h2>République Algérienne Démocratique et Populaire</h2>
+        <h2>Ministère de la Santé</h2>
+        <h3>Etablissement Publique Hospitalier Spécialisé</h3>
+        <h3>Centre Pierre et Marie Curie (CPMC) - Alger</h3>
+        <h4>Service de Chirurgie « C » (ex Clinique Debussy)</h4>
+        <div class="print-title">PLANNING DES GARDES ET ROTATIONS - INTERNES</div>
+    </div>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label for="startDate">Date de début :</label>
+            <input type="date" id="startDate">
+        </div>
+        <div class="control-group">
+            <label for="weeksCount">Durée :</label>
+            <select id="weeksCount">
+                <option value="1">1 Semaine</option>
+                <option value="2">2 Semaines</option>
+                <option value="4" selected>1 Mois</option>
+            </select>
+        </div>
+        <div class="control-group" style="background-color: #e5e7eb; padding: 10px; border-radius: 8px; margin-top: -10px;">
+            <label for="interneFiltre">👤 Mettre en évidence :</label>
+            <select id="interneFiltre">
+                <option value="-1">-- Personne --</option>
+                <option value="0">Waël (Grp A)</option>
+                <option value="1">Noussaiba (Grp B)</option>
+                <option value="2">Yassamine (Grp A)</option>
+                <option value="3">Lylia (Grp B)</option>
+                <option value="4">Ikram (Grp A)</option>
+                <option value="5">Baya (Grp B)</option>
+            </select>
+        </div>
+        <div class="control-group" style="display: flex; gap: 10px;">
+            <button onclick="genererPlanning()">Générer</button>
+            <button class="btn-print" onclick="window.print()">🖨️ Imprimer</button>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>📅 Date</th>
+                    <th>🚨 Garde</th>
+                    <th>🩺 Présents (Équipe de la Semaine)</th>
+                    <th>☕ Libérés (Semaine Off / Repos)</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const internes = ['Waël', 'Noussaiba', 'Yassamine', 'Lylia', 'Ikram', 'Baya'];
+    // Date de référence des gardes
+    const baseDateUTC = Date.UTC(2026, 8, 29); 
+    // Dimanche de référence pour déterminer quelle semaine on est
+    const refSundayUTC = Date.UTC(2026, 8, 27);
+
+    document.addEventListener("DOMContentLoaded", () => {
+        let today = new Date();
+        document.getElementById('startDate').value = today.toISOString().split('T')[0];
+        document.getElementById('interneFiltre').addEventListener('change', genererPlanning);
+        genererPlanning();
+    });
+
+    function genererPlanning() {
+        const startDateInput = document.getElementById('startDate').value;
+        if (!startDateInput) return;
+        
+        const weeks = parseInt(document.getElementById('weeksCount').value);
+        const daysToGenerate = weeks * 7;
+        const targetInterne = parseInt(document.getElementById('interneFiltre').value);
+        
+        const startParts = startDateInput.split('-');
+        let currentUTC = Date.UTC(startParts[0], startParts[1] - 1, startParts[2]);
+        
+        let tbody = document.getElementById('tableBody');
+        tbody.innerHTML = ''; 
+        
+        const joursSemaine = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+        for (let i = 0; i < daysToGenerate; i++) {
+            let loopDate = new Date(currentUTC + i * 86400000);
+            let diffDays = Math.floor((loopDate.getTime() - baseDateUTC) / 86400000);
+            let diffFromSunday = Math.floor((loopDate.getTime() - refSundayUTC) / 86400000);
+            
+            // Alternance des semaines pour les groupes
+            let currentWeekIndex = Math.floor(diffFromSunday / 7);
+            let isGroupeA = (currentWeekIndex % 2 === 0);
+            
+            // LE HACK MATHEMATIQUE : Groupes Impairs (A) et Pairs (B)
+            // Groupe A : 0 (Waël), 2 (Yassamine), 4 (Ikram)
+            // Groupe B : 1 (Noussaiba), 3 (Lylia), 5 (Baya)
+            let groupeActif = isGroupeA ? [0, 2, 4] : [1, 3, 5];
+            
+            if (loopDate.getUTCDay() === 0 && i !== 0) {
+                let sepTr = document.createElement('tr');
+                sepTr.innerHTML = `<td colspan="4" class="semaine-separator">🔽 SEMAINE DU GROUPE ${isGroupeA ? 'A (Waël, Yassamine, Ikram)' : 'B (Noussaiba, Lylia, Baya)'} 🔽</td>`;
+                tbody.appendChild(sepTr);
+            } else if (i === 0) {
+                let sepTr = document.createElement('tr');
+                sepTr.innerHTML = `<td colspan="4" class="semaine-separator">SEMAINE EN COURS : GROUPE ${isGroupeA ? 'A (Waël, Yassamine, Ikram)' : 'B (Noussaiba, Lylia, Baya)'}</td>`;
+                tbody.appendChild(sepTr);
+            }
+            
+            let gardeIdx = ((diffDays % 6) + 6) % 6;
+            let postGardeIdx = (gardeIdx - 1 + 6) % 6;
+            
+            let dayOfWeek = loopDate.getUTCDay();
+            let isWeekend = (dayOfWeek === 5 || dayOfWeek === 6);
+            
+            let presents = [];
+            if (!isWeekend) {
+                // Les présents sont le groupe de la semaine MOINS l'interne de garde et l'interne post-garde
+                // (Mathématiquement, ça donnera TOUJOURS exactement 2 présents !)
+                presents = groupeActif.filter(idx => idx !== gardeIdx && idx !== postGardeIdx);
+            }
+            
+            let repos = [];
+            for (let j = 0; j < 6; j++) {
+                if (j !== gardeIdx && !presents.includes(j)) {
+                    repos.push(j);
+                }
+            }
+
+            let rowClass = "";
+            if (isWeekend) rowClass = "weekend-row";
+
+            if (targetInterne !== -1) {
+                if (targetInterne === gardeIdx) rowClass += " hl-garde";
+                else if (presents.includes(targetInterne)) rowClass += " hl-present";
+                else if (repos.includes(targetInterne)) rowClass += " hl-repos";
+            }
+
+            let tr = document.createElement('tr');
+            tr.className = rowClass.trim();
+
+            let dateStr = `${joursSemaine[dayOfWeek]} ${loopDate.getUTCDate().toString().padStart(2, '0')}/${(loopDate.getUTCMonth()+1).toString().padStart(2, '0')}`;
+            
+            const formatName = (idx, baseClass = "") => {
+                let name = internes[idx];
+                if (idx === targetInterne) return `<span class="${baseClass} highlight-text">${name}</span>`;
+                return `<span class="${baseClass}">${name}</span>`;
+            };
+
+            let gardeStr = `<span class="badge-garde">${internes[gardeIdx]}</span>`;
+            if (targetInterne === gardeIdx) gardeStr = `<span class="badge-garde highlight-text">${internes[gardeIdx]}</span>`;
+
+            let presentsStr = isWeekend ? "<em>- Aucun -</em>" : presents.map(idx => formatName(idx)).join(', ');
+            
+            let reposStr = repos.map(idx => {
+                let isPostGarde = (idx === postGardeIdx);
+                let cssClass = isPostGarde ? "post-garde-text" : "";
+                let nameHtml = formatName(idx, cssClass);
+                return isPostGarde ? `${nameHtml} (Post-garde)` : nameHtml;
+            }).join(', ');
+
+            tr.innerHTML = `
+                <td><strong>${dateStr}</strong></td>
+                <td>${gardeStr}</td>
+                <td>${presentsStr}</td>
+                <td>${reposStr}</td>
+            `;
+            
+            tbody.appendChild(tr);
+        }
+    }
+</script>
+
 </body>
 </html>
