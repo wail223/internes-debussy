@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dossiers Patients - CPMC</title>
+    <title>Dossiers Patients - CPMC Debussy</title>
     <style>
         :root {
-            --primary: #0284c7; /* Bleu médical */
+            --primary: #0284c7;
             --primary-light: #e0f2fe;
             --success: #16a34a;
             --warning: #ca8a04;
@@ -16,222 +16,202 @@
             --text: #1e293b;
             --text-light: #64748b;
         }
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0; padding: 15px;
-            padding-bottom: 80px;
-        }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .header h2 { margin: 0; color: var(--primary); font-size: 1.5em; }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 90px; }
+        .header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; }
+        .nav-links { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+        .nav-btn { background: #e2e8f0; color: var(--text); padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space: nowrap; }
+        .nav-btn.active { background: var(--primary); color: white; }
         
-        button { cursor: pointer; border: none; border-radius: 8px; padding: 10px 15px; font-weight: 600; font-size: 14px; transition: 0.2s; }
-        .btn-toggle { background: #cbd5e1; color: #0f172a; }
-        
-        /* Grid des lits */
+        .floor-selector { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 15px; }
+        .floor-btn { background: white; border: 1px solid #cbd5e1; padding: 8px 14px; border-radius: 20px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .floor-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
         .floor { display: none; }
         .floor.active { display: block; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
-        .room-card { background: var(--card); padding: 12px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .room-title { margin: 0 0 10px 0; font-size: 1em; color: var(--text-light); text-align: center;}
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+        .room-card { background: var(--card); padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .room-title { margin: 0 0 10px 0; font-size: 0.9em; color: var(--text-light); text-align: center; font-weight: 700; }
         .beds { display: flex; flex-direction: column; gap: 8px; }
         
         .bed-btn {
             background-color: #f8fafc; color: var(--text-light);
-            border: 2px dashed #cbd5e1; padding: 12px;
-            display: flex; justify-content: space-between; align-items: center;
+            border: 2px dashed #cbd5e1; padding: 10px; border-radius: 8px;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
+            cursor: pointer; width: 100%; box-sizing: border-box;
         }
         .bed-btn.occupied {
-            background-color: var(--primary-light); color: var(--primary);
-            border: 2px solid var(--primary);
+            background-color: var(--primary-light); color: #0369a1;
+            border: 2px solid var(--primary); font-weight: 600;
         }
-        .bed-btn .icon { font-size: 1.2em; }
+        .bed-code { font-size: 0.8em; opacity: 0.8; text-transform: uppercase; }
+        .bed-patient-name { font-size: 0.95em; font-weight: bold; word-break: break-word; }
 
-        /* Modals (Dossier & Formulaire) */
-        .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.6); align-items: flex-end; justify-content: center;
-            z-index: 1000; backdrop-filter: blur(4px);
-        }
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); align-items: flex-end; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
         .modal.active { display: flex; }
-        .modal-content {
-            background: var(--card); width: 100%; max-width: 600px;
-            height: 90vh; border-radius: 20px 20px 0 0; padding: 20px;
-            overflow-y: auto; box-sizing: border-box;
-            animation: slideUp 0.3s ease-out;
-        }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: white; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; z-index: 10; }
-        .modal-header h3 { margin: 0; font-size: 1.4em; }
-        .close-btn { background: #f1f5f9; color: var(--text); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1.2em; }
+        .modal-content { background: var(--card); width: 100%; max-width: 650px; height: 92vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; box-sizing: border-box; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; z-index: 10; }
+        .close-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2em; cursor: pointer; }
 
-        /* Vue Dossier (Lecture) */
-        .dossier-view { display: flex; flex-direction: column; gap: 15px; }
-        .section-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; }
-        .section-title { font-size: 0.9em; text-transform: uppercase; color: var(--text-light); font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-        .data-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; }
-        .data-label { color: var(--text-light); font-size: 0.9em; }
+        .section-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+        .section-title { font-size: 0.85em; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 10px; }
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; font-size: 0.9em; }
+        .data-label { color: var(--text-light); }
         .data-value { font-weight: 600; text-align: right; }
-        .data-text { font-size: 0.95em; line-height: 1.5; background: white; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 5px; }
+        .data-text { font-size: 0.9em; line-height: 1.4; background: white; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 4px; }
         
-        /* Actions */
-        .action-buttons { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-edit { background: var(--warning); color: white; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-photo { background: var(--text); color: white; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
-
-        /* Vue Formulaire (Edition) */
-        .form-view { display: none; flex-direction: column; gap: 15px; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px; }
-        .form-group label { font-size: 0.9em; font-weight: 600; color: var(--text); }
-        .form-group input, .form-group textarea, .form-group select { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; background: #f8fafc; }
-        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); background: white; }
-        .grid-2-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-save { background: var(--success); color: white; width: 100%; padding: 15px; font-size: 1.1em; margin-top: 20px; }
-        .btn-cancel { background: transparent; color: var(--danger); width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--danger); }
-
-        /* Tags ATCD */
-        .tags-container { display: flex; flex-wrap: wrap; gap: 8px; }
-        .tag-checkbox { display: none; }
-        .tag-label { background: white; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 20px; font-size: 0.85em; cursor: pointer; color: var(--text-light); }
-        .tag-checkbox:checked + .tag-label { background: var(--primary); color: white; border-color: var(--primary); }
+        .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+        .form-group label { font-size: 0.85em; font-weight: 600; color: var(--text); }
+        .form-group input, .form-group textarea, .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; background: #f8fafc; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         
-        #photoPreview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; display: none; margin-top: 10px; }
+        .btn-main { background: var(--primary); color: white; padding: 12px; border-radius: 8px; border: none; font-weight: 600; width: 100%; cursor: pointer; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>🏥 CPMC - Chirurgie</h2>
-        <button class="btn-toggle" onclick="toggleFloor()">🔄 3ème Étage</button>
+        <div class="top-bar">
+            <h2 style="margin:0; color: var(--primary);">🏥 CPMC Debussy</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-btn active">🛏️ Lits / Hospitalisation</a>
+            <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
+            <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
+            <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
+        </div>
     </div>
 
-    <!-- 4ème Étage -->
-    <div id="floor-4" class="floor active">
-        <div class="grid" id="grid-4"></div>
+    <div class="floor-selector">
+        <button class="floor-btn active" onclick="switchFloor('floor-4', this)">4ème Étage</button>
+        <button class="floor-btn" onclick="switchFloor('floor-3', this)">3ème Étage</button>
+        <button class="floor-btn" onclick="switchFloor('floor-rea', this)">🚨 Réanimation</button>
     </div>
 
-    <!-- 3ème Étage -->
-    <div id="floor-3" class="floor">
-        <div class="grid" id="grid-3"></div>
-    </div>
+    <div id="floor-4" class="floor active"><div class="grid" id="grid-4"></div></div>
+    <div id="floor-3" class="floor"><div class="grid" id="grid-3"></div></div>
+    <div id="floor-rea" class="floor"><div class="grid" id="grid-rea"></div></div>
 
-    <!-- MODAL PRINCIPAL (Sert pour la lecture ET l'édition) -->
+    <!-- MODAL DOSSIER PATIENT -->
     <div id="patientModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modalTitle">🛏️ Lit --</h3>
+                <h3 id="modalTitle" style="margin:0;">Lit --</h3>
                 <button class="close-btn" onclick="closeModal()">✕</button>
             </div>
             
             <input type="hidden" id="currentBedId">
 
-            <!-- ========================================== -->
-            <!-- VUE DOSSIER (LECTURE SEULE)                -->
-            <!-- ========================================== -->
-            <div id="dossierView" class="dossier-view">
-                
+            <!-- VUE LECTURE DOSSIER -->
+            <div id="dossierView" style="margin-top: 15px;">
                 <div class="section-card">
-                    <div class="section-title">👤 Identité & Constantes</div>
-                    <div class="data-row"><span class="data-label">Patient</span> <span class="data-value" id="viewName">-</span></div>
-                    <div class="data-row"><span class="data-label">Âge</span> <span class="data-value" id="viewAge">-</span></div>
-                    <div class="data-row"><span class="data-label">Poids / BMI</span> <span class="data-value" id="viewConstantes">-</span></div>
-                    <div class="data-row"><span class="data-label" style="color: var(--danger);">Allergies</span> <span class="data-value" style="color: var(--danger);" id="viewAllergies">Aucune</span></div>
+                    <div class="section-title">👤 Identité & Inscription</div>
+                    <div class="data-row"><span class="data-label">Nom & Prénom</span> <span class="data-value" id="vName">-</span></div>
+                    <div class="data-row"><span class="data-label">Téléphone</span> <span class="data-value" id="vTel">-</span></div>
+                    <div class="data-row"><span class="data-label">Âge / Groupe</span> <span class="data-value" id="vAgeGrp">-</span></div>
+                    <div class="data-row"><span class="data-label">Poids / Taille / BMI</span> <span class="data-value" id="vBmi">-</span></div>
+                    <div class="data-row"><span class="data-label" style="color:var(--danger)">Allergies</span> <span class="data-value" style="color:var(--danger)" id="vAllergies">Aucune</span></div>
                 </div>
 
                 <div class="section-card">
-                    <div class="section-title">🩺 Motif & ATCD</div>
-                    <div class="data-row"><span class="data-label">Diagnostic</span> <span class="data-value" id="viewDiag">-</span></div>
-                    <div class="data-label" style="margin-top: 8px;">Antécédents :</div>
-                    <div class="data-text" id="viewAtcd">-</div>
+                    <div class="section-title">📅 Dates Clés</div>
+                    <div class="data-row"><span class="data-label">Date d'entrée</span> <span class="data-value" id="vDateEntree">-</span></div>
+                    <div class="data-row"><span class="data-label">Date d'intervention</span> <span class="data-value" id="vDateIntervention">-</span></div>
+                    <div class="data-row"><span class="data-label">Date de sortie prévisionnelle</span> <span class="data-value" id="vDateSortie">-</span></div>
                 </div>
 
                 <div class="section-card">
-                    <div class="section-title">📝 Transmissions & Examens (Garde)</div>
-                    <div class="data-text" id="viewTransmissions">Aucune note.</div>
-                    
-                    <!-- Espace pour afficher la photo scannée (ex: IRM) -->
-                    <img id="photoDisplay" src="" style="width:100%; border-radius: 8px; margin-top: 10px; display: none;">
+                    <div class="section-title">🩺 Motif, ATCD & Décisions</div>
+                    <div class="data-row"><span class="data-label">Diagnostic</span> <span class="data-value" id="vDiag">-</span></div>
+                    <div class="data-row"><span class="data-label">Décision Réa</span> <span class="data-value" id="vDecRea">-</span></div>
+                    <div class="data-row"><span class="data-label">Colloque</span> <span class="data-value" id="vDecColloque">-</span></div>
+                    <div class="data-label" style="margin-top:6px;">Antécédents :</div>
+                    <div class="data-text" id="vAtcd">-</div>
                 </div>
 
-                <div class="action-buttons">
-                    <!-- Bouton magique pour ouvrir l'appareil photo du téléphone -->
-                    <button class="btn-photo" onclick="document.getElementById('cameraInput').click()">
-                        📸 Scanner Doc
-                    </button>
-                    <!-- Input caché pour activer la caméra native -->
-                    <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none;" onchange="handlePhotoUpload(event)">
-                    
-                    <button class="btn-edit" onclick="switchToEdit()">
-                        ✏️ Modifier
-                    </button>
+                <div class="section-card">
+                    <div class="section-title">🔬 Bilans & Imagerie (Résultats)</div>
+                    <div class="data-label">Bilan Complet :</div><div class="data-text" id="vBilanComplet">-</div>
+                    <div class="data-label" style="margin-top:6px;">Échographie :</div><div class="data-text" id="vEcho">-</div>
+                    <div class="data-label" style="margin-top:6px;">TDM TAP :</div><div class="data-text" id="vTdmTap">-</div>
+                    <div class="data-label" style="margin-top:6px;">TDM :</div><div class="data-text" id="vTdm">-</div>
+                    <div class="data-label" style="margin-top:6px;">IRM :</div><div class="data-text" id="vIrm">-</div>
+                    <div class="data-label" style="margin-top:6px;">Endoscopie :</div><div class="data-text" id="vEndo">-</div>
                 </div>
-                <button onclick="clearPatient()" style="width: 100%; background: transparent; color: var(--text-light); margin-top: 15px; border: 1px dashed #cbd5e1;">Libérer le lit (Faire sortir le patient)</button>
+
+                <div class="section-card">
+                    <div class="section-title">📌 Remarques & Transmissions</div>
+                    <div class="data-text" id="vRemarques">-</div>
+                    <img id="vPhoto" src="" style="width:100%; border-radius:8px; margin-top:10px; display:none;">
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button class="btn-main btn-warning" onclick="switchToEdit()">✏️ Modifier</button>
+                    <button class="btn-main btn-danger" onclick="archiveAndFreePatient()">📦 Libérer le Lit (Archiver)</button>
+                </div>
             </div>
 
-            <!-- ========================================== -->
-            <!-- VUE FORMULAIRE (EDITION)                   -->
-            <!-- ========================================== -->
-            <div id="formView" class="form-view">
-                
-                <div class="form-group">
-                    <label>Nom & Prénom</label>
-                    <input type="text" id="editName" placeholder="Ex: CHIKOUCHE Fatiha">
-                </div>
-                
-                <div class="grid-2-cols">
-                    <div class="form-group">
-                        <label>Âge</label>
-                        <input type="number" id="editAge" placeholder="Ex: 67">
-                    </div>
-                    <div class="form-group">
-                        <label>Poids (kg)</label>
-                        <input type="number" id="editPoids" placeholder="Ex: 75">
+            <!-- VUE FORMULAIRE EDITION -->
+            <div id="formView" style="display:none; margin-top: 15px;">
+                <div class="form-group"><label>Nom & Prénom</label><input type="text" id="eName" placeholder="Ex: GUESMI NASSIMA"></div>
+                <div class="grid-2">
+                    <div class="form-group"><label>N° Téléphone</label><input type="tel" id="eTel" placeholder="06XXXXXXXX"></div>
+                    <div class="form-group"><label>Groupe Sanguin</label>
+                        <select id="eGrp">
+                            <option value="A+">A+</option><option value="A-">A-</option>
+                            <option value="B+">B+</option><option value="B-">B-</option>
+                            <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                            <option value="O+">O+</option><option value="O-">O-</option>
+                        </select>
                     </div>
                 </div>
+                <div class="grid-3">
+                    <div class="form-group"><label>Âge</label><input type="number" id="eAge"></div>
+                    <div class="form-group"><label>Poids (kg)</label><input type="number" id="ePoids" oninput="calcBMI()"></div>
+                    <div class="form-group"><label>Taille (cm)</label><input type="number" id="eTaille" oninput="calcBMI()"></div>
+                </div>
+                <div class="form-group"><label>BMI Calculated</label><input type="text" id="eBmi" readonly style="background:#e2e8f0;"></div>
 
-                <div class="form-group">
-                    <label>Allergies (Médicaments...)</label>
-                    <input type="text" id="editAllergies" placeholder="Ex: Pénicilline, ou rien">
+                <div class="grid-3">
+                    <div class="form-group"><label>Date Entrée</label><input type="date" id="eDateEntree"></div>
+                    <div class="form-group"><label>Date Intervention</label><input type="date" id="eDateIntervention"></div>
+                    <div class="form-group"><label>Date Sortie Prévue</label><input type="date" id="eDateSortie"></div>
                 </div>
 
-                <div class="form-group" style="margin-top: 10px;">
-                    <label>Diagnostic / Motif d'hospitalisation</label>
-                    <input type="text" id="editDiag" placeholder="Ex: ADK de l'endomètre">
-                </div>
+                <div class="form-group"><label>Allergies</label><input type="text" id="eAllergies"></div>
+                <div class="form-group"><label>Diagnostic Main</label><input type="text" id="eDiag"></div>
+                <div class="form-group"><label>Antécédents</label><textarea id="eAtcd" rows="2"></textarea></div>
 
-                <div class="form-group">
-                    <label>Antécédents Rapides (Cochez)</label>
-                    <div class="tags-container">
-                        <input type="checkbox" id="atcd-hta" class="tag-checkbox" value="HTA"><label for="atcd-hta" class="tag-label">HTA</label>
-                        <input type="checkbox" id="atcd-diabete" class="tag-checkbox" value="Diabète"><label for="atcd-diabete" class="tag-label">Diabète</label>
-                        <input type="checkbox" id="atcd-asthme" class="tag-checkbox" value="Asthme"><label for="atcd-asthme" class="tag-label">Asthme</label>
-                        <input type="checkbox" id="atcd-cardio" class="tag-checkbox" value="Cardiopathie"><label for="atcd-cardio" class="tag-label">Cardiopathie</label>
-                    </div>
-                    <input type="text" id="editAtcdTexte" placeholder="Autres ATCD (ex: Cholecystectomie)" style="margin-top: 8px;">
+                <div class="grid-2">
+                    <div class="form-group"><label>Décision Réa</label><input type="text" id="eDecRea" placeholder="Ex: Oui (Lit réservé) / Non"></div>
+                    <div class="form-group"><label>Décision Colloque</label><input type="text" id="eDecColloque" placeholder="Ex: Opérable"></div>
                 </div>
+                <div class="form-group"><label>Date Colloque</label><input type="date" id="eDateColloque"></div>
 
-                <div class="form-group" style="margin-top: 10px;">
-                    <label>Transmissions (Résultats, Post-op, À surveiller)</label>
-                    <textarea id="editTransmissions" rows="4" placeholder="Ex: Suites simples. Prévoir FNS demain. TDM: processus tissulaire..."></textarea>
+                <div class="form-group"><label>🔬 Bilans Complets (FNS, TP, TCA, Bilan Rénal...)</label><textarea id="eBilanComplet" rows="3"></textarea></div>
+                <div class="grid-2">
+                    <div class="form-group"><label>Échographie</label><input type="text" id="eEcho"></div>
+                    <div class="form-group"><label>TDM TAP</label><input type="text" id="eTdmTap"></div>
+                    <div class="form-group"><label>TDM</label><input type="text" id="eTdm"></div>
+                    <div class="form-group"><label>IRM</label><input type="text" id="eIrm"></div>
                 </div>
+                <div class="form-group"><label>Endoscopie</label><input type="text" id="eEndo"></div>
+                <div class="form-group"><label>Remarques / Transmissions</label><textarea id="eRemarques" rows="3"></textarea></div>
 
-                <button class="btn-save" onclick="savePatient()">💾 Enregistrer le dossier</button>
-                <button class="btn-cancel" onclick="switchToView()">Annuler</button>
+                <button class="btn-main" onclick="savePatient()" style="background:var(--success); margin-bottom:8px;">💾 Enregistrer</button>
+                <button class="btn-main" onclick="switchToView()" style="background:transparent; color:var(--text); border:1px solid #cbd5e1;">Annuler</button>
             </div>
-
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- LOGIQUE & FIREBASE                         -->
-    <!-- ========================================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, onValue, remove, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // 🚨 METS TES CLÉS FIREBASE ICI (internes-debussy) :
         const firebaseConfig = {
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
             authDomain: "internes-debussy.firebaseapp.com",
@@ -245,210 +225,211 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         let patientsDb = {};
-        let currentPhotoBase64 = ""; // Pour stocker temporairement la photo
 
-        // 1. Générer l'interface des lits
-        function generateRooms(floor, startId, endId) {
-            const grid = document.getElementById(`grid-${floor}`);
-            for (let i = startId; i <= endId; i++) {
+        // Génération des lits pour chaque étage
+        function buildGrid(gridId, start, end, isRea = false) {
+            const grid = document.getElementById(gridId);
+            grid.innerHTML = "";
+            if(isRea) {
                 const room = document.createElement('div');
                 room.className = 'room-card';
-                room.innerHTML = `
-                    <h4 class="room-title">Chambre ${i}</h4>
-                    <div class="beds">
-                        <button id="btn-${i}P" class="bed-btn" onclick="openModal('${i}P')">
-                            <span>🛏️ ${i}P (Porte)</span> <span class="icon">➕</span>
-                        </button>
-                        <button id="btn-${i}F" class="bed-btn" onclick="openModal('${i}F')">
-                            <span>🛏️️ ${i}F (Fenêtre)</span> <span class="icon">➕</span>
-                        </button>
-                    </div>
-                `;
+                room.style.gridColumn = "1 / -1";
+                let bedsHtml = '<div class="beds" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:10px;">';
+                for(let i=1; i<=6; i++) {
+                    bedsHtml += `
+                        <button id="btn-REA${i}" class="bed-btn" onclick="openModal('REA${i}')">
+                            <span class="bed-code">🚨 Lit Réa R${i}</span>
+                            <span class="bed-patient-name" id="name-REA${i}">(Vide)</span>
+                        </button>`;
+                }
+                bedsHtml += '</div>';
+                room.innerHTML = `<h4 class="room-title">Salle de Réanimation</h4>` + bedsHtml;
                 grid.appendChild(room);
+            } else {
+                for (let i = start; i <= end; i++) {
+                    const room = document.createElement('div');
+                    room.className = 'room-card';
+                    room.innerHTML = `
+                        <h4 class="room-title">Chambre ${i}</h4>
+                        <div class="beds">
+                            <button id="btn-${i}P" class="bed-btn" onclick="openModal('${i}P')">
+                                <span class="bed-code">🛏️ ${i}P (Porte)</span>
+                                <span class="bed-patient-name" id="name-${i}P">(Vide)</span>
+                            </button>
+                            <button id="btn-${i}F" class="bed-btn" onclick="openModal('${i}F')">
+                                <span class="bed-code">🛏️ ${i}F (Fenêtre)</span>
+                                <span class="bed-patient-name" id="name-${i}F">(Vide)</span>
+                            </button>
+                        </div>`;
+                    grid.appendChild(room);
+                }
             }
         }
-        generateRooms(4, 401, 408);
-        generateRooms(3, 301, 308);
 
-        // 2. Synchronisation Firebase (Mise à jour des couleurs)
-        const patientsRef = ref(db, 'dossiers_patients/');
-        onValue(patientsRef, (snapshot) => {
+        buildGrid('grid-4', 401, 408);
+        buildGrid('grid-3', 301, 308);
+        buildGrid('grid-rea', 1, 6, true);
+
+        // Ecouteur temps réel Firebase pour mettre à jour les boutons et NOMS des patients
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
             patientsDb = snapshot.val() || {};
             document.querySelectorAll('.bed-btn').forEach(btn => {
                 const bedId = btn.id.replace('btn-', '');
-                const icon = btn.querySelector('.icon');
+                const nameSpan = document.getElementById(`name-${bedId}`);
                 if(patientsDb[bedId] && patientsDb[bedId].nom) {
                     btn.classList.add('occupied');
-                    icon.textContent = "📁"; // Icône dossier si occupé
+                    if(nameSpan) nameSpan.textContent = patientsDb[bedId].nom.toUpperCase();
                 } else {
                     btn.classList.remove('occupied');
-                    icon.textContent = "➕"; // Icône plus si vide
+                    if(nameSpan) nameSpan.textContent = "(Vide)";
                 }
             });
         });
 
-        // 3. Fonctions d'interface
-        window.toggleFloor = function() {
-            const f3 = document.getElementById('floor-3');
-            const f4 = document.getElementById('floor-4');
-            const btn = document.querySelector('.btn-toggle');
-            if (f3.classList.contains('active')) {
-                f3.classList.remove('active'); f4.classList.add('active');
-                btn.textContent = '🔄 3ème Étage';
-            } else {
-                f4.classList.remove('active'); f3.classList.add('active');
-                btn.textContent = '🔄 4ème Étage';
+        window.switchFloor = function(floorId, btn) {
+            document.querySelectorAll('.floor').forEach(f => f.classList.remove('active'));
+            document.querySelectorAll('.floor-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(floorId).classList.add('active');
+            btn.classList.add('active');
+        };
+
+        window.calcBMI = function() {
+            const p = parseFloat(document.getElementById('ePoids').value);
+            const t = parseFloat(document.getElementById('eTaille').value) / 100;
+            if(p && t) {
+                document.getElementById('eBmi').value = (p / (t * t)).toFixed(1);
             }
-        }
+        };
 
         window.openModal = function(bedId) {
             document.getElementById('currentBedId').value = bedId;
-            document.getElementById('modalTitle').textContent = `🛏️ Lit ${bedId}`;
-            
+            document.getElementById('modalTitle').textContent = `Lit ${bedId}`;
             const p = patientsDb[bedId];
             
             if(p && p.nom) {
-                // Le lit est occupé -> Afficher le dossier Lecture
-                document.getElementById('viewName').textContent = p.nom;
-                document.getElementById('viewAge').textContent = p.age ? `${p.age} ans` : '-';
-                document.getElementById('viewConstantes').textContent = p.poids ? `${p.poids} kg` : '-';
-                document.getElementById('viewAllergies').textContent = p.allergies || 'Aucune';
-                document.getElementById('viewDiag').textContent = p.diag || '-';
-                
-                // Construire la liste des ATCD
-                let atcdList = (p.atcdTags || []).join(', ');
-                if(p.atcdTexte) atcdList += (atcdList ? ', ' : '') + p.atcdTexte;
-                document.getElementById('viewAtcd').textContent = atcdList || 'Aucun';
-                
-                document.getElementById('viewTransmissions').textContent = p.transmissions || 'Aucune transmission.';
-
-                // Afficher la photo si elle existe
-                const imgDisp = document.getElementById('photoDisplay');
-                if(p.photoUrl) {
-                    imgDisp.src = p.photoUrl;
-                    imgDisp.style.display = 'block';
-                    currentPhotoBase64 = p.photoUrl;
-                } else {
-                    imgDisp.style.display = 'none';
-                    currentPhotoBase64 = "";
-                }
-
+                document.getElementById('vName').textContent = p.nom;
+                document.getElementById('vTel').textContent = p.telephone || '-';
+                document.getElementById('vAgeGrp').textContent = `${p.age || '-'} ans (${p.grp || '-'})`;
+                document.getElementById('vBmi').textContent = `${p.poids || '-'} kg / ${p.taille || '-'} cm (BMI: ${p.bmi || '-'})`;
+                document.getElementById('vAllergies').textContent = p.allergies || 'Aucune';
+                document.getElementById('vDateEntree').textContent = p.dateEntree || '-';
+                document.getElementById('vDateIntervention').textContent = p.dateIntervention || '-';
+                document.getElementById('vDateSortie').textContent = p.dateSortie || '-';
+                document.getElementById('vDiag').textContent = p.diag || '-';
+                document.getElementById('vDecRea').textContent = p.decRea || '-';
+                document.getElementById('vDecColloque').textContent = p.decColloque ? `${p.decColloque} (${p.dateColloque || ''})` : '-';
+                document.getElementById('vAtcd').textContent = p.atcd || 'Aucun';
+                document.getElementById('vBilanComplet').textContent = p.bilanComplet || 'Non saisi';
+                document.getElementById('vEcho').textContent = p.echo || '-';
+                document.getElementById('vTdmTap').textContent = p.tdmTap || '-';
+                document.getElementById('vTdm').textContent = p.tdm || '-';
+                document.getElementById('vIrm').textContent = p.irm || '-';
+                document.getElementById('vEndo').textContent = p.endo || '-';
+                document.getElementById('vRemarques').textContent = p.remarques || '-';
                 switchToView();
             } else {
-                // Lit vide -> Aller directement au mode Édition (nouveau patient)
-                resetForm();
+                resetEditForm();
                 switchToEdit();
             }
-            
             document.getElementById('patientModal').classList.add('active');
-        }
+        };
 
-        window.closeModal = function() {
-            document.getElementById('patientModal').classList.remove('active');
-        }
-
+        window.closeModal = function() { document.getElementById('patientModal').classList.remove('active'); };
+        
         window.switchToEdit = function() {
             document.getElementById('dossierView').style.display = 'none';
-            document.getElementById('formView').style.display = 'flex';
-            
-            // Pré-remplir le formulaire avec les données actuelles
+            document.getElementById('formView').style.display = 'block';
             const bedId = document.getElementById('currentBedId').value;
             const p = patientsDb[bedId] || {};
-            
-            document.getElementById('editName').value = p.nom || '';
-            document.getElementById('editAge').value = p.age || '';
-            document.getElementById('editPoids').value = p.poids || '';
-            document.getElementById('editAllergies').value = p.allergies || '';
-            document.getElementById('editDiag').value = p.diag || '';
-            document.getElementById('editAtcdTexte').value = p.atcdTexte || '';
-            document.getElementById('editTransmissions').value = p.transmissions || '';
-            
-            // Cocher les tags existants
-            document.querySelectorAll('.tag-checkbox').forEach(cb => cb.checked = false);
-            if(p.atcdTags) {
-                p.atcdTags.forEach(tag => {
-                    const checkbox = document.querySelector(`.tag-checkbox[value="${tag}"]`);
-                    if(checkbox) checkbox.checked = true;
-                });
-            }
-        }
+            document.getElementById('eName').value = p.nom || '';
+            document.getElementById('eTel').value = p.telephone || '';
+            document.getElementById('eGrp').value = p.grp || 'A+';
+            document.getElementById('eAge').value = p.age || '';
+            document.getElementById('ePoids').value = p.poids || '';
+            document.getElementById('eTaille').value = p.taille || '';
+            document.getElementById('eBmi').value = p.bmi || '';
+            document.getElementById('eDateEntree').value = p.dateEntree || '';
+            document.getElementById('eDateIntervention').value = p.dateIntervention || '';
+            document.getElementById('eDateSortie').value = p.dateSortie || '';
+            document.getElementById('eAllergies').value = p.allergies || '';
+            document.getElementById('eDiag').value = p.diag || '';
+            document.getElementById('eAtcd').value = p.atcd || '';
+            document.getElementById('eDecRea').value = p.decRea || '';
+            document.getElementById('eDecColloque').value = p.decColloque || '';
+            document.getElementById('eDateColloque').value = p.dateColloque || '';
+            document.getElementById('eBilanComplet').value = p.bilanComplet || '';
+            document.getElementById('eEcho').value = p.echo || '';
+            document.getElementById('eTdmTap').value = p.tdmTap || '';
+            document.getElementById('eTdm').value = p.tdm || '';
+            document.getElementById('eIrm').value = p.irm || '';
+            document.getElementById('eEndo').value = p.endo || '';
+            document.getElementById('eRemarques').value = p.remarques || '';
+        };
 
         window.switchToView = function() {
-            const bedId = document.getElementById('currentBedId').value;
-            if(!patientsDb[bedId] || !patientsDb[bedId].nom) {
-                closeModal(); // Si on annule un nouveau lit, on ferme.
-            } else {
-                document.getElementById('formView').style.display = 'none';
-                document.getElementById('dossierView').style.display = 'flex';
-            }
+            document.getElementById('formView').style.display = 'none';
+            document.getElementById('dossierView').style.display = 'block';
+        };
+
+        function resetEditForm() {
+            document.querySelectorAll('#formView input, #formView textarea').forEach(i => i.value = '');
         }
 
-        window.resetForm = function() {
-            document.getElementById('editName').value = '';
-            document.getElementById('editAge').value = '';
-            document.getElementById('editPoids').value = '';
-            document.getElementById('editAllergies').value = '';
-            document.getElementById('editDiag').value = '';
-            document.getElementById('editAtcdTexte').value = '';
-            document.getElementById('editTransmissions').value = '';
-            document.querySelectorAll('.tag-checkbox').forEach(cb => cb.checked = false);
-            currentPhotoBase64 = "";
-        }
-
-        // 4. Gestion de l'appareil photo (Convertit l'image pour la stocker)
-        window.handlePhotoUpload = function(event) {
-            const file = event.target.files[0];
-            if(!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                currentPhotoBase64 = e.target.result;
-                // Mettre à jour Firebase avec la photo immédiatement
-                const bedId = document.getElementById('currentBedId').value;
-                if(patientsDb[bedId] && patientsDb[bedId].nom) {
-                    set(ref(db, 'dossiers_patients/' + bedId + '/photoUrl'), currentPhotoBase64);
-                    document.getElementById('photoDisplay').src = currentPhotoBase64;
-                    document.getElementById('photoDisplay').style.display = 'block';
-                    alert("📸 Photo scannée et ajoutée au dossier !");
-                }
-            };
-            reader.readAsDataURL(file); // Note: Sur une vraie app on compresserait l'image avant
-        }
-
-        // 5. Sauvegarde
         window.savePatient = function() {
             const bedId = document.getElementById('currentBedId').value;
-            
-            // Récupérer les tags cochés
-            const checkedTags = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => cb.value);
-
-            const patientData = {
-                nom: document.getElementById('editName').value,
-                age: document.getElementById('editAge').value,
-                poids: document.getElementById('editPoids').value,
-                allergies: document.getElementById('editAllergies').value,
-                diag: document.getElementById('editDiag').value,
-                atcdTags: checkedTags,
-                atcdTexte: document.getElementById('editAtcdTexte').value,
-                transmissions: document.getElementById('editTransmissions').value,
-                photoUrl: currentPhotoBase64
+            const data = {
+                bedId: bedId,
+                nom: document.getElementById('eName').value.trim().toUpperCase(),
+                telephone: document.getElementById('eTel').value,
+                grp: document.getElementById('eGrp').value,
+                age: document.getElementById('eAge').value,
+                poids: document.getElementById('ePoids').value,
+                taille: document.getElementById('eTaille').value,
+                bmi: document.getElementById('eBmi').value,
+                dateEntree: document.getElementById('eDateEntree').value,
+                dateIntervention: document.getElementById('eDateIntervention').value,
+                dateSortie: document.getElementById('eDateSortie').value,
+                allergies: document.getElementById('eAllergies').value,
+                diag: document.getElementById('eDiag').value,
+                atcd: document.getElementById('eAtcd').value,
+                decRea: document.getElementById('eDecRea').value,
+                decColloque: document.getElementById('eDecColloque').value,
+                dateColloque: document.getElementById('eDateColloque').value,
+                bilanComplet: document.getElementById('eBilanComplet').value,
+                echo: document.getElementById('eEcho').value,
+                tdmTap: document.getElementById('eTdmTap').value,
+                tdm: document.getElementById('eTdm').value,
+                irm: document.getElementById('eIrm').value,
+                endo: document.getElementById('eEndo').value,
+                remarques: document.getElementById('eRemarques').value
             };
-            
-            if(patientData.nom.trim() === '') {
-                alert("Le nom du patient est obligatoire !");
-                return;
-            }
 
-            set(ref(db, 'dossiers_patients/' + bedId), patientData);
+            if(!data.nom) return alert("Le nom est obligatoire !");
+            set(ref(db, 'dossiers_patients/' + bedId), data);
             closeModal();
-        }
+        };
 
-        window.clearPatient = function() {
+        // Transfert automatique vers ARCHIVES à la sortie du patient
+        window.archiveAndFreePatient = function() {
             const bedId = document.getElementById('currentBedId').value;
-            if(confirm("Confirmer la sortie de ce patient ? Cela effacera son dossier actuel.")) {
-                remove(ref(db, 'dossiers_patients/' + bedId));
-                closeModal();
+            const patient = patientsDb[bedId];
+            if(!patient) return;
+
+            if(confirm(`Voulez-vous libérer le lit ${bedId} et archiver le dossier de ${patient.nom} ?`)) {
+                const archiveData = { ...patient, dateArchivage: new Date().toISOString().split('T')[0] };
+                push(ref(db, 'archives_patients/'), archiveData).then(() => {
+                    remove(ref(db, 'dossiers_patients/' + bedId));
+                    closeModal();
+                    alert("Patient archivé avec succès !");
+                });
             }
+        };
+
+        // Redirection depuis URL si paramètre bedId présent (Ex: depuis interventions)
+        const urlParams = new URLSearchParams(window.location.search);
+        const bedFromUrl = urlParams.get('bedId');
+        if(bedFromUrl) {
+            setTimeout(() => openModal(bedFromUrl), 500);
         }
     </script>
 </body>
