@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Gardes - CPMC</title>
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --primary: #2563eb;
+            --border: #e5e7eb;
+            --text-main: #1f2937;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1 { font-size: 24px; text-align: center; margin-top: 0; }
+        
+        /* Contrôles (Boutons, etc.) */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .control-group { flex: 1; min-width: 150px; }
+        label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #4b5563; }
+        input, select, button {
+            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db;
+            font-size: 16px; box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary); color: white; font-weight: bold; border: none;
+            cursor: pointer; transition: 0.2s; margin-top: 24px;
+        }
+        button:hover { background-color: #1d4ed8; }
+        .btn-print { background-color: #10b981; }
+        .btn-print:hover { background-color: #059669; }
+        
+        /* Table Styles (Écran) */
+        .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 700px; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid var(--border); }
+        th { background-color: #f8fafc; font-weight: 600; color: #475569; position: sticky; top: 0; }
+        
+        .weekend-row { background-color: #fef9c3; }
+        
+        /* Highlight Styles */
+        .hl-garde { background-color: #fee2e2 !important; border-left: 5px solid #ef4444; }
+        .hl-present { background-color: #dbeafe !important; border-left: 5px solid #3b82f6; }
+        .hl-repos { background-color: #dcfce7 !important; border-left: 5px solid #10b981; }
+        .badge-garde { background-color: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; display: inline-block;}
+        .post-garde-text { color: #047857; font-weight: bold; }
+        .highlight-text { font-weight: bold; font-size: 1.05em; text-decoration: underline; }
+
+        /* En-tête d'impression caché sur l'écran */
+        .print-header { display: none; text-align: center; margin-bottom: 30px; font-family: "Times New Roman", Times, serif; }
+        .print-header h2 { font-size: 18px; text-transform: uppercase; margin: 5px 0; }
+        .print-header h3 { font-size: 16px; margin: 5px 0; font-weight: normal; }
+        .print-header h4 { font-size: 14px; margin: 5px 0; font-weight: normal; font-style: italic; }
+        .print-title { font-size: 22px; font-weight: bold; text-decoration: underline; margin-top: 20px; }
+
+        /* ========================================= */
+        /* CSS SPÉCIAL IMPRESSION (A4)               */
+        /* ========================================= */
+        @media print {
+            /* Forcer l'impression des couleurs de fond sur Chrome/Safari */
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            
+            body { background-color: white; padding: 0; }
+            .container { box-shadow: none; padding: 0; max-width: 100%; border: none; }
+            
+            /* Cacher l'interface utilisateur */
+            .controls, h1 { display: none !important; }
+            
+            /* Afficher l'en-tête officiel */
+            .print-header { display: block; }
+            
+            /* Adapter le tableau pour le papier */
+            table { width: 100%; border: 2px solid #000; }
+            th, td { border: 1px solid #000 !important; color: #000; font-size: 12pt; padding: 8px; }
+            th { background-color: #e5e7eb !important; font-size: 13pt; text-transform: uppercase; }
+            
+            /* Retirer le soulignement et surlignage personnel lors de l'impression */
+            .hl-garde, .hl-present, .hl-repos { border-left: none !important; background-color: transparent !important; }
+            .weekend-row { background-color: #f3f4f6 !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- TITRE ÉCRAN -->
+    <h1>🏥 Planning des Gardes</h1>
+    
+    <!-- EN-TÊTE PAPIER (Invisible à l'écran) -->
+    <div class="print-header">
+        <h2>République Algérienne Démocratique et Populaire</h2>
+        <h2>Ministère de la Santé</h2>
+        <h3>Etablissement Publique Hospitalier Spécialisé</h3>
+        <h3>Centre Pierre et Marie Curie (CPMC) - Alger</h3>
+        <h4>Service de Chirurgie « C » (ex Clinique Debussy)</h4>
+        
+        <div class="print-title">PLANNING DES GARDES ET ROTATIONS - INTERNES</div>
+    </div>
+    
+    <!-- CONTRÔLES (Cachés à l'impression) -->
+    <div class="controls">
+        <div class="control-group">
+            <label for="startDate">Date de début :</label>
+            <input type="date" id="startDate">
+        </div>
+        <div class="control-group">
+            <label for="weeksCount">Durée :</label>
+            <select id="weeksCount">
+                <option value="1">1 Semaine</option>
+                <option value="2">2 Semaines</option>
+                <option value="4" selected>1 Mois</option>
+            </select>
+        </div>
+        <div class="control-group" style="background-color: #e5e7eb; padding: 10px; border-radius: 8px; margin-top: -10px;">
+            <label for="interneFiltre">👤 Mettre en évidence :</label>
+            <select id="interneFiltre">
+                <option value="-1">-- Personne --</option>
+                <option value="0">Waël</option>
+                <option value="1">Noussaiba</option>
+                <option value="2">Yassamine</option>
+                <option value="3">Lylia</option>
+                <option value="4">Ikram</option>
+                <option value="5">Baya</option>
+            </select>
+        </div>
+        <div class="control-group" style="display: flex; gap: 10px;">
+            <button onclick="genererPlanning()">Générer</button>
+            <button class="btn-print" onclick="window.print()">🖨️ Imprimer</button>
+        </div>
+    </div>
+
+    <!-- TABLEAU -->
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>📅 Date</th>
+                    <th>🚨 Garde</th>
+                    <th>🩺 Présents</th>
+                    <th>☕ Libérés (Repos)</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Les lignes s'afficheront ici -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const internes = ['Waël', 'Noussaiba', 'Yassamine', 'Lylia', 'Ikram', 'Baya'];
+    const baseDateUTC = Date.UTC(2026, 8, 29); // Mardi 29 Septembre 2026
+
+    document.addEventListener("DOMContentLoaded", () => {
+        let today = new Date();
+        document.getElementById('startDate').value = today.toISOString().split('T')[0];
+        document.getElementById('interneFiltre').addEventListener('change', genererPlanning);
+        genererPlanning();
+    });
+
+    function genererPlanning() {
+        const startDateInput = document.getElementById('startDate').value;
+        if (!startDateInput) return;
+        
+        const weeks = parseInt(document.getElementById('weeksCount').value);
+        const daysToGenerate = weeks * 7;
+        const targetInterne = parseInt(document.getElementById('interneFiltre').value);
+        
+        const startParts = startDateInput.split('-');
+        let currentUTC = Date.UTC(startParts[0], startParts[1] - 1, startParts[2]);
+        
+        let tbody = document.getElementById('tableBody');
+        tbody.innerHTML = ''; 
+        
+        const joursSemaine = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+        for (let i = 0; i < daysToGenerate; i++) {
+            let loopDate = new Date(currentUTC + i * 86400000);
+            let diffDays = Math.floor((loopDate.getTime() - baseDateUTC) / 86400000);
+            
+            let gardeIdx = ((diffDays % 6) + 6) % 6;
+            let postGardeIdx = (gardeIdx - 1 + 6) % 6;
+            
+            let dayOfWeek = loopDate.getUTCDay();
+            let isWeekend = (dayOfWeek === 5 || dayOfWeek === 6);
+            
+            let presents = [];
+            if (!isWeekend) {
+                // MODIFICATION ICI : On prend le +1 et +2 pour que les présents soient toujours 
+                // ceux qui vont faire les gardes des jours suivants (donc ils travaillent en pré-garde).
+                presents.push((gardeIdx + 1) % 6);
+                presents.push((gardeIdx + 2) % 6);
+            }
+            
+            let repos = [];
+            for (let j = 0; j < 6; j++) {
+                if (j !== gardeIdx && !presents.includes(j)) {
+                    repos.push(j);
+                }
+            }
+
+            let rowClass = "";
+            if (isWeekend) rowClass = "weekend-row";
+
+            if (targetInterne !== -1) {
+                if (targetInterne === gardeIdx) rowClass += " hl-garde";
+                else if (presents.includes(targetInterne)) rowClass += " hl-present";
+                else if (repos.includes(targetInterne)) rowClass += " hl-repos";
+            }
+
+            let tr = document.createElement('tr');
+            tr.className = rowClass.trim();
+
+            let dateStr = `${joursSemaine[dayOfWeek]} ${loopDate.getUTCDate().toString().padStart(2, '0')}/${(loopDate.getUTCMonth()+1).toString().padStart(2, '0')}`;
+            
+            const formatName = (idx, baseClass = "") => {
+                let name = internes[idx];
+                if (idx === targetInterne) return `<span class="${baseClass} highlight-text">${name}</span>`;
+                return `<span class="${baseClass}">${name}</span>`;
+            };
+
+            let gardeStr = `<span class="badge-garde">${internes[gardeIdx]}</span>`;
+            if (targetInterne === gardeIdx) gardeStr = `<span class="badge-garde highlight-text">${internes[gardeIdx]}</span>`;
+
+            let presentsStr = isWeekend ? "<em>- Aucun -</em>" : `${formatName(presents[0])}, ${formatName(presents[1])}`;
+            
+            let reposStr = repos.map(idx => {
+                let isPostGarde = (idx === postGardeIdx);
+                let cssClass = isPostGarde ? "post-garde-text" : "";
+                let nameHtml = formatName(idx, cssClass);
+                // On garde la mention "(Post-garde)" pour le jour exact de sortie, le reste est juste "Repos"
+                return isPostGarde ? `${nameHtml} (Post-garde)` : nameHtml;
+            }).join(', ');
+
+            tr.innerHTML = `
+                <td><strong>${dateStr}</strong></td>
+                <td>${gardeStr}</td>
+                <td>${presentsStr}</td>
+                <td>${reposStr}</td>
+            `;
+            
+            tbody.appendChild(tr);
+        }
+    }
+</script>
+
+</body>
+</html>
