@@ -5,18 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Archives Interventions - CPMC</title>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background:#f1f5f9; padding:15px; margin:0; }
+        body { font-family: system-ui, sans-serif; background:#f1f5f9; padding:15px; margin:0; }
         .nav-links { display: flex; gap: 8px; margin-bottom: 15px; overflow-x:auto; }
         .nav-btn { background: #e2e8f0; color: #1e293b; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space:nowrap; }
         .nav-btn.active { background: #0284c7; color: white; }
-        
-        table { width: 100%; border-collapse: collapse; background: white; font-size: 0.85em; margin-top:10px; }
+        .container { background: white; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; }
+        input[type="text"] { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
         th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
         th { background: #f8fafc; color: #0284c7; }
+        .btn-save { background: #0284c7; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h2>🗂️ Archives des Programmes Opératoires</h2>
     <div class="nav-links">
         <a href="patients.html" class="nav-btn">🛏️ Hospitalisation</a>
         <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
@@ -24,61 +25,96 @@
         <a href="archives-interventions.html" class="nav-btn active">🗂️ Archive Interventions</a>
     </div>
 
-    <label><b>Sélectionner une date passée :</b></label>
-    <input type="date" id="archiveDate" onchange="fetchArchivedProgram()">
-
-    <div id="archivedTableContainer" style="margin-top:15px;">Choisissez une date ci-dessus.</div>
+    <div class="container">
+        <h2>🗂️️ Historique des Interventions</h2>
+        <input type="text" id="searchIntervention" placeholder="Rechercher par nom de patient, intervention ou date (ex: 2026-10)..." onkeyup="renderInterventions()">
+        
+        <div style="overflow-x:auto;">
+            <table id="intervTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Salle</th>
+                        <th>Patient</th>
+                        <th>Intervention</th>
+                        <th>Opérateur</th>
+                        <th>Statut</th>
+                        <th>Remarque</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="intervTableBody">
+                    <tr><td colspan="8" style="text-align:center;">Chargement...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
             authDomain: "internes-debussy.firebaseapp.com",
             databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "internes-debussy",
-            storageBucket: "internes-debussy.firebasestorage.app",
-            messagingSenderId: "614550756274",
-            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
+            projectId: "internes-debussy"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        
+        let allInterventions = [];
 
-        window.fetchArchivedProgram = function() {
-            const date = document.getElementById('archiveDate').value;
-            const container = document.getElementById('archivedTableContainer');
+        onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
+            const data = snapshot.val() || {};
+            allInterventions = [];
             
-            onValue(ref(db, 'programmes_operatoires/' + date), (snapshot) => {
-                const lines = snapshot.val();
-                if(!lines || lines.length === 0) {
-                    container.innerHTML = `<p>Aucun programme enregistré pour la date du ${date}.</p>`;
-                    return;
-                }
+            // Transformer les données en un tableau plat pour faciliter la recherche
+            Object.keys(data).forEach(dateStr => {
+                const lignes = data[dateStr];
+                lignes.forEach((ligne, index) => {
+                    allInterventions.push({ date: dateStr, index: index, ...ligne });
+                });
+            });
+            // Trier par date décroissante (plus récent en premier)
+            allInterventions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            renderInterventions();
+        });
 
-                container.innerHTML = `
-                    <h3>Programme du ${date}</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Salle</th><th>Position</th><th>Patient</th><th>Âge</th><th>GRP</th>
-                                <th>Diagnostic</th><th>Intervention</th><th>Opérateurs</th><th>INS/AMAR</th><th>Statut</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${lines.map(l => `
-                                <tr>
-                                    <td>${l.salle||'-'}</td><td>${l.position\vert{}\vert{}'-'}</td><td>${l.patientText||'-'}</td>
-                                    <td>${l.age||'-'}</td><td>${l.grp\vert{}\vert{}'-'}</td><td>${l.diag||'-'}</td>
-                                    <td>${l.intervention||'-'}</td><td>${l.operateur\vert{}\vert{}'-'}</td><td>${l.insAmar||'-'}</td>
-                                    <td><b>${l.statut||'Maintenue'}</b></td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                `;
-            }, { onlyOnce: true });
+        window.renderInterventions = function() {
+            const tbody = document.getElementById('intervTableBody');
+            const term = document.getElementById('searchIntervention').value.toLowerCase();
+            let html = '';
+            
+            allInterventions.forEach(inv => {
+                const searchString = `${inv.patientText} ${inv.intervention} ${inv.date}`.toLowerCase();
+                
+                if(searchString.includes(term)) {
+                    html += `
+                    <tr>
+                        <td><b>${inv.date}</b></td>
+                        <td>${inv.salle || '-'}</td>
+                        <td>${inv.patientText || '-'}</td>
+                        <td>${inv.intervention || '-'}</td>
+                        <td>${inv.operateur || '-'}</td>
+                        <td>${inv.statut || '-'}</td>
+                        <td>
+                            <input type="text" id="rem_${inv.date}_${inv.index}" value="${inv.remarque || ''}" placeholder="Ajouter une remarque..." style="margin:0;">
+                        </td>
+                        <td>
+                            <button class="btn-save" onclick="saveRemarque('${inv.date}', ${inv.index})">💾 Sauver</button>
+                        </td>
+                    </tr>`;
+                }
+            });
+            tbody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;">Aucune intervention trouvée.</td></tr>';
+        };
+
+        window.saveRemarque = function(date, index) {
+            const remVal = document.getElementById(`rem_${date}_${index}`).value;
+            update(ref(db, `programmes_operatoires/${date}/${index}`), { remarque: remVal }).then(() => {
+                alert("Remarque enregistrée avec succès !");
+            });
         };
     </script>
 </body>
