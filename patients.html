@@ -3,108 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transmissions - Internes CPMC</title>
+    <title>Dossiers Patients - CPMC</title>
     <style>
         :root {
-            --primary: #2563eb;
-            --bg: #f8fafc;
+            --primary: #0284c7; /* Bleu médical */
+            --primary-light: #e0f2fe;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --danger: #dc2626;
+            --bg: #f1f5f9;
             --card: #ffffff;
             --text: #1e293b;
+            --text-light: #64748b;
         }
         body {
             font-family: system-ui, -apple-system, sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            margin: 0;
-            padding: 20px;
+            margin: 0; padding: 15px;
+            padding-bottom: 80px;
         }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        button {
-            cursor: pointer;
-            border: none;
-            border-radius: 6px;
-            padding: 10px 15px;
-            font-weight: bold;
-            transition: opacity 0.2s;
-        }
-        .btn-toggle { background-color: #e2e8f0; color: var(--text); }
-        .btn-save { background-color: var(--primary); color: white; width: 100%; margin-top: 15px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h2 { margin: 0; color: var(--primary); font-size: 1.5em; }
         
+        button { cursor: pointer; border: none; border-radius: 8px; padding: 10px 15px; font-weight: 600; font-size: 14px; transition: 0.2s; }
+        .btn-toggle { background: #cbd5e1; color: #0f172a; }
+        
+        /* Grid des lits */
         .floor { display: none; }
         .floor.active { display: block; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+        .room-card { background: var(--card); padding: 12px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .room-title { margin: 0 0 10px 0; font-size: 1em; color: var(--text-light); text-align: center;}
+        .beds { display: flex; flex-direction: column; gap: 8px; }
         
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 15px;
-        }
-        .room-card {
-            background: var(--card);
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border-left: 4px solid var(--primary);
-        }
-        .room-title { margin: 0 0 10px 0; font-size: 1.1em; }
-        .beds { display: flex; gap: 10px; }
         .bed-btn {
-            flex: 1;
-            background-color: #f1f5f9;
-            color: var(--primary);
-            border: 1px solid #cbd5e1;
-            padding: 12px;
-            font-size: 1em;
-            border-radius: 8px;
+            background-color: #f8fafc; color: var(--text-light);
+            border: 2px dashed #cbd5e1; padding: 12px;
+            display: flex; justify-content: space-between; align-items: center;
         }
         .bed-btn.occupied {
-            background-color: #dbeafe;
-            border-color: var(--primary);
-            font-weight: bold;
+            background-color: var(--primary-light); color: var(--primary);
+            border: 2px solid var(--primary);
         }
+        .bed-btn .icon { font-size: 1.2em; }
 
-        /* Modal Styles */
+        /* Modals (Dossier & Formulaire) */
         .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            align-items: center; justify-content: center;
-            z-index: 1000;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); align-items: flex-end; justify-content: center;
+            z-index: 1000; backdrop-filter: blur(4px);
         }
         .modal.active { display: flex; }
         .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            background: var(--card); width: 100%; max-width: 600px;
+            height: 90vh; border-radius: 20px 20px 0 0; padding: 20px;
+            overflow-y: auto; box-sizing: border-box;
+            animation: slideUp 0.3s ease-out;
         }
-        .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .close { background: none; font-size: 1.5em; padding: 0; color: #64748b; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-size: 0.9em; margin-bottom: 4px; color: #475569; }
-        .form-group input, .form-group textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: white; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; z-index: 10; }
+        .modal-header h3 { margin: 0; font-size: 1.4em; }
+        .close-btn { background: #f1f5f9; color: var(--text); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1.2em; }
+
+        /* Vue Dossier (Lecture) */
+        .dossier-view { display: flex; flex-direction: column; gap: 15px; }
+        .section-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; }
+        .section-title { font-size: 0.9em; text-transform: uppercase; color: var(--text-light); font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; }
+        .data-label { color: var(--text-light); font-size: 0.9em; }
+        .data-value { font-weight: 600; text-align: right; }
+        .data-text { font-size: 0.95em; line-height: 1.5; background: white; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 5px; }
+        
+        /* Actions */
+        .action-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-edit { background: var(--warning); color: white; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-photo { background: var(--text); color: white; flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        /* Vue Formulaire (Edition) */
+        .form-view { display: none; flex-direction: column; gap: 15px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px; }
+        .form-group label { font-size: 0.9em; font-weight: 600; color: var(--text); }
+        .form-group input, .form-group textarea, .form-group select { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; background: #f8fafc; }
+        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); background: white; }
+        .grid-2-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-save { background: var(--success); color: white; width: 100%; padding: 15px; font-size: 1.1em; margin-top: 20px; }
+        .btn-cancel { background: transparent; color: var(--danger); width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--danger); }
+
+        /* Tags ATCD */
+        .tags-container { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tag-checkbox { display: none; }
+        .tag-label { background: white; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 20px; font-size: 0.85em; cursor: pointer; color: var(--text-light); }
+        .tag-checkbox:checked + .tag-label { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        #photoPreview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; display: none; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>🛏️ Gestion des Lits</h2>
-        <button class="btn-toggle" onclick="toggleFloor()">Voir 3ème Étage</button>
+        <h2>🏥 CPMC - Chirurgie</h2>
+        <button class="btn-toggle" onclick="toggleFloor()">🔄 3ème Étage</button>
     </div>
 
     <!-- 4ème Étage -->
@@ -117,39 +117,121 @@
         <div class="grid" id="grid-3"></div>
     </div>
 
-    <!-- Formulaire Patient (Modal) -->
+    <!-- MODAL PRINCIPAL (Sert pour la lecture ET l'édition) -->
     <div id="patientModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modalTitle">Chambre</h3>
-                <button class="close" onclick="closeModal()">&times;</button>
+                <h3 id="modalTitle">🛏️ Lit --</h3>
+                <button class="close-btn" onclick="closeModal()">✕</button>
             </div>
+            
             <input type="hidden" id="currentBedId">
-            <div class="form-group">
-                <label>Nom & Prénom</label>
-                <input type="text" id="patientName" placeholder="Ex: FOULAN Benfoulen">
+
+            <!-- ========================================== -->
+            <!-- VUE DOSSIER (LECTURE SEULE)                -->
+            <!-- ========================================== -->
+            <div id="dossierView" class="dossier-view">
+                
+                <div class="section-card">
+                    <div class="section-title">👤 Identité & Constantes</div>
+                    <div class="data-row"><span class="data-label">Patient</span> <span class="data-value" id="viewName">-</span></div>
+                    <div class="data-row"><span class="data-label">Âge</span> <span class="data-value" id="viewAge">-</span></div>
+                    <div class="data-row"><span class="data-label">Poids / BMI</span> <span class="data-value" id="viewConstantes">-</span></div>
+                    <div class="data-row"><span class="data-label" style="color: var(--danger);">Allergies</span> <span class="data-value" style="color: var(--danger);" id="viewAllergies">Aucune</span></div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">🩺 Motif & ATCD</div>
+                    <div class="data-row"><span class="data-label">Diagnostic</span> <span class="data-value" id="viewDiag">-</span></div>
+                    <div class="data-label" style="margin-top: 8px;">Antécédents :</div>
+                    <div class="data-text" id="viewAtcd">-</div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">📝 Transmissions & Examens (Garde)</div>
+                    <div class="data-text" id="viewTransmissions">Aucune note.</div>
+                    
+                    <!-- Espace pour afficher la photo scannée (ex: IRM) -->
+                    <img id="photoDisplay" src="" style="width:100%; border-radius: 8px; margin-top: 10px; display: none;">
+                </div>
+
+                <div class="action-buttons">
+                    <!-- Bouton magique pour ouvrir l'appareil photo du téléphone -->
+                    <button class="btn-photo" onclick="document.getElementById('cameraInput').click()">
+                        📸 Scanner Doc
+                    </button>
+                    <!-- Input caché pour activer la caméra native -->
+                    <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none;" onchange="handlePhotoUpload(event)">
+                    
+                    <button class="btn-edit" onclick="switchToEdit()">
+                        ✏️ Modifier
+                    </button>
+                </div>
+                <button onclick="clearPatient()" style="width: 100%; background: transparent; color: var(--text-light); margin-top: 15px; border: 1px dashed #cbd5e1;">Libérer le lit (Faire sortir le patient)</button>
             </div>
-            <div class="form-group">
-                <label>Âge / Poids</label>
-                <input type="text" id="patientAge" placeholder="Ex: 8 ans / 24 kg">
+
+            <!-- ========================================== -->
+            <!-- VUE FORMULAIRE (EDITION)                   -->
+            <!-- ========================================== -->
+            <div id="formView" class="form-view">
+                
+                <div class="form-group">
+                    <label>Nom & Prénom</label>
+                    <input type="text" id="editName" placeholder="Ex: CHIKOUCHE Fatiha">
+                </div>
+                
+                <div class="grid-2-cols">
+                    <div class="form-group">
+                        <label>Âge</label>
+                        <input type="number" id="editAge" placeholder="Ex: 67">
+                    </div>
+                    <div class="form-group">
+                        <label>Poids (kg)</label>
+                        <input type="number" id="editPoids" placeholder="Ex: 75">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Allergies (Médicaments...)</label>
+                    <input type="text" id="editAllergies" placeholder="Ex: Pénicilline, ou rien">
+                </div>
+
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>Diagnostic / Motif d'hospitalisation</label>
+                    <input type="text" id="editDiag" placeholder="Ex: ADK de l'endomètre">
+                </div>
+
+                <div class="form-group">
+                    <label>Antécédents Rapides (Cochez)</label>
+                    <div class="tags-container">
+                        <input type="checkbox" id="atcd-hta" class="tag-checkbox" value="HTA"><label for="atcd-hta" class="tag-label">HTA</label>
+                        <input type="checkbox" id="atcd-diabete" class="tag-checkbox" value="Diabète"><label for="atcd-diabete" class="tag-label">Diabète</label>
+                        <input type="checkbox" id="atcd-asthme" class="tag-checkbox" value="Asthme"><label for="atcd-asthme" class="tag-label">Asthme</label>
+                        <input type="checkbox" id="atcd-cardio" class="tag-checkbox" value="Cardiopathie"><label for="atcd-cardio" class="tag-label">Cardiopathie</label>
+                    </div>
+                    <input type="text" id="editAtcdTexte" placeholder="Autres ATCD (ex: Cholecystectomie)" style="margin-top: 8px;">
+                </div>
+
+                <div class="form-group" style="margin-top: 10px;">
+                    <label>Transmissions (Résultats, Post-op, À surveiller)</label>
+                    <textarea id="editTransmissions" rows="4" placeholder="Ex: Suites simples. Prévoir FNS demain. TDM: processus tissulaire..."></textarea>
+                </div>
+
+                <button class="btn-save" onclick="savePatient()">💾 Enregistrer le dossier</button>
+                <button class="btn-cancel" onclick="switchToView()">Annuler</button>
             </div>
-            <div class="form-group">
-                <label>Motif d'hospitalisation</label>
-                <input type="text" id="patientMotif" placeholder="Ex: Appendicite">
-            </div>
-            <div class="form-group">
-                <label>Remarques (Transmissions)</label>
-                <textarea id="patientNotes" rows="3" placeholder="À surveiller durant la garde..."></textarea>
-            </div>
-            <button class="btn-save" onclick="savePatient()">Enregistrer (Synchro en direct)</button>
+
         </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- LOGIQUE & FIREBASE                         -->
+    <!-- ========================================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // CONFIGURATION FIREBASE EXTACTE DE TON PROJET
+        // 🚨 METS TES CLÉS FIREBASE ICI (internes-debussy) :
         const firebaseConfig = {
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
             authDomain: "internes-debussy.firebaseapp.com",
@@ -157,74 +239,106 @@
             projectId: "internes-debussy",
             storageBucket: "internes-debussy.firebasestorage.app",
             messagingSenderId: "614550756274",
-            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab",
-            measurementId: "G-TPH7RBD9X1"
+            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
         let patientsDb = {};
+        let currentPhotoBase64 = ""; // Pour stocker temporairement la photo
 
+        // 1. Générer l'interface des lits
         function generateRooms(floor, startId, endId) {
             const grid = document.getElementById(`grid-${floor}`);
             for (let i = startId; i <= endId; i++) {
                 const room = document.createElement('div');
                 room.className = 'room-card';
                 room.innerHTML = `
-                    <h3 class="room-title">Chambre ${i}</h3>
+                    <h4 class="room-title">Chambre ${i}</h4>
                     <div class="beds">
-                        <button id="btn-${i}P" class="bed-btn" onclick="openModal('${i}P')">${i}P (Porte)</button>
-                        <button id="btn-${i}F" class="bed-btn" onclick="openModal('${i}F')">${i}F (Fenêtre)</button>
+                        <button id="btn-${i}P" class="bed-btn" onclick="openModal('${i}P')">
+                            <span>🛏️ ${i}P (Porte)</span> <span class="icon">➕</span>
+                        </button>
+                        <button id="btn-${i}F" class="bed-btn" onclick="openModal('${i}F')">
+                            <span>🛏️️ ${i}F (Fenêtre)</span> <span class="icon">➕</span>
+                        </button>
                     </div>
                 `;
                 grid.appendChild(room);
             }
         }
-
         generateRooms(4, 401, 408);
         generateRooms(3, 301, 308);
 
-        // Synchronisation en temps réel avec Firebase
-        const patientsRef = ref(db, 'chambres/');
+        // 2. Synchronisation Firebase (Mise à jour des couleurs)
+        const patientsRef = ref(db, 'dossiers_patients/');
         onValue(patientsRef, (snapshot) => {
             patientsDb = snapshot.val() || {};
-            
             document.querySelectorAll('.bed-btn').forEach(btn => {
                 const bedId = btn.id.replace('btn-', '');
-                if(patientsDb[bedId] && patientsDb[bedId].name && patientsDb[bedId].name.trim() !== '') {
+                const icon = btn.querySelector('.icon');
+                if(patientsDb[bedId] && patientsDb[bedId].nom) {
                     btn.classList.add('occupied');
+                    icon.textContent = "📁"; // Icône dossier si occupé
                 } else {
                     btn.classList.remove('occupied');
+                    icon.textContent = "➕"; // Icône plus si vide
                 }
             });
         });
 
+        // 3. Fonctions d'interface
         window.toggleFloor = function() {
             const f3 = document.getElementById('floor-3');
             const f4 = document.getElementById('floor-4');
             const btn = document.querySelector('.btn-toggle');
-            
             if (f3.classList.contains('active')) {
-                f3.classList.remove('active');
-                f4.classList.add('active');
-                btn.textContent = 'Voir 3ème Étage';
+                f3.classList.remove('active'); f4.classList.add('active');
+                btn.textContent = '🔄 3ème Étage';
             } else {
-                f4.classList.remove('active');
-                f3.classList.add('active');
-                btn.textContent = 'Voir 4ème Étage';
+                f4.classList.remove('active'); f3.classList.add('active');
+                btn.textContent = '🔄 4ème Étage';
             }
         }
 
         window.openModal = function(bedId) {
             document.getElementById('currentBedId').value = bedId;
-            document.getElementById('modalTitle').textContent = `Lit ${bedId}`;
+            document.getElementById('modalTitle').textContent = `🛏️ Lit ${bedId}`;
             
-            const data = patientsDb[bedId] || { name: '', age: '', motif: '', notes: '' };
-            document.getElementById('patientName').value = data.name;
-            document.getElementById('patientAge').value = data.age;
-            document.getElementById('patientMotif').value = data.motif;
-            document.getElementById('patientNotes').value = data.notes;
+            const p = patientsDb[bedId];
+            
+            if(p && p.nom) {
+                // Le lit est occupé -> Afficher le dossier Lecture
+                document.getElementById('viewName').textContent = p.nom;
+                document.getElementById('viewAge').textContent = p.age ? `${p.age} ans` : '-';
+                document.getElementById('viewConstantes').textContent = p.poids ? `${p.poids} kg` : '-';
+                document.getElementById('viewAllergies').textContent = p.allergies || 'Aucune';
+                document.getElementById('viewDiag').textContent = p.diag || '-';
+                
+                // Construire la liste des ATCD
+                let atcdList = (p.atcdTags || []).join(', ');
+                if(p.atcdTexte) atcdList += (atcdList ? ', ' : '') + p.atcdTexte;
+                document.getElementById('viewAtcd').textContent = atcdList || 'Aucun';
+                
+                document.getElementById('viewTransmissions').textContent = p.transmissions || 'Aucune transmission.';
+
+                // Afficher la photo si elle existe
+                const imgDisp = document.getElementById('photoDisplay');
+                if(p.photoUrl) {
+                    imgDisp.src = p.photoUrl;
+                    imgDisp.style.display = 'block';
+                    currentPhotoBase64 = p.photoUrl;
+                } else {
+                    imgDisp.style.display = 'none';
+                    currentPhotoBase64 = "";
+                }
+
+                switchToView();
+            } else {
+                // Lit vide -> Aller directement au mode Édition (nouveau patient)
+                resetForm();
+                switchToEdit();
+            }
             
             document.getElementById('patientModal').classList.add('active');
         }
@@ -233,17 +347,108 @@
             document.getElementById('patientModal').classList.remove('active');
         }
 
+        window.switchToEdit = function() {
+            document.getElementById('dossierView').style.display = 'none';
+            document.getElementById('formView').style.display = 'flex';
+            
+            // Pré-remplir le formulaire avec les données actuelles
+            const bedId = document.getElementById('currentBedId').value;
+            const p = patientsDb[bedId] || {};
+            
+            document.getElementById('editName').value = p.nom || '';
+            document.getElementById('editAge').value = p.age || '';
+            document.getElementById('editPoids').value = p.poids || '';
+            document.getElementById('editAllergies').value = p.allergies || '';
+            document.getElementById('editDiag').value = p.diag || '';
+            document.getElementById('editAtcdTexte').value = p.atcdTexte || '';
+            document.getElementById('editTransmissions').value = p.transmissions || '';
+            
+            // Cocher les tags existants
+            document.querySelectorAll('.tag-checkbox').forEach(cb => cb.checked = false);
+            if(p.atcdTags) {
+                p.atcdTags.forEach(tag => {
+                    const checkbox = document.querySelector(`.tag-checkbox[value="${tag}"]`);
+                    if(checkbox) checkbox.checked = true;
+                });
+            }
+        }
+
+        window.switchToView = function() {
+            const bedId = document.getElementById('currentBedId').value;
+            if(!patientsDb[bedId] || !patientsDb[bedId].nom) {
+                closeModal(); // Si on annule un nouveau lit, on ferme.
+            } else {
+                document.getElementById('formView').style.display = 'none';
+                document.getElementById('dossierView').style.display = 'flex';
+            }
+        }
+
+        window.resetForm = function() {
+            document.getElementById('editName').value = '';
+            document.getElementById('editAge').value = '';
+            document.getElementById('editPoids').value = '';
+            document.getElementById('editAllergies').value = '';
+            document.getElementById('editDiag').value = '';
+            document.getElementById('editAtcdTexte').value = '';
+            document.getElementById('editTransmissions').value = '';
+            document.querySelectorAll('.tag-checkbox').forEach(cb => cb.checked = false);
+            currentPhotoBase64 = "";
+        }
+
+        // 4. Gestion de l'appareil photo (Convertit l'image pour la stocker)
+        window.handlePhotoUpload = function(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentPhotoBase64 = e.target.result;
+                // Mettre à jour Firebase avec la photo immédiatement
+                const bedId = document.getElementById('currentBedId').value;
+                if(patientsDb[bedId] && patientsDb[bedId].nom) {
+                    set(ref(db, 'dossiers_patients/' + bedId + '/photoUrl'), currentPhotoBase64);
+                    document.getElementById('photoDisplay').src = currentPhotoBase64;
+                    document.getElementById('photoDisplay').style.display = 'block';
+                    alert("📸 Photo scannée et ajoutée au dossier !");
+                }
+            };
+            reader.readAsDataURL(file); // Note: Sur une vraie app on compresserait l'image avant
+        }
+
+        // 5. Sauvegarde
         window.savePatient = function() {
             const bedId = document.getElementById('currentBedId').value;
+            
+            // Récupérer les tags cochés
+            const checkedTags = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => cb.value);
+
             const patientData = {
-                name: document.getElementById('patientName').value,
-                age: document.getElementById('patientAge').value,
-                motif: document.getElementById('patientMotif').value,
-                notes: document.getElementById('patientNotes').value
+                nom: document.getElementById('editName').value,
+                age: document.getElementById('editAge').value,
+                poids: document.getElementById('editPoids').value,
+                allergies: document.getElementById('editAllergies').value,
+                diag: document.getElementById('editDiag').value,
+                atcdTags: checkedTags,
+                atcdTexte: document.getElementById('editAtcdTexte').value,
+                transmissions: document.getElementById('editTransmissions').value,
+                photoUrl: currentPhotoBase64
             };
             
-            set(ref(db, 'chambres/' + bedId), patientData);
+            if(patientData.nom.trim() === '') {
+                alert("Le nom du patient est obligatoire !");
+                return;
+            }
+
+            set(ref(db, 'dossiers_patients/' + bedId), patientData);
             closeModal();
+        }
+
+        window.clearPatient = function() {
+            const bedId = document.getElementById('currentBedId').value;
+            if(confirm("Confirmer la sortie de ce patient ? Cela effacera son dossier actuel.")) {
+                remove(ref(db, 'dossiers_patients/' + bedId));
+                closeModal();
+            }
         }
     </script>
 </body>
