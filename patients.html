@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transmissions - Internes</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 15px;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+        .btn-toggle { background-color: #e2e8f0; color: var(--text); }
+        .btn-save { background-color: var(--primary); color: white; width: 100%; margin-top: 15px; }
+        
+        .floor { display: none; }
+        .floor.active { display: block; }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .room-card {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--primary);
+        }
+        .room-title { margin: 0 0 10px 0; font-size: 1.1em; }
+        .beds { display: flex; gap: 10px; }
+        .bed-btn {
+            flex: 1;
+            background-color: #f1f5f9;
+            color: var(--primary);
+            border: 1px solid #cbd5e1;
+            padding: 12px;
+            font-size: 1em;
+        }
+        .bed-btn.occupied {
+            background-color: #dbeafe;
+            border-color: var(--primary);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center; justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+        }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .close { background: none; font-size: 1.5em; padding: 0; color: #64748b; }
+        
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 0.9em; margin-bottom: 4px; color: #475569; }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Gestion des Patients</h2>
+        <button class="btn-toggle" onclick="toggleFloor()">Voir 3ème Étage</button>
+    </div>
+
+    <!-- 4ème Étage -->
+    <div id="floor-4" class="floor active">
+        <div class="grid" id="grid-4"></div>
+    </div>
+
+    <!-- 3ème Étage -->
+    <div id="floor-3" class="floor">
+        <div class="grid" id="grid-3"></div>
+    </div>
+
+    <!-- Fenêtre Modale (Formulaire Patient) -->
+    <div id="patientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Chambre</h3>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            <input type="hidden" id="currentBedId">
+            <div class="form-group">
+                <label>Nom & Prénom</label>
+                <input type="text" id="patientName" placeholder="Ex: FOUlAN Benfoulen">
+            </div>
+            <div class="form-group">
+                <label>Âge / Poids</label>
+                <input type="text" id="patientAge" placeholder="Ex: 8 ans / 24 kg">
+            </div>
+            <div class="form-group">
+                <label>Motif d'hospitalisation</label>
+                <input type="text" id="patientMotif" placeholder="Ex: Bronchiolite">
+            </div>
+            <div class="form-group">
+                <label>Remarques (Garde)</label>
+                <textarea id="patientNotes" rows="3" placeholder="À surveiller..."></textarea>
+            </div>
+            <button class="btn-save" onclick="savePatient()">Enregistrer</button>
+        </div>
+    </div>
+
+    <script>
+        // Simulation de la base de données locale
+        let patientsDb = JSON.parse(localStorage.getItem('patientsDb')) || {};
+
+        // Génération des chambres
+        function generateRooms(floor, startId, endId) {
+            const grid = document.getElementById(`grid-${floor}`);
+            for (let i = startId; i <= endId; i++) {
+                const room = document.createElement('div');
+                room.className = 'room-card';
+                room.innerHTML = `
+                    <h3 class="room-title">Chambre ${i}</h3>
+                    <div class="beds">
+                        <button class="bed-btn ${patientsDb[i+'P']?.name ? 'occupied' : ''}" onclick="openModal('${i}P')">${i}P (Porte)</button>
+                        <button class="bed-btn ${patientsDb[i+'F']?.name ? 'occupied' : ''}" onclick="openModal('${i}F')">${i}F (Fenêtre)</button>
+                    </div>
+                `;
+                grid.appendChild(room);
+            }
+        }
+
+        generateRooms(4, 401, 408);
+        generateRooms(3, 301, 308);
+
+        function toggleFloor() {
+            const f3 = document.getElementById('floor-3');
+            const f4 = document.getElementById('floor-4');
+            const btn = document.querySelector('.btn-toggle');
+            
+            if (f3.classList.contains('active')) {
+                f3.classList.remove('active');
+                f4.classList.add('active');
+                btn.textContent = 'Voir 3ème Étage';
+            } else {
+                f4.classList.remove('active');
+                f3.classList.add('active');
+                btn.textContent = 'Voir 4ème Étage';
+            }
+        }
+
+        function openModal(bedId) {
+            document.getElementById('currentBedId').value = bedId;
+            document.getElementById('modalTitle').textContent = `Lit ${bedId}`;
+            
+            // Charger les données si elles existent
+            const data = patientsDb[bedId] || { name: '', age: '', motif: '', notes: '' };
+            document.getElementById('patientName').value = data.name;
+            document.getElementById('patientAge').value = data.age;
+            document.getElementById('patientMotif').value = data.motif;
+            document.getElementById('patientNotes').value = data.notes;
+            
+            document.getElementById('patientModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('patientModal').classList.remove('active');
+        }
+
+        function savePatient() {
+            const bedId = document.getElementById('currentBedId').value;
+            patientsDb[bedId] = {
+                name: document.getElementById('patientName').value,
+                age: document.getElementById('patientAge').value,
+                motif: document.getElementById('patientMotif').value,
+                notes: document.getElementById('patientNotes').value
+            };
+            
+            // Sauvegarde locale temporaire
+            localStorage.setItem('patientsDb', JSON.stringify(patientsDb));
+            
+            // Mettre à jour l'interface (couleur du bouton)
+            document.querySelector(`button[onclick="openModal('${bedId}')"]`).classList.toggle('occupied', patientsDb[bedId].name !== '');
+            
+            closeModal();
+            // C'est ici que tu mettras la fonction Firebase plus tard !
+        }
+    </script>
+</body>
+</html>
