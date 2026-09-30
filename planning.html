@@ -120,12 +120,13 @@
             <label for="interneFiltre">👤 Mettre en évidence :</label>
             <select id="interneFiltre">
                 <option value="-1">-- Personne --</option>
-                <option value="0">Waël (Grp A)</option>
-                <option value="1">Noussaiba (Grp B)</option>
-                <option value="2">Yassamine (Grp A)</option>
-                <option value="3">Lylia (Grp B)</option>
-                <option value="4">Ikram (Grp A)</option>
-                <option value="5">Baya (Grp B)</option>
+                <!-- NOUVEL ORDRE POUR GARANTIR 3 INTERNES PAR JOUR -->
+                <option value="0">Waël (Grp B)</option>
+                <option value="1">Noussaiba (Grp A)</option>
+                <option value="2">Lylia (Grp B)</option>
+                <option value="3">Yassamine (Grp A)</option>
+                <option value="4">Baya (Grp B)</option>
+                <option value="5">Ikram (Grp A)</option>
             </select>
         </div>
         <div class="control-group" style="display: flex; gap: 10px;">
@@ -140,7 +141,7 @@
                 <tr>
                     <th>📅 Date</th>
                     <th>🚨 Garde</th>
-                    <th>🩺 Présents (Équipe de la Semaine)</th>
+                    <th>🩺 Présents (1 Garde + 2 = 3 total)</th>
                     <th>☕ Libérés (Semaine Off / Repos)</th>
                 </tr>
             </thead>
@@ -151,10 +152,15 @@
 </div>
 
 <script>
-    const internes = ['Waël', 'Noussaiba', 'Yassamine', 'Lylia', 'Ikram', 'Baya'];
-    // Date de référence des gardes
+    // LE NOUVEL ORDRE OBLIGATOIRE (Alternance Groupe B / Groupe A)
+    const internes = ['Waël', 'Noussaiba', 'Lylia', 'Yassamine', 'Baya', 'Ikram'];
+    
+    // Indices :
+    // Groupe B : 0 (Waël), 2 (Lylia), 4 (Baya)
+    // Groupe A : 1 (Noussaiba), 3 (Yassamine), 5 (Ikram)
+
+    // Date de référence (Mardi 29 sept) et le Dimanche qui a débuté cette semaine-là
     const baseDateUTC = Date.UTC(2026, 8, 29); 
-    // Dimanche de référence pour déterminer quelle semaine on est
     const refSundayUTC = Date.UTC(2026, 8, 27);
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -185,22 +191,19 @@
             let diffDays = Math.floor((loopDate.getTime() - baseDateUTC) / 86400000);
             let diffFromSunday = Math.floor((loopDate.getTime() - refSundayUTC) / 86400000);
             
-            // Alternance des semaines pour les groupes
+            // Semaine Paire = Groupe A (1,3,5) | Semaine Impaire = Groupe B (0,2,4)
             let currentWeekIndex = Math.floor(diffFromSunday / 7);
             let isGroupeA = (currentWeekIndex % 2 === 0);
             
-            // LE HACK MATHEMATIQUE : Groupes Impairs (A) et Pairs (B)
-            // Groupe A : 0 (Waël), 2 (Yassamine), 4 (Ikram)
-            // Groupe B : 1 (Noussaiba), 3 (Lylia), 5 (Baya)
-            let groupeActif = isGroupeA ? [0, 2, 4] : [1, 3, 5];
+            let groupeActif = isGroupeA ? [1, 3, 5] : [0, 2, 4];
             
             if (loopDate.getUTCDay() === 0 && i !== 0) {
                 let sepTr = document.createElement('tr');
-                sepTr.innerHTML = `<td colspan="4" class="semaine-separator">🔽 SEMAINE DU GROUPE ${isGroupeA ? 'A (Waël, Yassamine, Ikram)' : 'B (Noussaiba, Lylia, Baya)'} 🔽</td>`;
+                sepTr.innerHTML = `<td colspan="4" class="semaine-separator">🔽 SEMAINE DU GROUPE ${isGroupeA ? 'A (Noussaiba, Yassamine, Ikram)' : 'B (Waël, Lylia, Baya)'} 🔽</td>`;
                 tbody.appendChild(sepTr);
             } else if (i === 0) {
                 let sepTr = document.createElement('tr');
-                sepTr.innerHTML = `<td colspan="4" class="semaine-separator">SEMAINE EN COURS : GROUPE ${isGroupeA ? 'A (Waël, Yassamine, Ikram)' : 'B (Noussaiba, Lylia, Baya)'}</td>`;
+                sepTr.innerHTML = `<td colspan="4" class="semaine-separator">SEMAINE EN COURS : GROUPE ${isGroupeA ? 'A (Noussaiba, Yassamine, Ikram)' : 'B (Waël, Lylia, Baya)'}</td>`;
                 tbody.appendChild(sepTr);
             }
             
@@ -212,8 +215,7 @@
             
             let presents = [];
             if (!isWeekend) {
-                // Les présents sont le groupe de la semaine MOINS l'interne de garde et l'interne post-garde
-                // (Mathématiquement, ça donnera TOUJOURS exactement 2 présents !)
+                // MAGIE MATHÉMATIQUE : Il restera TOUJOURS exactement 2 personnes ici
                 presents = groupeActif.filter(idx => idx !== gardeIdx && idx !== postGardeIdx);
             }
             
