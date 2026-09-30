@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programme Opératoire - CPMC</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background:#f1f5f9; padding:15px; margin:0; }
+        .nav-links { display: flex; gap: 8px; margin-bottom: 15px; overflow-x:auto; }
+        .nav-btn { background: #e2e8f0; color: #1e293b; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space:nowrap; }
+        .nav-btn.active { background: #0284c7; color: white; }
+        
+        .header-doc { background: white; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #cbd5e1; margin-bottom: 15px; }
+        .header-doc h3 { margin: 0; font-size: 1.1em; color: #0284c7; }
+        .header-doc h4 { margin: 5px 0; font-size: 0.9em; color: #64748b; }
+
+        table { width: 100%; border-collapse: collapse; background: white; margin-bottom: 15px; font-size: 0.85em; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+        th { background: #f8fafc; color: #0284c7; }
+        
+        .patient-link { color: #0284c7; font-weight: bold; text-decoration: underline; cursor: pointer; }
+        .status-annule { background: #fef2f2; color: #dc2626; text-decoration: line-through; }
+        .status-reprog { background: #fefce8; color: #ca8a04; }
+
+        .form-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e1; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
+        input, select, textarea { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; }
+        
+        .btn { background: #0284c7; color: white; padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="nav-links">
+        <a href="index.html" class="nav-btn">🛏️ Hospitalisation</a>
+        <a href="interventions.html" class="nav-btn active">📋 Programme Opératoire</a>
+        <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
+        <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
+    </div>
+
+    <!-- EN-TÊTE TYPE CLINIQUE DEBUSSY / CPMC -->
+    <div class="header-doc">
+        <h3>ÉTABLISSEMENT PUBLIC HOSPITALIER SPÉCIALISÉ CENTRE PIERRE ET MARIE CURIE</h3>
+        <h4>Service de Chirurgie C ex Clinique Debussy</h4>
+        <h2 style="margin: 10px 0; color:#1e293b;">PROGRAMME OPÉRATOIRE</h2>
+        <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
+            <label><b>Date du Programme :</b></label>
+            <input type="date" id="progDate" style="width: auto;" onchange="loadProgramForDate()">
+        </div>
+    </div>
+
+    <!-- TABLEAU COMPATIBLE AVEC LA FEUILLE CPMC -->
+    <div style="overflow-x:auto;">
+        <table id="progTable">
+            <thead>
+                <tr>
+                    <th>Salle</th>
+                    <th>Position</th>
+                    <th>Patient (Lit + Nom)</th>
+                    <th>Âge</th>
+                    <th>GRP</th>
+                    <th>Diagnostic</th>
+                    <th>Intervention</th>
+                    <th>Opérateur(s)</th>
+                    <th>INS / AMAR</th>
+                    <th>Statut</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="progTableBody">
+                <tr><td colspan="11" style="text-align:center;">Sélectionnez une date...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- FORMULAIRE D'AJOUT D'UNE PATIENTE AU PROGRAMME -->
+    <div class="form-card">
+        <h4 style="margin-top:0; color:#0284c7;">➕ Ajouter une intervention au programme</h4>
+        
+        <div class="form-group" style="margin-bottom: 10px;">
+            <label><b>Sélectionner une patiente présente au service :</b></label>
+            <select id="selectPatient" onchange="autoFillPatientData()">
+                <option value="">-- Choisir une patiente --</option>
+            </select>
+        </div>
+
+        <div class="grid-3">
+            <div><label>Salle</label><input type="text" id="addSalle" placeholder="Ex: Salle I"></div>
+            <div><label>Position</label><input type="text" id="addPos" placeholder="Ex: 1er"></div>
+            <div><label>Lit + Patient</label><input type="text" id="addPatient" placeholder="402F: GUESMI NASSIMA"></div>
+            <div><label>Âge</label><input type="number" id="addAge"></div>
+            <div><label>GRP</label><input type="text" id="addGrp" placeholder="A+"></div>
+            <div><label>Diagnostic</label><input type="text" id="addDiag"></div>
+        </div>
+
+        <div class="grid-3">
+            <div><label>Intervention</label><input type="text" id="addIntervention" placeholder="Ex: CHOLECYSTECTOMIE"></div>
+            <div><label>Opérateur(s)</label><input type="text" id="addOperateur" placeholder="Pr DJELALI, Dr ZEGGANE..."></div>
+            <div><label>INS / AMAR</label><input type="text" id="addInsAmar" placeholder="INS: SAIDI, AMAR: GOUDA"></div>
+        </div>
+
+        <input type="hidden" id="addBedId">
+
+        <button class="btn" onclick="addInterventionLine()" style="margin-top:10px;">➕ Ajouter au Tableau</button>
+    </div>
+
+    <button class="btn" onclick="saveCurrentProgram()" style="background:#16a34a; width:100%; font-size:1.1em; padding:15px;">💾 Enregistrer le Programme du Jour & Archiver</button>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
+            authDomain: "internes-debussy.firebaseapp.com",
+            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "internes-debussy",
+            storageBucket: "internes-debussy.firebasestorage.app",
+            messagingSenderId: "614550756274",
+            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        let currentProgramLines = [];
+        let activePatients = {};
+
+        // Régler la date par défaut sur aujourd'hui
+        document.getElementById('progDate').value = new Date().toISOString().split('T')[0];
+
+        // Charger les patients en cours pour alimenter la liste déroulante
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+            activePatients = snapshot.val() || {};
+            const select = document.getElementById('selectPatient');
+            select.innerHTML = '<option value="">-- Choisir une patiente --</option>';
+            
+            Object.keys(activePatients).forEach(bedId => {
+                const p = activePatients[bedId];
+                if(p.nom) {
+                    select.innerHTML += `<option value="${bedId}">${bedId} : ${p.nom}</option>`;
+                }
+            });
+        });
+
+        window.autoFillPatientData = function() {
+            const bedId = document.getElementById('selectPatient').value;
+            if(!bedId) return;
+            const p = activePatients[bedId];
+            if(p) {
+                document.getElementById('addBedId').value = bedId;
+                document.getElementById('addPatient').value = `${bedId}: ${p.nom}`;
+                document.getElementById('addAge').value = p.age || '';
+                document.getElementById('addGrp').value = p.grp || '';
+                document.getElementById('addDiag').value = p.diag || '';
+            }
+        };
+
+        window.addInterventionLine = function() {
+            const line = {
+                salle: document.getElementById('addSalle').value,
+                position: document.getElementById('addPos').value,
+                patientText: document.getElementById('addPatient').value,
+                bedId: document.getElementById('addBedId').value,
+                age: document.getElementById('addAge').value,
+                grp: document.getElementById('addGrp').value,
+                diag: document.getElementById('addDiag').value,
+                intervention: document.getElementById('addIntervention').value,
+                operateur: document.getElementById('addOperateur').value,
+                insAmar: document.getElementById('addInsAmar').value,
+                statut: 'Maintien'
+            };
+            currentProgramLines.push(line);
+            renderProgramTable();
+        };
+
+        function renderProgramTable() {
+            const tbody = document.getElementById('progTableBody');
+            if(currentProgramLines.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;">Aucune intervention programmée pour cette date.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = currentProgramLines.map((l, index) => `
+                <tr class="${l.statut === 'Annulée' ? 'status-annule' : (l.statut === 'Reprogrammée' ? 'status-reprog' : '')}">
+                    <td>${l.salle || '-'}</td>
+                    <td>${l.position || '-'}</td>
+                    <td><span class="patient-link" onclick="goToDossier('${l.bedId}')">${l.patientText}</span></td>
+                    <td>${l.age || '-'}</td>
+                    <td>${l.grp || '-'}</td>
+                    <td>${l.diag || '-'}</td>
+                    <td>${l.intervention || '-'}</td>
+                    <td>${l.operateur || '-'}</td>
+                    <td>${l.insAmar || '-'}</td>
+                    <td>
+                        <select onchange="updateStatus(${index}, this.value)" style="font-size:0.8em; padding:2px;">
+                            <option value="Maintien" ${l.statut==='Maintien'?'selected':''}>Maintenue</option>
+                            <option value="Annulée" ${l.statut==='Annulée'?'selected':''}>❌ Annulée</option>
+                            <option value="Reprogrammée" ${l.statut==='Reprogrammée'?'selected':''}>🔄 Reprogrammée</option>
+                        </select>
+                    </td>
+                    <td><button onclick="removeLine(${index})" style="background:red; color:white; border:none; border-radius:4px; cursor:pointer;">✕</button></td>
+                </tr>
+            `).join('');
+        }
+
+        window.updateStatus = function(index, val) {
+            currentProgramLines[index].statut = val;
+            renderProgramTable();
+        };
+
+        window.removeLine = function(index) {
+            currentProgramLines.splice(index, 1);
+            renderProgramTable();
+        };
+
+        window.goToDossier = function(bedId) {
+            if(bedId) {
+                window.location.href = `index.html?bedId=${bedId}`;
+            } else {
+                alert("Lit non rattaché directement.");
+            }
+        };
+
+        window.saveCurrentProgram = function() {
+            const date = document.getElementById('progDate').value;
+            if(!date) return alert("Veuillez sélectionner une date.");
+            
+            set(ref(db, 'programmes_operatoires/' + date), currentProgramLines).then(() => {
+                alert("Programme opératoire enregistré et archivé avec succès !");
+            });
+        };
+
+        window.loadProgramForDate = function() {
+            const date = document.getElementById('progDate').value;
+            onValue(ref(db, 'programmes_operatoires/' + date), (snapshot) => {
+                currentProgramLines = snapshot.val() || [];
+                renderProgramTable();
+            }, { onlyOnce: true });
+        };
+
+        loadProgramForDate();
+    </script>
+</body>
+</html>
