@@ -32,7 +32,7 @@
 <body>
 
     <div class="nav-links">
-        <a href="index.html" class="nav-btn">🛏️ Hospitalisation</a>
+        <a href="patients.html" class="nav-btn">🛏️ Hospitalisation</a>
         <a href="interventions.html" class="nav-btn active">📋 Programme Opératoire</a>
         <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
         <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
@@ -215,7 +215,7 @@
 
         window.goToDossier = function(bedId) {
             if(bedId) {
-                window.location.href = `index.html?bedId=${bedId}`;
+                window.location.href = `patients.html?bedId=${bedId}`;
             } else {
                 alert("Lit non rattaché directement.");
             }
