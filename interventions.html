@@ -52,7 +52,7 @@
                 </tr>
             </thead>
             <tbody id="progTableBody">
-                <tr><td colspan="11" style="text-align:center;">Sélectionnez une date...</td></tr>
+                <tr><td colspan="11" style="text-align:center;">Chargement du programme...</td></tr>
             </tbody>
         </table>
     </div>
@@ -122,7 +122,14 @@
         let currentProgramLines = [];
         let activePatients = {};
 
-        document.getElementById('progDate').value = new Date().toISOString().split('T')[0];
+        // Correction pour récupérer la date locale exacte sans décalage UTC
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        
+        document.getElementById('progDate').value = todayStr;
 
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
             activePatients = snapshot.val() || {};
@@ -168,7 +175,7 @@
         function renderProgramTable() {
             const tbody = document.getElementById('progTableBody');
             if(currentProgramLines.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;">Aucune intervention programmée.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;">Aucune intervention programmée pour cette date.</td></tr>';
                 return;
             }
             tbody.innerHTML = currentProgramLines.map((l, index) => `
@@ -221,6 +228,7 @@
             }, { onlyOnce: true });
         };
 
+        // Chargement initial du programme pour la date du jour
         loadProgramForDate();
     </script>
 </body>
