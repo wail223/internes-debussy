@@ -34,202 +34,257 @@
     </div>
 
     <div class="header-doc">
-        <h3>ÉTABLISSEMENT PUBLIC HOSPITALIER SPÉCIALISÉ CENTRE PIERRE ET MARIE CURIE</h3>
-        <h4>Service de Chirurgie C ex Clinique Debussy</h4>
-        <h2 style="margin: 10px 0; color:#1e293b;">PROGRAMME OPÉRATOIRE</h2>
-        <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
-            <label><b>Date du Programme :</b></label>
-            <input type="date" id="progDate" style="width: auto;" onchange="loadProgramForDate()">
-        </div>
+    <h3>ÉTABLISSEMENT PUBLIC HOSPITALIER SPÉCIALISÉ CENTRE PIERRE ET MARIE CURIE</h3>
+    <h4>Service de Chirurgie C ex Clinique Debussy</h4>
+    <h2 style="margin: 10px 0; color:#1e293b;">PROGRAMME OPÉRATOIRE</h2>
+    <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
+        <label><b>Date du Programme :</b></label>
+        <input type="date" id="progDate" style="width: auto;" onchange="loadProgramForDate()">
+    </div>
+</div>
+
+<div style="overflow-x:auto;">
+    <table id="progTable">
+        <thead>
+            <tr>
+                <th>Salle</th><th>Position</th><th>Patient (Lit + Nom)</th><th>Âge</th><th>GRP</th>
+                <th>Diagnostic</th><th>Intervention</th><th>Opérateur(s)</th><th>INS / AMAR</th><th>Statut</th><th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="progTableBody">
+            <tr><td colspan="11" style="text-align:center;">Chargement du programme...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="form-card">
+    <h4 id="formTitle" style="margin-top:0; color:#0284c7;">➕ Ajouter une intervention au programme</h4>
+    <div class="form-group" style="margin-bottom: 10px;">
+        <label><b>Sélectionner une patiente présente au service :</b></label>
+        <select id="selectPatient" onchange="autoFillPatientData()">
+            <option value="">-- Choisir une patiente --</option>
+        </select>
     </div>
 
-    <div style="overflow-x:auto;">
-        <table id="progTable">
-            <thead>
-                <tr>
-                    <th>Salle</th><th>Position</th><th>Patient (Lit + Nom)</th><th>Âge</th><th>GRP</th>
-                    <th>Diagnostic</th><th>Intervention</th><th>Opérateur(s)</th><th>INS / AMAR</th><th>Statut</th><th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="progTableBody">
-                <tr><td colspan="11" style="text-align:center;">Chargement du programme...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="form-card">
-        <h4 style="margin-top:0; color:#0284c7;">➕ Ajouter une intervention au programme</h4>
-        <div class="form-group" style="margin-bottom: 10px;">
-            <label><b>Sélectionner une patiente présente au service :</b></label>
-            <select id="selectPatient" onchange="autoFillPatientData()">
-                <option value="">-- Choisir une patiente --</option>
+    <div class="grid-3">
+        <div>
+            <label>Salle</label>
+            <select id="addSalle">
+                <option value="Salle I">Salle I</option>
+                <option value="Salle II">Salle II</option>
             </select>
         </div>
-
-        <div class="grid-3">
-            <div>
-                <label>Salle</label>
-                <select id="addSalle">
-                    <option value="Salle I">Salle I</option>
-                    <option value="Salle II">Salle II</option>
-                </select>
-            </div>
-            <div>
-                <label>Position</label>
-                <select id="addPos">
-                    <option value="1er">1er</option>
-                    <option value="2ème">2ème</option>
-                    <option value="3ème">3ème</option>
-                    <option value="4ème">4ème</option>
-                    <option value="5ème">5ème</option>
-                </select>
-            </div>
-            <div><label>Lit + Patient</label><input type="text" id="addPatient" placeholder="402F: GUESMI NASSIMA"></div>
-            <div><label>Âge</label><input type="number" id="addAge"></div>
-            <div><label>GRP</label><input type="text" id="addGrp" placeholder="A+"></div>
-            <div><label>Diagnostic</label><input type="text" id="addDiag"></div>
+        <div>
+            <label>Position</label>
+            <select id="addPos">
+                <option value="1er">1er</option>
+                <option value="2ème">2ème</option>
+                <option value="3ème">3ème</option>
+                <option value="4ème">4ème</option>
+                <option value="5ème">5ème</option>
+            </select>
         </div>
-
-        <div class="grid-3">
-            <div><label>Intervention</label><input type="text" id="addIntervention" placeholder="Ex: CHOLECYSTECTOMIE"></div>
-            <div><label>Opérateur(s)</label><input type="text" id="addOperateur" placeholder="Pr DJELALI, Dr ZEGGANE..."></div>
-            <div><label>INS / AMAR</label><input type="text" id="addInsAmar" placeholder="INS: SAIDI, AMAR: GOUDA"></div>
-        </div>
-
-        <input type="hidden" id="addBedId">
-        <button class="btn" onclick="addInterventionLine()" style="margin-top:10px;">➕ Ajouter au Tableau</button>
+        <div><label>Lit + Patient</label><input type="text" id="addPatient" placeholder="402F: GUESMI NASSIMA"></div>
+        <div><label>Âge</label><input type="number" id="addAge"></div>
+        <div><label>GRP</label><input type="text" id="addGrp" placeholder="A+"></div>
+        <div><label>Diagnostic</label><input type="text" id="addDiag"></div>
     </div>
 
-    <button class="btn" onclick="saveCurrentProgram()" style="background:#16a34a; width:100%; font-size:1.1em; padding:15px;">💾 Enregistrer le Programme du Jour</button>
+    <div class="grid-3">
+        <div><label>Intervention</label><input type="text" id="addIntervention" placeholder="Ex: CHOLECYSTECTOMIE"></div>
+        <div><label>Opérateur(s)</label><input type="text" id="addOperateur" placeholder="Pr DJELALI, Dr ZEGGANE..."></div>
+        <div><label>INS / AMAR</label><input type="text" id="addInsAmar" placeholder="INS: SAIDI, AMAR: GOUDA"></div>
+    </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    <input type="hidden" id="addBedId">
+    <input type="hidden" id="editIndex" value="-1">
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button id="submitBtn" class="btn" onclick="saveOrAddInterventionLine()">➕ Ajouter au Tableau</button>
+        <button id="cancelEditBtn" class="btn" onclick="resetForm()" style="background:#64748b; display:none;">Annuler</button>
+    </div>
+</div>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
-            authDomain: "internes-debussy.firebaseapp.com",
-            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "internes-debussy",
-            storageBucket: "internes-debussy.firebasestorage.app",
-            messagingSenderId: "614550756274",
-            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
-        };
+<button class="btn" onclick="saveCurrentProgram()" style="background:#16a34a; width:100%; font-size:1.1em; padding:15px;">💾 Enregistrer le Programme du Jour</button>
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        
-        let currentProgramLines = [];
-        let activePatients = {};
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Correction pour récupérer la date locale exacte sans décalage UTC
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const todayStr = `${year}-${month}-${day}`;
-        
-        document.getElementById('progDate').value = todayStr;
+    const firebaseConfig = {
+        apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
+        authDomain: "internes-debussy.firebaseapp.com",
+        databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "internes-debussy",
+        storageBucket: "internes-debussy.firebasestorage.app",
+        messagingSenderId: "614550756274",
+        appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
+    };
 
-        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
-            activePatients = snapshot.val() || {};
-            const select = document.getElementById('selectPatient');
-            select.innerHTML = '<option value="">-- Choisir une patiente --</option>';
-            Object.keys(activePatients).forEach(bedId => {
-                const p = activePatients[bedId];
-                if(p.nom) { select.innerHTML += `<option value="${bedId}">${bedId} : ${p.nom}</option>`; }
-            });
-        });
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    
+    let currentProgramLines = [];
+    let activePatients = {};
 
-        window.autoFillPatientData = function() {
-            const bedId = document.getElementById('selectPatient').value;
-            if(!bedId) return;
+    // Correction pour récupérer la date locale exacte sans décalage UTC
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+    
+    document.getElementById('progDate').value = todayStr;
+
+    onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+        activePatients = snapshot.val() || {};
+        const select = document.getElementById('selectPatient');
+        select.innerHTML = '<option value="">-- Choisir une patiente --</option>';
+        Object.keys(activePatients).forEach(bedId => {
             const p = activePatients[bedId];
-            if(p) {
-                document.getElementById('addBedId').value = bedId;
-                document.getElementById('addPatient').value = `${bedId}: ${p.nom}`;
-                document.getElementById('addAge').value = p.age || '';
-                document.getElementById('addGrp').value = p.grp || '';
-                document.getElementById('addDiag').value = p.diag || '';
-            }
+            if(p.nom) { select.innerHTML += `<option value="${bedId}">${bedId} : ${p.nom}</option>`; }
+        });
+    });
+
+    window.autoFillPatientData = function() {
+        const bedId = document.getElementById('selectPatient').value;
+        if(!bedId) return;
+        const p = activePatients[bedId];
+        if(p) {
+            document.getElementById('addBedId').value = bedId;
+            document.getElementById('addPatient').value = `${bedId}: ${p.nom}`;
+            document.getElementById('addAge').value = p.age || '';
+            document.getElementById('addGrp').value = p.grp || '';
+            document.getElementById('addDiag').value = p.diag || '';
+        }
+    };
+
+    window.saveOrAddInterventionLine = function() {
+        const editIdx = parseInt(document.getElementById('editIndex').value);
+        const line = {
+            salle: document.getElementById('addSalle').value,
+            position: document.getElementById('addPos').value,
+            patientText: document.getElementById('addPatient').value,
+            bedId: document.getElementById('addBedId').value,
+            age: document.getElementById('addAge').value,
+            grp: document.getElementById('addGrp').value,
+            diag: document.getElementById('addDiag').value,
+            intervention: document.getElementById('addIntervention').value,
+            operateur: document.getElementById('addOperateur').value,
+            insAmar: document.getElementById('addInsAmar').value,
+            statut: editIdx > -1 ? currentProgramLines[editIdx].statut : 'Maintien'
         };
 
-        window.addInterventionLine = function() {
-            const line = {
-                salle: document.getElementById('addSalle').value,
-                position: document.getElementById('addPos').value,
-                patientText: document.getElementById('addPatient').value,
-                bedId: document.getElementById('addBedId').value,
-                age: document.getElementById('addAge').value,
-                grp: document.getElementById('addGrp').value,
-                diag: document.getElementById('addDiag').value,
-                intervention: document.getElementById('addIntervention').value,
-                operateur: document.getElementById('addOperateur').value,
-                insAmar: document.getElementById('addInsAmar').value,
-                statut: 'Maintien'
-            };
+        if (editIdx > -1) {
+            currentProgramLines[editIdx] = line;
+        } else {
             currentProgramLines.push(line);
-            renderProgramTable();
-        };
-
-        function renderProgramTable() {
-            const tbody = document.getElementById('progTableBody');
-            if(currentProgramLines.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;">Aucune intervention programmée pour cette date.</td></tr>';
-                return;
-            }
-            tbody.innerHTML = currentProgramLines.map((l, index) => `
-                <tr class="${l.statut === 'Annulée' ? 'status-annule' : (l.statut === 'Reprogrammée' ? 'status-reprog' : '')}">
-                    <td>${l.salle || '-'}</td><td>${l.position || '-'}</td>
-                    <td><span class="patient-link" onclick="goToDossier('${l.bedId}')">${l.patientText}</span></td>
-                    <td>${l.age || '-'}</td><td>${l.grp || '-'}</td><td>${l.diag || '-'}</td>
-                    <td>${l.intervention || '-'}</td><td>${l.operateur || '-'}</td><td>${l.insAmar || '-'}</td>
-                    <td>
-                        <select onchange="updateStatus(${index}, this.value)" style="font-size:0.8em; padding:2px;">
-                            <option value="Maintien" ${l.statut==='Maintien'?'selected':''}>Maintenue</option>
-                            <option value="Annulée" ${l.statut==='Annulée'?'selected':''}>❌ Annulée</option>
-                            <option value="Reprogrammée" ${l.statut==='Reprogrammée'?'selected':''}>🔄 Reprogrammée</option>
-                        </select>
-                    </td>
-                    <td><button onclick="removeLine(${index})" style="background:#dc2626; color:white; border:none; border-radius:4px; padding:5px 10px; cursor:pointer;">✕</button></td>
-                </tr>
-            `).join('');
         }
 
-        window.updateStatus = function(index, val) {
-            currentProgramLines[index].statut = val;
+        renderProgramTable();
+        resetForm();
+    };
+
+    window.editLine = function(index) {
+        const l = currentProgramLines[index];
+        document.getElementById('addSalle').value = l.salle || 'Salle I';
+        document.getElementById('addPos').value = l.position || '1er';
+        document.getElementById('addPatient').value = l.patientText || '';
+        document.getElementById('addBedId').value = l.bedId || '';
+        document.getElementById('addAge').value = l.age || '';
+        document.getElementById('addGrp').value = l.grp || '';
+        document.getElementById('addDiag').value = l.diag || '';
+        document.getElementById('addIntervention').value = l.intervention || '';
+        document.getElementById('addOperateur').value = l.operateur || '';
+        document.getElementById('addInsAmar').value = l.insAmar || '';
+        
+        document.getElementById('editIndex').value = index;
+        document.getElementById('formTitle').innerText = "✏️ Modifier l'intervention";
+        document.getElementById('submitBtn').innerText = "💾 Mettre à jour";
+        document.getElementById('cancelEditBtn').style.display = "inline-block";
+        
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    };
+
+    window.resetForm = function() {
+        document.getElementById('selectPatient').value = "";
+        document.getElementById('addSalle').value = "Salle I";
+        document.getElementById('addPos').value = "1er";
+        document.getElementById('addPatient').value = "";
+        document.getElementById('addBedId').value = "";
+        document.getElementById('addAge').value = "";
+        document.getElementById('addGrp').value = "";
+        document.getElementById('addDiag').value = "";
+        document.getElementById('addIntervention').value = "";
+        document.getElementById('addOperateur').value = "";
+        document.getElementById('addInsAmar').value = "";
+        
+        document.getElementById('editIndex').value = "-1";
+        document.getElementById('formTitle').innerText = "➕ Ajouter une intervention au programme";
+        document.getElementById('submitBtn').innerText = "➕ Ajouter au Tableau";
+        document.getElementById('cancelEditBtn').style.display = "none";
+    };
+
+    function renderProgramTable() {
+        const tbody = document.getElementById('progTableBody');
+        if(currentProgramLines.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;">Aucune intervention programmée pour cette date.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = currentProgramLines.map((l, index) => `
+            <tr class="${l.statut === 'Annulée' ? 'status-annule' : (l.statut === 'Reprogrammée' ? 'status-reprog' : '')}">
+                <td>${l.salle || '-'}</td><td>${l.position || '-'}</td>
+                <td><span class="patient-link" onclick="goToDossier('${l.bedId}')">${l.patientText}</span></td>
+                <td>${l.age || '-'}</td><td>${l.grp || '-'}</td><td>${l.diag || '-'}</td>
+                <td>${l.intervention || '-'}</td><td>${l.operateur || '-'}</td><td>${l.insAmar || '-'}</td>
+                <td>
+                    <select onchange="updateStatus(${index}, this.value)" style="font-size:0.8em; padding:2px;">
+                        <option value="Maintien" ${l.statut==='Maintien'?'selected':''}>Maintenue</option>
+                        <option value="Annulée" ${l.statut==='Annulée'?'selected':''}>❌ Annulée</option>
+                        <option value="Reprogrammée" ${l.statut==='Reprogrammée'?'selected':''}>🔄 Reprogrammée</option>
+                    </select>
+                </td>
+                <td>
+                    <div class="action-btns">
+                        <button onclick="editLine(${index})" style="background:#0284c7; color:white; border:none; border-radius:4px; padding:5px 8px; cursor:pointer;" title="Modifier">✏️</button>
+                        <button onclick="removeLine(${index})" style="background:#dc2626; color:white; border:none; border-radius:4px; padding:5px 8px; cursor:pointer;" title="Supprimer">✕</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    window.updateStatus = function(index, val) {
+        currentProgramLines[index].statut = val;
+        renderProgramTable();
+    };
+
+    window.removeLine = function(index) {
+        if(confirm("Êtes-vous sûr de vouloir supprimer ce patient du programme opératoire ?")) {
+            currentProgramLines.splice(index, 1);
             renderProgramTable();
-        };
+        }
+    };
 
-        window.removeLine = function(index) {
-            if(confirm("Êtes-vous sûr de vouloir supprimer ce patient du programme opératoire ?")) {
-                currentProgramLines.splice(index, 1);
-                renderProgramTable();
-            }
-        };
+    window.goToDossier = function(bedId) {
+        if(bedId) window.location.href = `patients.html?bedId=${bedId}`;
+    };
 
-        window.goToDossier = function(bedId) {
-            if(bedId) window.location.href = `patients.html?bedId=${bedId}`;
-        };
+    window.saveCurrentProgram = function() {
+        const date = document.getElementById('progDate').value;
+        if(!date) return alert("Veuillez sélectionner une date.");
+        set(ref(db, 'programmes_operatoires/' + date), currentProgramLines).then(() => {
+            alert("Programme opératoire enregistré et archivé avec succès !");
+        });
+    };
 
-        window.saveCurrentProgram = function() {
-            const date = document.getElementById('progDate').value;
-            if(!date) return alert("Veuillez sélectionner une date.");
-            set(ref(db, 'programmes_operatoires/' + date), currentProgramLines).then(() => {
-                alert("Programme opératoire enregistré et archivé avec succès !");
-            });
-        };
+    window.loadProgramForDate = function() {
+        const date = document.getElementById('progDate').value;
+        onValue(ref(db, 'programmes_operatoires/' + date), (snapshot) => {
+            currentProgramLines = snapshot.val() || [];
+            renderProgramTable();
+        }, { onlyOnce: true });
+    };
 
-        window.loadProgramForDate = function() {
-            const date = document.getElementById('progDate').value;
-            onValue(ref(db, 'programmes_operatoires/' + date), (snapshot) => {
-                currentProgramLines = snapshot.val() || [];
-                renderProgramTable();
-            }, { onlyOnce: true });
-        };
-
-        // Chargement initial du programme pour la date du jour
-        loadProgramForDate();
-    </script>
-</body>
-</html>
+    // Chargement initial du programme pour la date du jour
+    loadProgramForDate();
+</script>
