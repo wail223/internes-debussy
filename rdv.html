@@ -1,0 +1,71 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.4">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="fr"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;Calculateur RDV - CPMC&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body { font-family: -apple-system, sans-serif; padding: 20px; max-width: 400px; margin: auto; background: #f4f4f9; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>select, input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>button { background: #007aff; color: white; border: none; font-weight: bold; cursor: pointer; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>#resultat { margin-top: 15px; font-weight: bold; font-size: 18px; color: #333; text-align: center; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;h3&gt;📅 Calculateur de RDV&lt;/h3&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;label&gt;Jour de consultation du médecin :&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;select id="jourMedecin"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="0"&gt;Dimanche (Dr Merad, Dr. Zegane + Dr Benmoussa...)&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="1"&gt;Lundi (Pr. Chekman + Dr Benouaret, Dr. Gouaref...)&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="3"&gt;Mercredi (Pr. Azzouz, Pr. Jnied, Dr. Khelif...)&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="4"&gt;Jeudi (Pr. Djelali, Dr. Bouzid, Dr Akbal...)&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/select&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;label&gt;Délai demandé (en jours) :&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;input type="number" id="delai" placeholder="ex: 15" value="15"&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button onclick="calculerRDV()"&gt;Calculer la date&lt;/button&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="resultat"&gt;&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>function calculerRDV() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let targetDay = parseInt(document.getElementById('jourMedecin').value);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let delai = parseInt(document.getElementById('delai').value);</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>let dateRDV = new Date();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>dateRDV.setDate(dateRDV.getDate() + delai);</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Ajuster au jour de la semaine ciblé</p>
+<p class="p1"><span class="Apple-converted-space">        </span>while (dateRDV.getDay() !== targetDay) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>dateRDV.setDate(dateRDV.getDate() + 1);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>let options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('resultat').innerText = "Prochain RDV :\n" + dateRDV.toLocaleDateString('fr-FR', options);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
