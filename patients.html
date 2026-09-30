@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transmissions - Internes</title>
+    <title>Transmissions - Internes CPMC</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -59,10 +59,12 @@
             border: 1px solid #cbd5e1;
             padding: 12px;
             font-size: 1em;
+            border-radius: 8px;
         }
         .bed-btn.occupied {
             background-color: #dbeafe;
             border-color: var(--primary);
+            font-weight: bold;
         }
 
         /* Modal Styles */
@@ -72,14 +74,16 @@
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5);
             align-items: center; justify-content: center;
+            z-index: 1000;
         }
         .modal.active { display: flex; }
         .modal-content {
             background: white;
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 12px;
             width: 90%;
             max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
         .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
         .close { background: none; font-size: 1.5em; padding: 0; color: #64748b; }
@@ -90,15 +94,16 @@
             width: 100%;
             padding: 8px;
             border: 1px solid #cbd5e1;
-            border-radius: 4px;
+            border-radius: 6px;
             box-sizing: border-box;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>Gestion des Patients</h2>
+        <h2>🛏️ Gestion des Lits</h2>
         <button class="btn-toggle" onclick="toggleFloor()">Voir 3ème Étage</button>
     </div>
 
@@ -112,7 +117,7 @@
         <div class="grid" id="grid-3"></div>
     </div>
 
-    <!-- Fenêtre Modale (Formulaire Patient) -->
+    <!-- Formulaire Patient (Modal) -->
     <div id="patientModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -122,7 +127,7 @@
             <input type="hidden" id="currentBedId">
             <div class="form-group">
                 <label>Nom & Prénom</label>
-                <input type="text" id="patientName" placeholder="Ex: FOUlAN Benfoulen">
+                <input type="text" id="patientName" placeholder="Ex: FOULAN Benfoulen">
             </div>
             <div class="form-group">
                 <label>Âge / Poids</label>
@@ -130,21 +135,37 @@
             </div>
             <div class="form-group">
                 <label>Motif d'hospitalisation</label>
-                <input type="text" id="patientMotif" placeholder="Ex: Bronchiolite">
+                <input type="text" id="patientMotif" placeholder="Ex: Appendicite">
             </div>
             <div class="form-group">
-                <label>Remarques (Garde)</label>
-                <textarea id="patientNotes" rows="3" placeholder="À surveiller..."></textarea>
+                <label>Remarques (Transmissions)</label>
+                <textarea id="patientNotes" rows="3" placeholder="À surveiller durant la garde..."></textarea>
             </div>
-            <button class="btn-save" onclick="savePatient()">Enregistrer</button>
+            <button class="btn-save" onclick="savePatient()">Enregistrer (Synchro en direct)</button>
         </div>
     </div>
 
-    <script>
-        // Simulation de la base de données locale
-        let patientsDb = JSON.parse(localStorage.getItem('patientsDb')) || {};
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Génération des chambres
+        // CONFIGURATION FIREBASE EXTACTE DE TON PROJET
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
+            authDomain: "internes-debussy.firebaseapp.com",
+            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "internes-debussy",
+            storageBucket: "internes-debussy.firebasestorage.app",
+            messagingSenderId: "614550756274",
+            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab",
+            measurementId: "G-TPH7RBD9X1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let patientsDb = {};
+
         function generateRooms(floor, startId, endId) {
             const grid = document.getElementById(`grid-${floor}`);
             for (let i = startId; i <= endId; i++) {
@@ -153,8 +174,8 @@
                 room.innerHTML = `
                     <h3 class="room-title">Chambre ${i}</h3>
                     <div class="beds">
-                        <button class="bed-btn ${patientsDb[i+'P']?.name ? 'occupied' : ''}" onclick="openModal('${i}P')">${i}P (Porte)</button>
-                        <button class="bed-btn ${patientsDb[i+'F']?.name ? 'occupied' : ''}" onclick="openModal('${i}F')">${i}F (Fenêtre)</button>
+                        <button id="btn-${i}P" class="bed-btn" onclick="openModal('${i}P')">${i}P (Porte)</button>
+                        <button id="btn-${i}F" class="bed-btn" onclick="openModal('${i}F')">${i}F (Fenêtre)</button>
                     </div>
                 `;
                 grid.appendChild(room);
@@ -164,7 +185,22 @@
         generateRooms(4, 401, 408);
         generateRooms(3, 301, 308);
 
-        function toggleFloor() {
+        // Synchronisation en temps réel avec Firebase
+        const patientsRef = ref(db, 'chambres/');
+        onValue(patientsRef, (snapshot) => {
+            patientsDb = snapshot.val() || {};
+            
+            document.querySelectorAll('.bed-btn').forEach(btn => {
+                const bedId = btn.id.replace('btn-', '');
+                if(patientsDb[bedId] && patientsDb[bedId].name && patientsDb[bedId].name.trim() !== '') {
+                    btn.classList.add('occupied');
+                } else {
+                    btn.classList.remove('occupied');
+                }
+            });
+        });
+
+        window.toggleFloor = function() {
             const f3 = document.getElementById('floor-3');
             const f4 = document.getElementById('floor-4');
             const btn = document.querySelector('.btn-toggle');
@@ -180,11 +216,10 @@
             }
         }
 
-        function openModal(bedId) {
+        window.openModal = function(bedId) {
             document.getElementById('currentBedId').value = bedId;
             document.getElementById('modalTitle').textContent = `Lit ${bedId}`;
             
-            // Charger les données si elles existent
             const data = patientsDb[bedId] || { name: '', age: '', motif: '', notes: '' };
             document.getElementById('patientName').value = data.name;
             document.getElementById('patientAge').value = data.age;
@@ -194,27 +229,21 @@
             document.getElementById('patientModal').classList.add('active');
         }
 
-        function closeModal() {
+        window.closeModal = function() {
             document.getElementById('patientModal').classList.remove('active');
         }
 
-        function savePatient() {
+        window.savePatient = function() {
             const bedId = document.getElementById('currentBedId').value;
-            patientsDb[bedId] = {
+            const patientData = {
                 name: document.getElementById('patientName').value,
                 age: document.getElementById('patientAge').value,
                 motif: document.getElementById('patientMotif').value,
                 notes: document.getElementById('patientNotes').value
             };
             
-            // Sauvegarde locale temporaire
-            localStorage.setItem('patientsDb', JSON.stringify(patientsDb));
-            
-            // Mettre à jour l'interface (couleur du bouton)
-            document.querySelector(`button[onclick="openModal('${bedId}')"]`).classList.toggle('occupied', patientsDb[bedId].name !== '');
-            
+            set(ref(db, 'chambres/' + bedId), patientData);
             closeModal();
-            // C'est ici que tu mettras la fonction Firebase plus tard !
         }
     </script>
 </body>
