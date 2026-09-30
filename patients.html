@@ -67,7 +67,7 @@
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         
-        .btn-main { background: var(--primary); color: white; padding: 12px; border-radius: 8px; border: none; font-weight: 600; width: 100%; cursor: pointer; }
+        .btn-main { background: var(--primary); color: white; padding: 12px; border-radius: 8px; border: none; font-weight: 600; width: 100%; cursor: pointer; text-align: center; }
         .btn-warning { background: var(--warning); color: white; }
         .btn-danger { background: var(--danger); color: white; }
     </style>
@@ -78,7 +78,8 @@
         <div class="top-bar">
             <h2 style="margin:0; color: var(--primary);">🏥 CPMC Debussy</h2>
         </div>
-        <div class="nav-links">
+       <div class="nav-links">
+            <a href="index.html" class="nav-btn">🏠 Accueil</a>
             <a href="patients.html" class="nav-btn active">🛏️ Lits / Hospitalisation</a>
             <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
             <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
@@ -149,10 +150,11 @@
                     <img id="vPhoto" src="" style="width:100%; border-radius:8px; margin-top:10px; display:none;">
                 </div>
 
-                <div style="display:flex; gap:8px; margin-top:15px; flex-wrap:wrap;">
-                    <button class="btn-main btn-warning" style="flex:1;" onclick="switchToEdit()">✏️ Modifier</button>
-                    <button class="btn-main" style="flex:1; background:#0284c7;" onclick="changeBed()">🔀 Changer de Lit</button>
-                    <button class="btn-main btn-danger" style="flex:1;" onclick="archiveAndFreePatient()">📦 Libérer (Archiver)</button>
+                <!-- BOUTONS MODIFIÉS ICI -->
+                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:15px;">
+                    <button class="btn-main btn-warning" style="flex:1; min-width:140px;" onclick="switchToEdit()">✏️ Modifier</button>
+                    <button class="btn-main" style="flex:1; min-width:140px; background:var(--primary);" onclick="changerDeLit()">🔀 Changer Lit</button>
+                    <button class="btn-main btn-danger" style="flex:1; min-width:140px;" onclick="archiveAndFreePatient()">📦 Libérer (Archiver)</button>
                 </div>
             </div>
 
@@ -211,53 +213,284 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, remove, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        // IMPORT DE 'get' AJOUTÉ ICI POUR LE CHANGEMENT DE LIT
+        import { getDatabase, ref, set, onValue, remove, push, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyDPXF0x6LTLe code est très propre et bien structuré. L'architecture HTML/CSS est légère, et la gestion du JS en module Firebase v10 est parfaitement adaptée pour une SPA (*Single Page Application*) ultra-réactive.
-
-### 🎯 Les points forts du code :
-* **Exposition globale des fonctions** : L'attachement explicite à `window` (`window.openModal = ...`) est la bonne approche pour conserver les `onclick` HTML inline au sein d'un `<script type="module">`.
-* **Synchro temps réel** : L'écouteur `onValue` sur `dossiers_patients/` garantit que l'état des lits (occupé/libre) et le nom du patient se mettent à jour instantanément sur tous les écrans connectés.
-* **Modale hybride (Lecture / Édition)** : Le basculement dynamique entre `dossierView` et `formView` évite la surcharge du DOM tout en offrant une expérience utilisateur fluide sur mobile.
-* **Calcul automatique du BMI** : L'événement `oninput` sur le poids et la taille assure un retour immédiat sans rechargement.
-* **Deep linking via URL** : La lecture du paramètre `bedId` à l'initialisation permet de lier directement la feuille de soin/intervention au lit correspondant depuis un autre écran.
-
----
-
-### 💡 Pistes d'améliorations / Optimisations possibles :
-
-1. **Calculateur de BMI dans `openModal`**
-   Lorsqu'on ouvre la vue édition d'un patient existant, `calcBMI()` n'est exécuté que si l'utilisateur modifie une valeur. Si `bmi` n'était pas stocké en base, il peut être judicieux de forcer la mise à jour du champ.
-
-2. **Gestion de la photo (`vPhoto`)**
-   Une balise `<img id="vPhoto">` est présente dans le DOM en lecture, mais le formulaire `formView` n'a pas encore le champ d'upload associé (via Firebase Storage ou encodage Base64).
-
-3. **Sécurisation de la suppression/archivage**
-   Lors de l'archivage, `archiveAndFreePatient()` effectue un `push` suivi d'un `remove`. L'utilisation d'une mise à jour atomique (*multi-path update* via `update(ref(db), updates)`) permettrait d'éviter qu'un dossier soit archivé sans être libéré en cas de coupure réseau entre les deux requêtes :
-
-```javascript
-// Alternative d'archivage atomique
-window.archiveAndFreePatient = async function() {
-    const bedId = document.getElementById('currentBedId').value;
-    const patient = patientsDb[bedId];
-    if(!patient) return;
-
-    if(confirm(`Voulez-vous libérer le lit ${bedId} et archiver le dossier de ${patient.nom} ?`)) {
-        const newArchiveKey = push(ref(db, 'archives_patients')).key;
-        const updates = {};
-        updates[`/archives_patients/${newArchiveKey}`] = { 
-            ...patient, 
-            dateArchivage: new Date().toISOString().split('T')[0] 
+            apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
+            authDomain: "internes-debussy.firebaseapp.com",
+            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "internes-debussy",
+            storageBucket: "internes-debussy.firebasestorage.app",
+            messagingSenderId: "614550756274",
+            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
         };
-        updates[`/dossiers_patients/${bedId}`] = null; // Libère le lit
 
-        try {
-            await update(ref(db), updates);
-            closeModal();
-            alert("Patient archivé et lit libéré avec succès !");
-        } catch (error) {
-            alert("Erreur lors de l'archivage : " + error.message);
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        let patientsDb = {};
+
+        // Génération des lits pour chaque étage
+        function buildGrid(gridId, start, end, isRea = false) {
+            const grid = document.getElementById(gridId);
+            grid.innerHTML = "";
+            if(isRea) {
+                const room = document.createElement('div');
+                room.className = 'room-card';
+                room.style.gridColumn = "1 / -1";
+                let bedsHtml = '<div class="beds" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:10px;">';
+                for(let i=1; i<=6; i++) {
+                    bedsHtml += `
+                        <button id="btn-REA${i}" class="bed-btn" onclick="openModal('REA${i}')">
+                            <span class="bed-code">🚨 Lit Réa R${i}</span>
+                            <span class="bed-patient-name" id="name-REA${i}">(Vide)</span>
+                        </button>`;
+                }
+                bedsHtml += '</div>';
+                room.innerHTML = `<h4 class="room-title">Salle de Réanimation</h4>` + bedsHtml;
+                grid.appendChild(room);
+            } else {
+                for (let i = start; i <= end; i++) {
+                    const room = document.createElement('div');
+                    room.className = 'room-card';
+                    room.innerHTML = `
+                        <h4 class="room-title">Chambre ${i}</h4>
+                        <div class="beds">
+                            <button id="btn-${i}P" class="bed-btn" onclick="openModal('${i}P')">
+                                <span class="bed-code">🛏️ ${i}P (Porte)</span>
+                                <span class="bed-patient-name" id="name-${i}P">(Vide)</span>
+                            </button>
+                            <button id="btn-${i}F" class="bed-btn" onclick="openModal('${i}F')">
+                                <span class="bed-code">🛏️ ${i}F (Fenêtre)</span>
+                                <span class="bed-patient-name" id="name-${i}F">(Vide)</span>
+                            </button>
+                        </div>`;
+                    grid.appendChild(room);
+                }
+            }
         }
-    }
-};
+
+        buildGrid('grid-4', 401, 408);
+        buildGrid('grid-3', 301, 308);
+        buildGrid('grid-rea', 1, 6, true);
+
+        // Ecouteur temps réel Firebase pour mettre à jour les boutons et NOMS des patients
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+            patientsDb = snapshot.val() || {};
+            document.querySelectorAll('.bed-btn').forEach(btn => {
+                const bedId = btn.id.replace('btn-', '');
+                const nameSpan = document.getElementById(`name-${bedId}`);
+                if(patientsDb[bedId] && patientsDb[bedId].nom) {
+                    btn.classList.add('occupied');
+                    if(nameSpan) nameSpan.textContent = patientsDb[bedId].nom.toUpperCase();
+                } else {
+                    btn.classList.remove('occupied');
+                    if(nameSpan) nameSpan.textContent = "(Vide)";
+                }
+            });
+        });
+
+        window.switchFloor = function(floorId, btn) {
+            document.querySelectorAll('.floor').forEach(f => f.classList.remove('active'));
+            document.querySelectorAll('.floor-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(floorId).classList.add('active');
+            btn.classList.add('active');
+        };
+
+        window.calcBMI = function() {
+            const p = parseFloat(document.getElementById('ePoids').value);
+            const t = parseFloat(document.getElementById('eTaille').value) / 100;
+            if(p && t) {
+                document.getElementById('eBmi').value = (p / (t * t)).toFixed(1);
+            }
+        };
+
+        window.openModal = function(bedId) {
+            document.getElementById('currentBedId').value = bedId;
+            document.getElementById('modalTitle').textContent = `Lit ${bedId}`;
+            const p = patientsDb[bedId];
+            
+            if(p && p.nom) {
+                document.getElementById('vName').textContent = p.nom;
+                document.getElementById('vTel').textContent = p.telephone || '-';
+                document.getElementById('vAgeGrp').textContent = `${p.age || '-'} ans (${p.grp || '-'})`;
+                document.getElementById('vBmi').textContent = `${p.poids || '-'} kg / ${p.taille || '-'} cm (BMI: ${p.bmi || '-'})`;
+                document.getElementById('vAllergies').textContent = p.allergies || 'Aucune';
+                document.getElementById('vDateEntree').textContent = p.dateEntree || '-';
+                document.getElementById('vDateIntervention').textContent = p.dateIntervention || '-';
+                document.getElementById('vDateSortie').textContent = p.dateSortie || '-';
+                document.getElementById('vDiag').textContent = p.diag || '-';
+                document.getElementById('vDecRea').textContent = p.decRea || '-';
+                document.getElementById('vDecColloque').textContent = p.decColloque ? `${p.decColloque} (${p.dateColloque || ''})` : '-';
+                document.getElementById('vAtcd').textContent = p.atcd || 'Aucun';
+                document.getElementById('vBilanComplet').textContent = p.bilanComplet || 'Non saisi';
+                document.getElementById('vEcho').textContent = p.echo || '-';
+                document.getElementById('vTdmTap').textContent = p.tdmTap || '-';
+                document.getElementById('vTdm').textContent = p.tdm || '-';
+                document.getElementById('vIrm').textContent = p.irm || '-';
+                document.getElementById('vEndo').textContent = p.endo || '-';
+                document.getElementById('vRemarques').textContent = p.remarques || '-';
+                switchToView();
+            } else {
+                resetEditForm();
+                switchToEdit();
+            }
+            document.getElementById('patientModal').classList.add('active');
+        };
+
+        window.closeModal = function() { document.getElementById('patientModal').classList.remove('active'); };
+        
+        window.switchToEdit = function() {
+            document.getElementById('dossierView').style.display = 'none';
+            document.getElementById('formView').style.display = 'block';
+            const bedId = document.getElementById('currentBedId').value;
+            const p = patientsDb[bedId] || {};
+            document.getElementById('eName').value = p.nom || '';
+            document.getElementById('eTel').value = p.telephone || '';
+            document.getElementById('eGrp').value = p.grp || 'A+';
+            document.getElementById('eAge').value = p.age || '';
+            document.getElementById('ePoids').value = p.poids || '';
+            document.getElementById('eTaille').value = p.taille || '';
+            document.getElementById('eBmi').value = p.bmi || '';
+            document.getElementById('eDateEntree').value = p.dateEntree || '';
+            document.getElementById('eDateIntervention').value = p.dateIntervention || '';
+            document.getElementById('eDateSortie').value = p.dateSortie || '';
+            document.getElementById('eAllergies').value = p.allergies || '';
+            document.getElementById('eDiag').value = p.diag || '';
+            document.getElementById('eAtcd').value = p.atcd || '';
+            document.getElementById('eDecRea').value = p.decRea || '';
+            document.getElementById('eDecColloque').value = p.decColloque || '';
+            document.getElementById('eDateColloque').value = p.dateColloque || '';
+            document.getElementById('eBilanComplet').value = p.bilanComplet || '';
+            document.getElementById('eEcho').value = p.echo || '';
+            document.getElementById('eTdmTap').value = p.tdmTap || '';
+            document.getElementById('eTdm').value = p.tdm || '';
+            document.getElementById('eIrm').value = p.irm || '';
+            document.getElementById('eEndo').value = p.endo || '';
+            document.getElementById('eRemarques').value = p.remarques || '';
+        };
+
+        window.switchToView = function() {
+            document.getElementById('formView').style.display = 'none';
+            document.getElementById('dossierView').style.display = 'block';
+        };
+
+        function resetEditForm() {
+            document.querySelectorAll('#formView input, #formView textarea').forEach(i => i.value = '');
+        }
+
+        window.savePatient = function() {
+            const bedId = document.getElementById('currentBedId').value;
+            const data = {
+                bedId: bedId,
+                nom: document.getElementById('eName').value.trim().toUpperCase(),
+                telephone: document.getElementById('eTel').value,
+                grp: document.getElementById('eGrp').value,
+                age: document.getElementById('eAge').value,
+                poids: document.getElementById('ePoids').value,
+                taille: document.getElementById('eTaille').value,
+                bmi: document.getElementById('eBmi').value,
+                dateEntree: document.getElementById('eDateEntree').value,
+                dateIntervention: document.getElementById('eDateIntervention').value,
+                dateSortie: document.getElementById('eDateSortie').value,
+                allergies: document.getElementById('eAllergies').value,
+                diag: document.getElementById('eDiag').value,
+                atcd: document.getElementById('eAtcd').value,
+                decRea: document.getElementById('eDecRea').value,
+                decColloque: document.getElementById('eDecColloque').value,
+                dateColloque: document.getElementById('eDateColloque').value,
+                bilanComplet: document.getElementById('eBilanComplet').value,
+                echo: document.getElementById('eEcho').value,
+                tdmTap: document.getElementById('eTdmTap').value,
+                tdm: document.getElementById('eTdm').value,
+                irm: document.getElementById('eIrm').value,
+                endo: document.getElementById('eEndo').value,
+                remarques: document.getElementById('eRemarques').value
+            };
+
+            if(!data.nom) return alert("Le nom est obligatoire !");
+            set(ref(db, 'dossiers_patients/' + bedId), data);
+            closeModal();
+        };
+
+        // FONCTION MODIFIÉE : Archivage compatible avec archives.html
+        window.archiveAndFreePatient = function() {
+            const bedId = document.getElementById('currentBedId').value;
+            const patient = patientsDb[bedId];
+            if(!patient) return;
+
+            if(confirm(`Voulez-vous libérer le lit ${bedId} et archiver le dossier de ${patient.nom} ?`)) {
+                
+                // Préparation des données d'archivage avec horodatage complet et numéro d'ancien lit
+                const archiveData = { 
+                    ...patient, 
+                    ancienLit: bedId,
+                    dateArchivage: new Date().toISOString(),
+                    timestampId: Date.now()
+                };
+
+                push(ref(db, 'archives_patients/'), archiveData).then(() => {
+                    remove(ref(db, 'dossiers_patients/' + bedId));
+                    closeModal();
+                    alert("Patient archivé avec succès !");
+                }).catch(error => {
+                    console.error("Erreur d'archivage :", error);
+                    alert("Une erreur est survenue lors de l'archivage.");
+                });
+            }
+        };
+
+        // NOUVELLE FONCTION : Changement de lit
+        window.changerDeLit = async function() {
+            const oldBedId = document.getElementById('currentBedId').value;
+            const patient = patientsDb[oldBedId];
+            
+            if (!patient) return;
+
+            const newBedId = prompt("Entrez le numéro du nouveau lit (ex: 401F, 305P, REA1) :\nAttention : Assurez-vous que le nouveau lit est vide.");
+            
+            if (!newBedId || newBedId.trim() === "") return;
+            const formattedNewBed = newBedId.trim().toUpperCase(); // Formatage standard
+
+            if (formattedNewBed === oldBedId) {
+                alert("Le patient est déjà dans ce lit !");
+                return;
+            }
+
+            const newBedRef = ref(db, 'dossiers_patients/' + formattedNewBed);
+
+            try {
+                // 1. Vérifier si le nouveau lit est libre
+                const newBedSnapshot = await get(newBedRef);
+                if (newBedSnapshot.exists() && newBedSnapshot.val().nom) {
+                    alert("Opération annulée : Le lit " + formattedNewBed + " est déjà occupé !");
+                    return;
+                }
+
+                // 2. Mettre à jour l'ID du lit dans les données
+                const newPatientData = { ...patient, bedId: formattedNewBed };
+
+                // 3. Copier les données vers le nouveau lit
+                await set(newBedRef, newPatientData);
+
+                // 4. Libérer (supprimer) l'ancien lit
+                await remove(ref(db, 'dossiers_patients/' + oldBedId));
+
+                alert(`Transfert réussi : Le patient a été déplacé vers le lit ${formattedNewBed}.`);
+                closeModal();
+                
+            } catch (error) {
+                console.error("Erreur lors du changement de lit :", error);
+                alert("Une erreur s'est produite lors du transfert.");
+            }
+        };
+
+        // Redirection depuis URL si paramètre bedId présent (Ex: depuis interventions)
+        const urlParams = new URLSearchParams(window.location.search);
+        const bedFromUrl = urlParams.get('bedId');
+        if(bedFromUrl) {
+            setTimeout(() => openModal(bedFromUrl), 500);
+        }
+    </script>
+</body>
+</html>
