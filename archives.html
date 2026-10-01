@@ -5,44 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Archives Patients - CPMC</title>
     <style>
-        body { font-family: system-ui, sans-serif; background:#f1f5f9; padding:15px; margin:0; }
+        :root {
+            --primary: #0284c7; --primary-light: #e0f2fe; --success: #16a34a; --warning: #ca8a04; --danger: #dc2626;
+            --bg: #f1f5f9; --card: #ffffff; --text: #1e293b; --text-light: #64748b;
+        }
+        body { font-family: system-ui, sans-serif; background:var(--bg); padding:15px; margin:0; color:var(--text); }
         .nav-links { display: flex; gap: 8px; margin-bottom: 15px; overflow-x:auto; }
         .nav-btn { background: #e2e8f0; color: #1e293b; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space:nowrap; }
-        .nav-btn.active { background: #0284c7; color: white; }
-        .container { background: white; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; }
-        input[type="text"] { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
+        .nav-btn.active { background: var(--primary); color: white; }
+        .container { background: white; padding: 15px; border-radius: 12px; border: 1px solid #cbd5e1; }
+        input[type="text"], select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 15px; font-size:15px;}
         table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
         th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
-        th { background: #f8fafc; color: #0284c7; }
-        .patient-link { color: #0284c7; font-weight: bold; text-decoration: underline; cursor: pointer; }
-        .btn-action { margin: 2px; padding: 5px 8px; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 0.8em;}
-        .btn-remarque { background: #0284c7; }
-        .btn-restore { background: #16a34a; }
-        .btn-delete { background: #dc2626; }
+        th { background: #f8fafc; color: var(--primary); }
+        .patient-link { color: var(--primary); font-weight: bold; text-decoration: underline; cursor: pointer; }
+        .btn-action { margin: 2px; padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; color: white; font-size: 0.8em; font-weight:600;}
+        .btn-remarque { background: var(--primary); }
+        .btn-restore { background: var(--success); }
+        .btn-delete { background: var(--danger); }
         
-        /* Modal pour le dossier */
-        #dossierModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); padding:20px; box-sizing:border-box; z-index:1000;}
-        .modal-content { background:white; padding:20px; border-radius:8px; max-width:600px; margin:auto; max-height:90vh; overflow-y:auto; }
+        /* Modal Style (Identique à patients.html) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); align-items: flex-end; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--card); width: 100%; max-width: 650px; height: 92vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; box-sizing: border-box; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; z-index: 10; margin-bottom:15px;}
+        .close-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2em; cursor: pointer; }
+
+        .section-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+        .section-title { font-size: 0.85em; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 10px; }
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; font-size: 0.9em; }
+        .data-label { color: var(--text-light); }
+        .data-value { font-weight: 600; text-align: right; }
+        .data-text { font-size: 0.9em; line-height: 1.4; background: white; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 4px; }
+        
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
+        .gallery-img { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; }
+
+        /* Petit modal centré pour la reprise de lit */
+        .small-modal-content { background: white; width: 90%; max-width: 400px; margin: auto; padding: 20px; border-radius: 12px; }
+        .small-modal { align-items: center; }
     </style>
 </head>
 <body>
     <div class="nav-links">
         <a href="index.html" class="nav-btn">🏠 Accueil</a>
-        <a href="patients.html" class="nav-btn">🛏️ Hospitalisation</a>
+        <a href="patients.html" class="nav-btn">🛏️ Lits / Hospitalisation</a>
         <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
         <a href="archives.html" class="nav-btn active">📦 Archive Patients</a>
         <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
     </div>
 
     <div class="container">
-        <h2>📦 Patients Archivés</h2>
+        <h2 style="color:var(--primary); margin-top:0;">📦 Patients Archivés</h2>
         <input type="text" id="searchArchived" placeholder="Rechercher un patient..." onkeyup="filterArchives()">
         
         <div style="overflow-x:auto;">
             <table id="archivesTable">
                 <thead>
                     <tr>
-                        <th>Date d'archive</th>
+                        <th>Date de Sortie</th>
                         <th>Nom du Patient</th>
                         <th>Dernier Lit</th>
                         <th>Remarque</th>
@@ -56,18 +77,78 @@
         </div>
     </div>
 
-    <!-- Modal Dossier -->
-    <div id="dossierModal" onclick="if(event.target==this) this.style.display='none'">
+    <!-- MODAL DOSSIER COMPLET -->
+    <div id="patientModal" class="modal">
         <div class="modal-content">
-            <h3 id="modalTitle" style="color:#0284c7; margin-top:0;">Dossier Patient</h3>
-            <pre id="modalContent" style="background:#f1f5f9; padding:10px; border-radius:6px; white-space:pre-wrap; font-size:0.9em;"></pre>
-            <button onclick="document.getElementById('dossierModal').style.display='none'" style="margin-top:10px; padding:8px 15px; cursor:pointer;">Fermer</button>
+            <div class="modal-header">
+                <h3 id="modalTitle" style="margin:0; color:var(--primary);">Dossier Patient</h3>
+                <button class="close-btn" onclick="closeModal('patientModal')">✕</button>
+            </div>
+            
+            <div id="dossierView">
+                <div class="section-card">
+                    <div class="section-title">👤 Identité & Dossier</div>
+                    <div class="data-row"><span class="data-label">N° Dossier</span> <span class="data-value" id="vNumDossier">-</span></div>
+                    <div class="data-row"><span class="data-label">Médecin Traitant</span> <span class="data-value" id="vMedecinTraitant">-</span></div>
+                    <div class="data-row"><span class="data-label">Nom & Prénom</span> <span class="data-value" id="vName">-</span></div>
+                    <div class="data-row"><span class="data-label">Téléphone</span> <span class="data-value" id="vTel">-</span></div>
+                    <div class="data-row"><span class="data-label">Date de Naissance</span> <span class="data-value" id="vDob">-</span></div>
+                    <div class="data-row"><span class="data-label">Âge / Groupe</span> <span class="data-value" id="vAgeGrp">-</span></div>
+                    <div class="data-row"><span class="data-label">Poids / Taille / BMI</span> <span class="data-value" id="vBmi">-</span></div>
+                    <div class="data-row"><span class="data-label" style="color:var(--danger)">Allergies</span> <span class="data-value" style="color:var(--danger)" id="vAllergies">Aucune</span></div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">📅 Dates Clés</div>
+                    <div class="data-row"><span class="data-label">Date d'entrée</span> <span class="data-value" id="vDateEntree">-</span></div>
+                    <div class="data-row"><span class="data-label">Date d'intervention</span> <span class="data-value" id="vDateIntervention">-</span></div>
+                    <div class="data-row"><span class="data-label" style="color:var(--danger)">Date de sortie (Libéré le)</span> <span class="data-value" style="color:var(--danger)" id="vDateSortie">-</span></div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">🩺 Motif, ATCD & Décisions</div>
+                    <div class="data-row"><span class="data-label">Diagnostic</span> <span class="data-value" id="vDiag">-</span></div>
+                    <div class="data-row"><span class="data-label">Décision Réa</span> <span class="data-value" id="vDecRea">-</span></div>
+                    <div class="data-row"><span class="data-label">Colloque</span> <span class="data-value" id="vDecColloque">-</span></div>
+                    <div class="data-label" style="margin-top:6px;">Antécédents :</div>
+                    <div class="data-text" id="vAtcd">-</div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">🔬 Bilans & Imagerie</div>
+                    <div class="data-label">Bilan Complet :</div><div class="data-text" id="vBilanComplet">-</div>
+                    <div class="data-label" style="margin-top:6px;">Échographie :</div><div class="data-text" id="vEcho">-</div>
+                    <div class="data-label" style="margin-top:6px;">TDM TAP :</div><div class="data-text" id="vTdmTap">-</div>
+                    <div class="data-label" style="margin-top:6px;">TDM :</div><div class="data-text" id="vTdm">-</div>
+                    <div class="data-label" style="margin-top:6px;">IRM :</div><div class="data-text" id="vIrm">-</div>
+                    <div class="data-label" style="margin-top:6px;">Endoscopie :</div><div class="data-text" id="vEndo">-</div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">📌 Remarques & Photos</div>
+                    <div class="data-text" id="vRemarques">-</div>
+                    <div id="photosContainer" class="gallery-grid" style="display:none; margin-top:10px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL REPRENDRE (LISTE DEROULANTE) -->
+    <div id="restoreModal" class="modal small-modal">
+        <div class="small-modal-content">
+            <h3 style="color:var(--success); margin-top:0;">↩️ Reprendre le patient</h3>
+            <p style="font-size:0.9em; color:var(--text-light);">Sélectionnez le nouveau lit pour <strong id="restorePatientName"></strong> :</p>
+            <select id="restoreBedSelect"></select>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn-action" style="flex:1; background:#94a3b8; padding:10px;" onclick="closeModal('restoreModal')">Annuler</button>
+                <button class="btn-action btn-restore" style="flex:1; padding:10px;" onclick="confirmRestore()">✅ Valider Reprise</button>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, onValue, update, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, onValue, update, remove, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
@@ -82,6 +163,21 @@
         const db = getDatabase(app);
         
         let archivesData = {};
+        let currentRestoreKey = null;
+
+        // Génération de la liste déroulante des lits
+        function generateBedsList() {
+            let options = '<option value="">-- Choisissez un lit ou une place --</option>';
+            options += '<optgroup label="4ème Étage">';
+            for(let i=401; i<=408; i++) options += `<option value="${i}P">${i}P (Porte)</option><option value="${i}F">${i}F (Fenêtre)</option>`;
+            options += '</optgroup><optgroup label="3ème Étage">';
+            for(let i=301; i<=308; i++) options += `<option value="${i}P">${i}P (Porte)</option><option value="${i}F">${i}F (Fenêtre)</option>`;
+            options += '</optgroup><optgroup label="Réanimation">';
+            for(let i=1; i<=6; i++) options += `<option value="REA${i}">Réa Lit ${i}</option>`;
+            options += '</optgroup>';
+            document.getElementById('restoreBedSelect').innerHTML = options;
+        }
+        generateBedsList();
 
         onValue(ref(db, 'archives_patients/'), (snapshot) => {
             archivesData = snapshot.val() || {};
@@ -93,19 +189,25 @@
             const term = document.getElementById('searchArchived').value.toLowerCase();
             let html = '';
             
-            Object.keys(archivesData).forEach(key => {
+            // Trier par date d'archivage (le plus récent en haut)
+            const sortedKeys = Object.keys(archivesData).sort((a, b) => {
+                return (archivesData[b].timestampId || 0) - (archivesData[a].timestampId || 0);
+            });
+
+            sortedKeys.forEach(key => {
                 const p = archivesData[key];
                 if(p.nom && p.nom.toLowerCase().includes(term)) {
+                    const dateSortieAffichee = p.dateSortieArchive || p.dateSortie || p.dateArchivage?.split('T')[0] || '-';
                     html += `
                     <tr>
-                        <td>${key.split('_')[0] || '-'}</td>
+                        <td><strong>${dateSortieAffichee}</strong></td>
                         <td><span class="patient-link" onclick="viewDossier('${key}')">${p.nom}</span></td>
                         <td>${p.ancienLit || '-'}</td>
-                        <td>${p.remarque || 'Aucune remarque'}</td>
+                        <td>${p.remarque || '-'}</td>
                         <td>
-                            <button class="btn-action btn-remarque" onclick="editRemarque('${key}')">📝 Remarque</button>
-                            <button class="btn-action btn-restore" onclick="restorePatient('${key}')">↩️ Reprendre</button>
-                            <button class="btn-action btn-delete" onclick="deleteArchive('${key}')">🗑️ Supprimer</button>
+                            <button class="btn-action btn-remarque" onclick="editRemarque('${key}')">📝 Rq.</button>
+                            <button class="btn-action btn-restore" onclick="openRestoreModal('${key}')">↩️ Reprendre</button>
+                            <button class="btn-action btn-delete" onclick="deleteArchive('${key}')">🗑️</button>
                         </td>
                     </tr>`;
                 }
@@ -116,14 +218,92 @@
         window.filterArchives = renderArchives;
 
         window.viewDossier = function(key) {
-            const data = archivesData[key];
-            document.getElementById('modalTitle').innerText = "Dossier : " + data.nom;
+            const p = archivesData[key];
+            document.getElementById('modalTitle').innerText = "Dossier : " + p.nom;
             
-            // Formatage propre du dossier JSON
-            let details = `Nom: ${data.nom || '-'}\nAge: ${data.age || '-'}\nGroupe Sanguin: ${data.grp || '-'}\nDiagnostic: ${data.diag || '-'}\n\nAntécédents / Histoire:\n${data.histoire || '-'}\n\nExamen Clinique:\n${data.examen || '-'}`;
+            // Remplissage du dossier
+            document.getElementById('vNumDossier').textContent = p.numDossier || '-';
+            document.getElementById('vMedecinTraitant').textContent = p.medecinTraitant || '-';
+            document.getElementById('vName').textContent = p.nom;
+            document.getElementById('vTel').textContent = p.telephone || '-';
+            document.getElementById('vDob').textContent = p.dob || '-';
+            document.getElementById('vAgeGrp').textContent = `${p.age || '-'} ans (${p.grp || 'Indéterminé'})`;
+            document.getElementById('vBmi').textContent = `${p.poids || '-'} kg / ${p.taille || '-'} cm (BMI: ${p.bmi || '-'})`;
+            document.getElementById('vAllergies').textContent = p.allergies || 'Aucune';
             
-            document.getElementById('modalContent').innerText = details;
-            document.getElementById('dossierModal').style.display = 'block';
+            document.getElementById('vDateEntree').textContent = p.dateEntree || '-';
+            document.getElementById('vDateIntervention').textContent = p.dateIntervention || '-';
+            // Afficher la date de libération spécifique
+            document.getElementById('vDateSortie').textContent = p.dateSortieArchive || p.dateSortie || p.dateArchivage?.split('T')[0] || '-';
+            
+            document.getElementById('vDiag').textContent = p.diag || '-';
+            document.getElementById('vDecRea').textContent = p.decRea || '-';
+            document.getElementById('vDecColloque').textContent = p.decColloque ? `${p.decColloque} (${p.dateColloque || ''})` : '-';
+            document.getElementById('vAtcd').textContent = p.atcd || 'Aucun';
+            document.getElementById('vBilanComplet').textContent = p.bilanComplet || '-';
+            document.getElementById('vEcho').textContent = p.echo || '-';
+            document.getElementById('vTdmTap').textContent = p.tdmTap || '-';
+            document.getElementById('vTdm').textContent = p.tdm || '-';
+            document.getElementById('vIrm').textContent = p.irm || '-';
+            document.getElementById('vEndo').textContent = p.endo || '-';
+            document.getElementById('vRemarques').textContent = p.remarques || '-';
+
+            // Photos
+            const photosContainer = document.getElementById('photosContainer');
+            if (p.photos && p.photos.length > 0) {
+                photosContainer.innerHTML = '';
+                p.photos.forEach(src => {
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.className = 'gallery-img';
+                    img.onclick = () => window.open(src, '_blank');
+                    photosContainer.appendChild(img);
+                });
+                photosContainer.style.display = 'grid';
+            } else {
+                photosContainer.style.display = 'none';
+            }
+
+            document.getElementById('patientModal').classList.add('active');
+        };
+
+        window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
+
+        window.openRestoreModal = function(key) {
+            currentRestoreKey = key;
+            document.getElementById('restorePatientName').innerText = archivesData[key].nom;
+            document.getElementById('restoreBedSelect').value = ""; // Reset du choix
+            document.getElementById('restoreModal').classList.add('active');
+        };
+
+        window.confirmRestore = async function() {
+            const newBed = document.getElementById('restoreBedSelect').value;
+            if(!newBed) return alert("Veuillez choisir un lit !");
+
+            const data = archivesData[currentRestoreKey];
+            const newBedRef = ref(db, 'dossiers_patients/' + newBed);
+
+            try {
+                // Vérifier si le lit est déjà occupé
+                const snapshot = await get(newBedRef);
+                if (snapshot.exists() && snapshot.val().nom) {
+                    alert("⚠️ Ce lit est déjà occupé ! Veuillez en choisir un autre.");
+                    return;
+                }
+
+                // Changer son lit et son statut vers normal
+                const restoreData = { ...data, bedId: newBed, statut: 'normal' };
+                delete restoreData.dateSortieArchive; // On enlève la date de sortie vu qu'il revient
+                
+                await set(newBedRef, restoreData);
+                await remove(ref(db, 'archives_patients/' + currentRestoreKey));
+                
+                alert(`✅ Patient restauré avec succès dans le lit ${newBed}`);
+                closeModal('restoreModal');
+            } catch (error) {
+                console.error(error);
+                alert("Erreur lors de la reprise du patient.");
+            }
         };
 
         window.editRemarque = function(key) {
@@ -134,25 +314,9 @@
             }
         };
 
-        window.restorePatient = function(key) {
-            const newBed = prompt("Entrez le numéro du lit (ex: 402F, Réa 1) pour y placer " + archivesData[key].nom + " :");
-            if(newBed) {
-                const data = archivesData[key];
-                // Enregistrer dans les dossiers actifs
-                set(ref(db, 'dossiers_patients/' + newBed), data).then(() => {
-                    // Supprimer des archives
-                    remove(ref(db, 'archives_patients/' + key)).then(() => {
-                        alert("Patient restauré avec succès au lit " + newBed);
-                    });
-                });
-            }
-        };
-
         window.deleteArchive = function(key) {
             if(confirm("⚠️ Êtes-vous certain de vouloir supprimer DÉFINITIVEMENT ce patient des archives ? Cette action est irréversible.")) {
-                remove(ref(db, 'archives_patients/' + key)).then(() => {
-                    alert("Patient supprimé définitivement.");
-                });
+                remove(ref(db, 'archives_patients/' + key));
             }
         };
     </script>
