@@ -15,6 +15,44 @@
         th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
         th { background: #f8fafc; color: #0284c7; }
         .btn-save { background: #0284c7; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+
+        /* STYLES DES INTERVENTIONS REPROGRAMMÉES ET ANNULÉES */
+        tr.status-reprogrammed {
+            background-color: #fefce8 !important;
+            color: #854d0e;
+        }
+        tr.status-reprogrammed td {
+            border-color: #fef08a;
+        }
+        
+        tr.status-canceled {
+            background-color: #fef2f2 !important;
+            color: #991b1b;
+        }
+        tr.status-canceled td {
+            border-color: #fecaca;
+        }
+
+        /* BADGES POUR LE STATUT */
+        .badge-reprogrammed {
+            background-color: #fef08a;
+            color: #854d0e;
+            border: 1px solid #eab308;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .badge-canceled {
+            background-color: #fecaca;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -27,8 +65,8 @@
     </div>
 
     <div class="container">
-        <h2>🗂️️ Historique des Interventions</h2>
-        <input type="text" id="searchIntervention" placeholder="Rechercher par nom de patient, intervention ou date (ex: 2026-10)..." onkeyup="renderInterventions()">
+        <h2>🗂 Historique des Interventions</h2>
+        <input type="text" id="searchIntervention" placeholder="Rechercher par nom de patient, intervention, statut ou date (ex: 2026-10)..." onkeyup="renderInterventions()">
         
         <div style="overflow-x:auto;">
             <table id="intervTable">
@@ -73,9 +111,13 @@
             // Transformer les données en un tableau plat pour faciliter la recherche
             Object.keys(data).forEach(dateStr => {
                 const lignes = data[dateStr];
-                lignes.forEach((ligne, index) => {
-                    allInterventions.push({ date: dateStr, index: index, ...ligne });
-                });
+                if(Array.isArray(lignes)) {
+                    lignes.forEach((ligne, index) => {
+                        if(ligne) {
+                            allInterventions.push({ date: dateStr, index: index, ...ligne });
+                        }
+                    });
+                }
             });
             // Trier par date décroissante (plus récent en premier)
             allInterventions.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -88,17 +130,30 @@
             let html = '';
             
             allInterventions.forEach(inv => {
-                const searchString = `${inv.patientText} ${inv.intervention} ${inv.date}`.toLowerCase();
+                const searchString = `${inv.patientText || ''} ${inv.intervention || ''} ${inv.date || ''} ${inv.operateur || ''} ${inv.statut || ''}`.toLowerCase();
                 
                 if(searchString.includes(term)) {
+                    const statutLower = (inv.statut || '').toLowerCase();
+                    let rowClass = '';
+                    let statusHtml = inv.statut || '-';
+
+                    // Détection des statuts reprogrammés (jaune) et annulés (rouge)
+                    if (statutLower.includes('reprogramm') || statutLower.includes('repro')) {
+                        rowClass = 'status-reprogrammed';
+                        statusHtml = `<span class="badge-reprogrammed">${inv.statut}</span>`;
+                    } else if (statutLower.includes('annul')) {
+                        rowClass = 'status-canceled';
+                        statusHtml = `<span class="badge-canceled">${inv.statut}</span>`;
+                    }
+
                     html += `
-                    <tr>
+                    <tr class="${rowClass}">
                         <td><b>${inv.date}</b></td>
                         <td>${inv.salle || '-'}</td>
                         <td>${inv.patientText || '-'}</td>
                         <td>${inv.intervention || '-'}</td>
                         <td>${inv.operateur || '-'}</td>
-                        <td>${inv.statut || '-'}</td>
+                        <td>${statusHtml}</td>
                         <td>
                             <input type="text" id="rem_${inv.date}_${inv.index}" value="${inv.remarque || ''}" placeholder="Ajouter une remarque..." style="margin:0;">
                         </td>
@@ -115,6 +170,9 @@
             const remVal = document.getElementById(`rem_${date}_${index}`).value;
             update(ref(db, `programmes_operatoires/${date}/${index}`), { remarque: remVal }).then(() => {
                 alert("Remarque enregistrée avec succès !");
+            }).catch(err => {
+                console.error("Erreur de sauvegarde de la remarque :", err);
+                alert("Erreur lors de l'enregistrement.");
             });
         };
     </script>
