@@ -1,15 +1,21 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dossiers Patients - CPMC Debussy</title>
     <script>
+    // Si l'utilisateur n'est pas connecté, redirection vers login.html
+    if (!localStorage.getItem('cpmc_user')) {
+        window.location.href = "login.html";
+    }
+</script>
+        <script>
     // Vérifie si l'utilisateur est connecté sur cet appareil
     if (!localStorage.getItem('cpmc_user')) {
         window.location.href = "login.html";
     }
 </script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dossiers Patients - CPMC Debussy</title>
     <!-- Script pour la conversion automatique des photos HEIC (iPhone) en JPEG -->
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <style>
