@@ -39,11 +39,30 @@
             border: 2px dashed #cbd5e1; padding: 10px; border-radius: 8px;
             display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
             cursor: pointer; width: 100%; box-sizing: border-box;
+            transition: all 0.2s ease;
         }
         .bed-btn.occupied {
             background-color: var(--primary-light); color: #0369a1;
             border: 2px solid var(--primary); font-weight: 600;
         }
+
+        /* CODES COULEURS POUR LES LITS */
+        .bed-btn.status-surveiller {
+            background-color: #fef2f2 !important;
+            border: 2px solid #ef4444 !important;
+            color: #991b1b !important;
+        }
+        .bed-btn.status-bloc {
+            background-color: #fefce8 !important;
+            border: 2px solid #eab308 !important;
+            color: #854d0e !important;
+        }
+        .bed-btn.status-postop {
+            background-color: #eff6ff !important;
+            border: 2px solid #3b82f6 !important;
+            color: #1e40af !important;
+        }
+
         .bed-code { font-size: 0.8em; opacity: 0.8; text-transform: uppercase; }
         .bed-patient-name { font-size: 0.95em; font-weight: bold; word-break: break-word; }
 
@@ -70,6 +89,16 @@
         .btn-main { background: var(--primary); color: white; padding: 12px; border-radius: 8px; border: none; font-weight: 600; width: 100%; cursor: pointer; text-align: center; }
         .btn-warning { background: var(--warning); color: white; }
         .btn-danger { background: var(--danger); color: white; }
+        
+        .btn-today { padding: 0 10px; font-size: 0.75em; background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-today:hover { background: #cbd5e1; }
+
+        .checkbox-group { display: flex; flex-direction: column; gap: 8px; margin-top: 5px; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 0.9em; font-weight: 500; cursor: pointer; }
+        .checkbox-item input { width: 18px; height: 18px; cursor: pointer; }
+
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
+        .gallery-img { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -110,12 +139,23 @@
             <!-- VUE LECTURE DOSSIER -->
             <div id="dossierView" style="margin-top: 15px;">
                 <div class="section-card">
-                    <div class="section-title">👤 Identité & Inscription</div>
+                    <div class="section-title">👤 Identité & Dossier</div>
+                    <div class="data-row"><span class="data-label">N° Dossier</span> <span class="data-value" id="vNumDossier">-</span></div>
+                    <div class="data-row"><span class="data-label">Médecin Traitant</span> <span class="data-value" id="vMedecinTraitant">-</span></div>
+                    <div class="data-row"><span class="data-label">État / Statut</span> <span class="data-value" id="vStatut">-</span></div>
                     <div class="data-row"><span class="data-label">Nom & Prénom</span> <span class="data-value" id="vName">-</span></div>
                     <div class="data-row"><span class="data-label">Téléphone</span> <span class="data-value" id="vTel">-</span></div>
+                    <div class="data-row"><span class="data-label">Date de Naissance</span> <span class="data-value" id="vDob">-</span></div>
                     <div class="data-row"><span class="data-label">Âge / Groupe</span> <span class="data-value" id="vAgeGrp">-</span></div>
                     <div class="data-row"><span class="data-label">Poids / Taille / BMI</span> <span class="data-value" id="vBmi">-</span></div>
                     <div class="data-row"><span class="data-label" style="color:var(--danger)">Allergies</span> <span class="data-value" style="color:var(--danger)" id="vAllergies">Aucune</span></div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">☑️ Procédures & Suivi</div>
+                    <div class="data-row"><span class="data-label">Commande de sang</span> <span class="data-value" id="vCmdSang">❌ Non faite</span></div>
+                    <div class="data-row"><span class="data-label">Commande de médicament</span> <span class="data-value" id="vCmdMed">❌ Non faite</span></div>
+                    <div class="data-row"><span class="data-label">Protocole de sortie</span> <span class="data-value" id="vProtocoleSortie">❌ Non fait</span></div>
                 </div>
 
                 <div class="section-card">
@@ -145,12 +185,16 @@
                 </div>
 
                 <div class="section-card">
-                    <div class="section-title">📌 Remarques & Transmissions</div>
+                    <div class="section-title">📌 Remarques & Photos</div>
                     <div class="data-text" id="vRemarques">-</div>
-                    <img id="vPhoto" src="" style="width:100%; border-radius:8px; margin-top:10px; display:none;">
+                    
+                    <div style="margin-top:10px;">
+                        <button id="btnTogglePhotos" class="btn-main" style="background:#64748b; font-size:0.85em; display:none;" onclick="togglePhotosView()">📸 Afficher les photos (<span id="photoCount">0</span>)</button>
+                        <div id="photosContainer" class="gallery-grid" style="display:none;"></div>
+                    </div>
                 </div>
 
-                <!-- BOUTONS MODIFIÉS ICI -->
+                <!-- BOUTONS D'ACTION -->
                 <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:15px;">
                     <button class="btn-main btn-warning" style="flex:1; min-width:140px;" onclick="switchToEdit()">✏️ Modifier</button>
                     <button class="btn-main" style="flex:1; min-width:140px; background:var(--primary);" onclick="changerDeLit()">🔀 Changer Lit</button>
@@ -160,11 +204,28 @@
 
             <!-- VUE FORMULAIRE EDITION -->
             <div id="formView" style="display:none; margin-top: 15px;">
+                <div class="grid-2">
+                    <div class="form-group"><label>N° Dossier</label><input type="text" id="eNumDossier" placeholder="Ex: DOS-2026-001"></div>
+                    <div class="form-group"><label>Médecin Traitant</label><input type="text" id="eMedecinTraitant" placeholder="Ex: Dr. Benali"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>État / Code Couleur du Patient</label>
+                    <select id="eStatut">
+                        <option value="normal">⚪ Couleur de base (Non opéré encore)</option>
+                        <option value="surveiller">🔴 À surveiller (Rouge)</option>
+                        <option value="bloc">🟡 Au bloc / En train d'être opéré (Jaune)</option>
+                        <option value="postop">🔵 Post-opératoire stable (Bleu)</option>
+                    </select>
+                </div>
+
                 <div class="form-group"><label>Nom & Prénom</label><input type="text" id="eName" placeholder="Ex: GUESMI NASSIMA"></div>
+                
                 <div class="grid-2">
                     <div class="form-group"><label>N° Téléphone</label><input type="tel" id="eTel" placeholder="06XXXXXXXX"></div>
                     <div class="form-group"><label>Groupe Sanguin</label>
                         <select id="eGrp">
+                            <option value="Indéterminé">Indéterminé</option>
                             <option value="A+">A+</option><option value="A-">A-</option>
                             <option value="B+">B+</option><option value="B-">B-</option>
                             <option value="AB+">AB+</option><option value="AB-">AB-</option>
@@ -172,17 +233,43 @@
                         </select>
                     </div>
                 </div>
-                <div class="grid-3">
-                    <div class="form-group"><label>Âge</label><input type="number" id="eAge"></div>
-                    <div class="form-group"><label>Poids (kg)</label><input type="number" id="ePoids" oninput="calcBMI()"></div>
-                    <div class="form-group"><label>Taille (cm)</label><input type="number" id="eTaille" oninput="calcBMI()"></div>
-                </div>
-                <div class="form-group"><label>BMI Calculated</label><input type="text" id="eBmi" readonly style="background:#e2e8f0;"></div>
 
                 <div class="grid-3">
-                    <div class="form-group"><label>Date Entrée</label><input type="date" id="eDateEntree"></div>
+                    <div class="form-group"><label>Date de Naissance</label><input type="date" id="eDob" onchange="calcAgeFromDob()"></div>
+                    <div class="form-group"><label>Âge (ans)</label><input type="number" id="eAge"></div>
+                    <div class="form-group"><label>Poids (kg)</label><input type="number" id="ePoids" oninput="calcBMI()"></div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group"><label>Taille (cm)</label><input type="number" id="eTaille" oninput="calcBMI()"></div>
+                    <div class="form-group"><label>BMI Calculated</label><input type="text" id="eBmi" readonly style="background:#e2e8f0;"></div>
+                </div>
+
+                <div class="section-card" style="background:#fff;">
+                    <div class="section-title">☑️️ Procédures & Suivi</div>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" id="eCmdSang"> Commande de sang faite</label>
+                        <label class="checkbox-item"><input type="checkbox" id="eCmdMed"> Commande de médicament faite</label>
+                        <label class="checkbox-item"><input type="checkbox" id="eProtocoleSortie"> Protocole de sortie prêt</label>
+                    </div>
+                </div>
+
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label>Date Entrée</label>
+                        <div style="display:flex; gap:4px;">
+                            <input type="date" id="eDateEntree" style="flex:1;">
+                            <button type="button" class="btn-today" onclick="setToday('eDateEntree')">Aujourd'hui</button>
+                        </div>
+                    </div>
                     <div class="form-group"><label>Date Intervention</label><input type="date" id="eDateIntervention"></div>
-                    <div class="form-group"><label>Date Sortie Prévue</label><input type="date" id="eDateSortie"></div>
+                    <div class="form-group">
+                        <label>Date Sortie Prévue</label>
+                        <div style="display:flex; gap:4px;">
+                            <input type="date" id="eDateSortie" style="flex:1;">
+                            <button type="button" class="btn-today" onclick="setToday('eDateSortie')">Aujourd'hui</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group"><label>Allergies</label><input type="text" id="eAllergies"></div>
@@ -205,6 +292,12 @@
                 <div class="form-group"><label>Endoscopie</label><input type="text" id="eEndo"></div>
                 <div class="form-group"><label>Remarques / Transmissions</label><textarea id="eRemarques" rows="3"></textarea></div>
 
+                <div class="form-group">
+                    <label>📸 Ajouter des Photos</label>
+                    <input type="file" id="ePhotos" multiple accept="image/*" onchange="handlePhotoUpload(event)">
+                    <div id="photosPreview" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;"></div>
+                </div>
+
                 <button class="btn-main" onclick="savePatient()" style="background:var(--success); margin-bottom:8px;">💾 Enregistrer</button>
                 <button class="btn-main" onclick="switchToView()" style="background:transparent; color:var(--text); border:1px solid #cbd5e1;">Annuler</button>
             </div>
@@ -213,7 +306,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        // IMPORT DE 'get' AJOUTÉ ICI POUR LE CHANGEMENT DE LIT
         import { getDatabase, ref, set, onValue, remove, push, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -229,6 +321,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         let patientsDb = {};
+        let currentPhotos = [];
 
         // Génération des lits pour chaque étage
         function buildGrid(gridId, start, end, isRea = false) {
@@ -274,17 +367,27 @@
         buildGrid('grid-3', 301, 308);
         buildGrid('grid-rea', 1, 6, true);
 
-        // Ecouteur temps réel Firebase pour mettre à jour les boutons et NOMS des patients
+        // Ecouteur temps réel Firebase pour mettre à jour les boutons, NOMS et COULEURS des patients
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
             patientsDb = snapshot.val() || {};
             document.querySelectorAll('.bed-btn').forEach(btn => {
                 const bedId = btn.id.replace('btn-', '');
                 const nameSpan = document.getElementById(`name-${bedId}`);
+                
+                // Réinitialisation des classes de couleur
+                btn.classList.remove('occupied', 'status-surveiller', 'status-bloc', 'status-postop');
+                
                 if(patientsDb[bedId] && patientsDb[bedId].nom) {
                     btn.classList.add('occupied');
+                    
+                    // Application de la couleur en fonction du statut
+                    const statut = patientsDb[bedId].statut;
+                    if(statut === 'surveiller') btn.classList.add('status-surveiller');
+                    else if(statut === 'bloc') btn.classList.add('status-bloc');
+                    else if(statut === 'postop') btn.classList.add('status-postop');
+
                     if(nameSpan) nameSpan.textContent = patientsDb[bedId].nom.toUpperCase();
                 } else {
-                    btn.classList.remove('occupied');
                     if(nameSpan) nameSpan.textContent = "(Vide)";
                 }
             });
@@ -305,17 +408,54 @@
             }
         };
 
+        window.calcAgeFromDob = function() {
+            const dobVal = document.getElementById('eDob').value;
+            if (!dobVal) return;
+            const dob = new Date(dobVal);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            if (age >= 0) {
+                document.getElementById('eAge').value = age;
+            }
+        };
+
+        window.setToday = function(inputId) {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById(inputId).value = today;
+        };
+
         window.openModal = function(bedId) {
             document.getElementById('currentBedId').value = bedId;
             document.getElementById('modalTitle').textContent = `Lit ${bedId}`;
             const p = patientsDb[bedId];
             
             if(p && p.nom) {
+                document.getElementById('vNumDossier').textContent = p.numDossier || '-';
+                document.getElementById('vMedecinTraitant').textContent = p.medecinTraitant || '-';
+                
+                const statutLabels = {
+                    'normal': '⚪ Normal / Non opéré',
+                    'surveiller': '🔴 À surveiller',
+                    'bloc': '🟡 Au bloc opératoire',
+                    'postop': '🔵 Post-opératoire stable'
+                };
+                document.getElementById('vStatut').textContent = statutLabels[p.statut] || '⚪ Normal / Non opéré';
+                
                 document.getElementById('vName').textContent = p.nom;
                 document.getElementById('vTel').textContent = p.telephone || '-';
-                document.getElementById('vAgeGrp').textContent = `${p.age || '-'} ans (${p.grp || '-'})`;
+                document.getElementById('vDob').textContent = p.dob || '-';
+                document.getElementById('vAgeGrp').textContent = `${p.age || '-'} ans (${p.grp || 'Indéterminé'})`;
                 document.getElementById('vBmi').textContent = `${p.poids || '-'} kg / ${p.taille || '-'} cm (BMI: ${p.bmi || '-'})`;
                 document.getElementById('vAllergies').textContent = p.allergies || 'Aucune';
+                
+                document.getElementById('vCmdSang').textContent = p.cmdSang ? '✅ Fait' : '❌ Non faite';
+                document.getElementById('vCmdMed').textContent = p.cmdMed ? '✅ Fait' : '❌ Non faite';
+                document.getElementById('vProtocoleSortie').textContent = p.protocoleSortie ? '✅ Prêt' : '❌ Non fait';
+
                 document.getElementById('vDateEntree').textContent = p.dateEntree || '-';
                 document.getElementById('vDateIntervention').textContent = p.dateIntervention || '-';
                 document.getElementById('vDateSortie').textContent = p.dateSortie || '-';
@@ -330,12 +470,42 @@
                 document.getElementById('vIrm').textContent = p.irm || '-';
                 document.getElementById('vEndo').textContent = p.endo || '-';
                 document.getElementById('vRemarques').textContent = p.remarques || '-';
+                
+                currentPhotos = p.photos || [];
+                const photoBtn = document.getElementById('btnTogglePhotos');
+                const photoCount = document.getElementById('photoCount');
+                if (currentPhotos.length > 0) {
+                    photoBtn.style.display = 'block';
+                    photoCount.textContent = currentPhotos.length;
+                } else {
+                    photoBtn.style.display = 'none';
+                }
+                document.getElementById('photosContainer').style.display = 'none';
+
                 switchToView();
             } else {
+                currentPhotos = [];
                 resetEditForm();
                 switchToEdit();
             }
             document.getElementById('patientModal').classList.add('active');
+        };
+
+        window.togglePhotosView = function() {
+            const container = document.getElementById('photosContainer');
+            if (container.style.display === 'none') {
+                container.innerHTML = '';
+                currentPhotos.forEach(src => {
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.className = 'gallery-img';
+                    img.onclick = () => window.open(src, '_blank');
+                    container.appendChild(img);
+                });
+                container.style.display = 'grid';
+            } else {
+                container.style.display = 'none';
+            }
         };
 
         window.closeModal = function() { document.getElementById('patientModal').classList.remove('active'); };
@@ -345,13 +515,23 @@
             document.getElementById('formView').style.display = 'block';
             const bedId = document.getElementById('currentBedId').value;
             const p = patientsDb[bedId] || {};
+            
+            document.getElementById('eNumDossier').value = p.numDossier || '';
+            document.getElementById('eMedecinTraitant').value = p.medecinTraitant || '';
+            document.getElementById('eStatut').value = p.statut || 'normal';
             document.getElementById('eName').value = p.nom || '';
             document.getElementById('eTel').value = p.telephone || '';
-            document.getElementById('eGrp').value = p.grp || 'A+';
+            document.getElementById('eGrp').value = p.grp || 'Indéterminé';
+            document.getElementById('eDob').value = p.dob || '';
             document.getElementById('eAge').value = p.age || '';
             document.getElementById('ePoids').value = p.poids || '';
             document.getElementById('eTaille').value = p.taille || '';
             document.getElementById('eBmi').value = p.bmi || '';
+            
+            document.getElementById('eCmdSang').checked = !!p.cmdSang;
+            document.getElementById('eCmdMed').checked = !!p.cmdMed;
+            document.getElementById('eProtocoleSortie').checked = !!p.protocoleSortie;
+
             document.getElementById('eDateEntree').value = p.dateEntree || '';
             document.getElementById('eDateIntervention').value = p.dateIntervention || '';
             document.getElementById('eDateSortie').value = p.dateSortie || '';
@@ -368,6 +548,9 @@
             document.getElementById('eIrm').value = p.irm || '';
             document.getElementById('eEndo').value = p.endo || '';
             document.getElementById('eRemarques').value = p.remarques || '';
+            
+            currentPhotos = p.photos || [];
+            renderPhotoPreviews();
         };
 
         window.switchToView = function() {
@@ -377,19 +560,88 @@
 
         function resetEditForm() {
             document.querySelectorAll('#formView input, #formView textarea').forEach(i => i.value = '');
+            document.querySelectorAll('#formView input[type="checkbox"]').forEach(i => i.checked = false);
+            document.getElementById('eGrp').value = 'Indéterminé';
+            document.getElementById('eStatut').value = 'normal';
+            currentPhotos = [];
+            renderPhotoPreviews();
         }
+
+        window.handlePhotoUpload = function(event) {
+            const files = Array.from(event.target.files);
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const maxDim = 800;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height) {
+                            if (width > maxDim) {
+                                height *= maxDim / width;
+                                width = maxDim;
+                            }
+                        } else {
+                            if (height > maxDim) {
+                                width *= maxDim / height;
+                                height = maxDim;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        currentPhotos.push(dataUrl);
+                        renderPhotoPreviews();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = '';
+        };
+
+        function renderPhotoPreviews() {
+            const previewDiv = document.getElementById('photosPreview');
+            previewDiv.innerHTML = '';
+            currentPhotos.forEach((src, index) => {
+                const container = document.createElement('div');
+                container.style.position = 'relative';
+                container.style.display = 'inline-block';
+                container.innerHTML = `
+                    <img src="${src}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;">
+                    <button type="button" onclick="removePhoto(${index})" style="position:absolute; top:-5px; right:-5px; background:var(--danger); color:white; border:none; border-radius:50%; width:18px; height:18px; font-size:10px; cursor:pointer;">✕</button>
+                `;
+                previewDiv.appendChild(container);
+            });
+        }
+
+        window.removePhoto = function(index) {
+            currentPhotos.splice(index, 1);
+            renderPhotoPreviews();
+        };
 
         window.savePatient = function() {
             const bedId = document.getElementById('currentBedId').value;
             const data = {
                 bedId: bedId,
+                numDossier: document.getElementById('eNumDossier').value.trim(),
+                medecinTraitant: document.getElementById('eMedecinTraitant').value.trim(),
+                statut: document.getElementById('eStatut').value,
                 nom: document.getElementById('eName').value.trim().toUpperCase(),
                 telephone: document.getElementById('eTel').value,
                 grp: document.getElementById('eGrp').value,
+                dob: document.getElementById('eDob').value,
                 age: document.getElementById('eAge').value,
                 poids: document.getElementById('ePoids').value,
                 taille: document.getElementById('eTaille').value,
                 bmi: document.getElementById('eBmi').value,
+                cmdSang: document.getElementById('eCmdSang').checked,
+                cmdMed: document.getElementById('eCmdMed').checked,
+                protocoleSortie: document.getElementById('eProtocoleSortie').checked,
                 dateEntree: document.getElementById('eDateEntree').value,
                 dateIntervention: document.getElementById('eDateIntervention').value,
                 dateSortie: document.getElementById('eDateSortie').value,
@@ -405,7 +657,8 @@
                 tdm: document.getElementById('eTdm').value,
                 irm: document.getElementById('eIrm').value,
                 endo: document.getElementById('eEndo').value,
-                remarques: document.getElementById('eRemarques').value
+                remarques: document.getElementById('eRemarques').value,
+                photos: currentPhotos
             };
 
             if(!data.nom) return alert("Le nom est obligatoire !");
@@ -413,15 +666,12 @@
             closeModal();
         };
 
-        // FONCTION MODIFIÉE : Archivage compatible avec archives.html
         window.archiveAndFreePatient = function() {
             const bedId = document.getElementById('currentBedId').value;
             const patient = patientsDb[bedId];
             if(!patient) return;
 
             if(confirm(`Voulez-vous libérer le lit ${bedId} et archiver le dossier de ${patient.nom} ?`)) {
-                
-                // Préparation des données d'archivage avec horodatage complet et numéro d'ancien lit
                 const archiveData = { 
                     ...patient, 
                     ancienLit: bedId,
@@ -440,7 +690,6 @@
             }
         };
 
-        // NOUVELLE FONCTION : Changement de lit
         window.changerDeLit = async function() {
             const oldBedId = document.getElementById('currentBedId').value;
             const patient = patientsDb[oldBedId];
@@ -450,7 +699,7 @@
             const newBedId = prompt("Entrez le numéro du nouveau lit (ex: 401F, 305P, REA1) :\nAttention : Assurez-vous que le nouveau lit est vide.");
             
             if (!newBedId || newBedId.trim() === "") return;
-            const formattedNewBed = newBedId.trim().toUpperCase(); // Formatage standard
+            const formattedNewBed = newBedId.trim().toUpperCase();
 
             if (formattedNewBed === oldBedId) {
                 alert("Le patient est déjà dans ce lit !");
@@ -460,20 +709,14 @@
             const newBedRef = ref(db, 'dossiers_patients/' + formattedNewBed);
 
             try {
-                // 1. Vérifier si le nouveau lit est libre
                 const newBedSnapshot = await get(newBedRef);
                 if (newBedSnapshot.exists() && newBedSnapshot.val().nom) {
                     alert("Opération annulée : Le lit " + formattedNewBed + " est déjà occupé !");
                     return;
                 }
 
-                // 2. Mettre à jour l'ID du lit dans les données
                 const newPatientData = { ...patient, bedId: formattedNewBed };
-
-                // 3. Copier les données vers le nouveau lit
                 await set(newBedRef, newPatientData);
-
-                // 4. Libérer (supprimer) l'ancien lit
                 await remove(ref(db, 'dossiers_patients/' + oldBedId));
 
                 alert(`Transfert réussi : Le patient a été déplacé vers le lit ${formattedNewBed}.`);
@@ -485,7 +728,6 @@
             }
         };
 
-        // Redirection depuis URL si paramètre bedId présent (Ex: depuis interventions)
         const urlParams = new URLSearchParams(window.location.search);
         const bedFromUrl = urlParams.get('bedId');
         if(bedFromUrl) {
