@@ -22,6 +22,11 @@
         .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
         input, select, textarea { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; }
         .btn { background: #0284c7; color: white; padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        
+        /* Style pour les flèches de date */
+        .nav-date-btn { background: #e2e8f0; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 1em; color: #1e293b; font-weight: bold; transition: background 0.2s; }
+        .nav-date-btn:hover { background: #cbd5e1; }
+        .no-block-day { background-color: #fef2f2 !important; color: #dc2626 !important; border-color: #dc2626 !important; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -34,14 +39,21 @@
     </div>
 
     <div class="header-doc">
-    <h3>ÉTABLISSEMENT PUBLIC HOSPITALIER SPÉCIALISÉ CENTRE PIERRE ET MARIE CURIE</h3>
-    <h4>Service de Chirurgie C ex Clinique Debussy</h4>
-    <h2 style="margin: 10px 0; color:#1e293b;">PROGRAMME OPÉRATOIRE</h2>
-    <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
-        <label><b>Date du Programme :</b></label>
-        <input type="date" id="progDate" style="width: auto;" onchange="loadProgramForDate()">
+        <h3>ÉTABLISSEMENT PUBLIC HOSPITALIER SPÉCIALISÉ CENTRE PIERRE ET MARIE CURIE</h3>
+        <h4>Service de Chirurgie C ex Clinique Debussy</h4>
+        <h2 style="margin: 10px 0; color:#1e293b;">PROGRAMME OPÉRATOIRE</h2>
+        
+        <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
+            <label><b>Date du Programme :</b></label>
+            <!-- Ajout des flèches autour du champ date -->
+            <button class="nav-date-btn" onclick="changeDate(-1)" title="Jour précédent">◀</button>
+            <input type="date" id="progDate" style="width: auto;" onchange="handleDateChange()">
+            <button class="nav-date-btn" onclick="changeDate(1)" title="Jour suivant">▶</button>
+        </div>
+        <div id="noBlockWarning" style="color:#dc2626; font-size:0.85em; font-weight:bold; margin-top:5px; display:none;">
+            ⚠️️ Pas de bloc opératoire prévu pour ce jour (Mardi ou Week-end).
+        </div>
     </div>
-</div>
 
 <div style="overflow-x:auto;">
     <table id="progTable">
@@ -86,7 +98,23 @@
         </div>
         <div><label>Lit + Patient</label><input type="text" id="addPatient" placeholder="402F: GUESMI NASSIMA"></div>
         <div><label>Âge</label><input type="number" id="addAge"></div>
-        <div><label>GRP</label><input type="text" id="addGrp" placeholder="A+"></div>
+        
+        <!-- Remplacement du champ texte GRP par une liste déroulante -->
+        <div>
+            <label>GRP</label>
+            <select id="addGrp">
+                <option value="">--</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+            </select>
+        </div>
+        
         <div><label>Diagnostic</label><input type="text" id="addDiag"></div>
     </div>
 
@@ -126,7 +154,7 @@
     let currentProgramLines = [];
     let activePatients = {};
 
-    // Correction pour récupérer la date locale exacte sans décalage UTC
+    // Initialisation de la date d'aujourd'hui
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -134,6 +162,41 @@
     const todayStr = `${year}-${month}-${day}`;
     
     document.getElementById('progDate').value = todayStr;
+
+    // --- NOUVEAU : Fonction pour naviguer dans les dates via les flèches ---
+    window.changeDate = function(daysToAdd) {
+        const dateInput = document.getElementById('progDate');
+        if(!dateInput.value) return;
+        
+        let currentDate = new Date(dateInput.value);
+        currentDate.setDate(currentDate.getDate() + daysToAdd);
+        
+        const y = currentDate.getFullYear();
+        const m = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const d = String(currentDate.getDate()).padStart(2, '0');
+        
+        dateInput.value = `${y}-${m}-${d}`;
+        handleDateChange(); // Met à jour les couleurs et charge le programme
+    };
+
+    // --- NOUVEAU : Fonction pour vérifier si le jour est rouge et charger le programme ---
+    window.handleDateChange = function() {
+        const dateInput = document.getElementById('progDate');
+        const warning = document.getElementById('noBlockWarning');
+        const dateVal = new Date(dateInput.value);
+        const dayOfWeek = dateVal.getDay(); // 0 = Dimanche, 1 = Lundi, 2 = Mardi, 5 = Vendredi, 6 = Samedi
+        
+        // Mettre en rouge pour Mardi(2), Vendredi(5) et Samedi(6)
+        if (dayOfWeek === 2 || dayOfWeek === 5 || dayOfWeek === 6) {
+            dateInput.classList.add('no-block-day');
+            warning.style.display = 'block';
+        } else {
+            dateInput.classList.remove('no-block-day');
+            warning.style.display = 'none';
+        }
+        
+        loadProgramForDate();
+    };
 
     onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
         activePatients = snapshot.val() || {};
@@ -273,7 +336,7 @@
         const date = document.getElementById('progDate').value;
         if(!date) return alert("Veuillez sélectionner une date.");
         set(ref(db, 'programmes_operatoires/' + date), currentProgramLines).then(() => {
-            alert("Programme opératoire enregistré et archivé avec succès !");
+            alert("Programme opératoire enregistré avec succès !");
         });
     };
 
@@ -285,6 +348,8 @@
         }, { onlyOnce: true });
     };
 
-    // Chargement initial du programme pour la date du jour
-    loadProgramForDate();
+    // Chargement initial avec la vérification des jours rouges
+    handleDateChange();
 </script>
+</body>
+</html>
