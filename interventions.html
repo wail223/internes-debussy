@@ -27,6 +27,24 @@
         .nav-date-btn { background: #e2e8f0; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 1em; color: #1e293b; font-weight: bold; transition: background 0.2s; }
         .nav-date-btn:hover { background: #cbd5e1; }
         .no-block-day { background-color: #fef2f2 !important; color: #dc2626 !important; border-color: #dc2626 !important; font-weight: bold; }
+        
+        /* Bannière d'auto-sauvegarde */
+        .auto-save-badge {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.95em;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
     </style>
 </head>
 <body>
@@ -130,7 +148,10 @@
     </div>
 </div>
 
-<button class="btn" onclick="saveCurrentProgram()" style="background:#16a34a; width:100%; font-size:1.1em; padding:15px;">💾 Enregistrer le Programme du Jour</button>
+<!-- BANNIÈRE DE CONFIRMATION AUTO-SAUVEGARDE -->
+<div class="auto-save-badge">
+    <span>✅ Sauvegarde automatique en temps réel activée</span>
+</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -175,7 +196,14 @@
     
     document.getElementById('progDate').value = defaultDateStr;
 
-    // Fonction pour naviguer dans les dates via les flèches
+    // FONCTION DE SAUVEGARDE AUTOMATIQUE EN TEMPS RÉEL
+    function autoSaveProgram() {
+        const date = document.getElementById('progDate').value;
+        if (!date) return;
+        set(ref(db, 'programmes_operatoires/' + date), currentProgramLines);
+    }
+
+    // Navigation de date via les flèches
     window.changeDate = function(daysToAdd) {
         const dateInput = document.getElementById('progDate');
         if(!dateInput.value) return;
@@ -191,7 +219,6 @@
         handleDateChange();
     };
 
-    // Fonction pour vérifier si le jour est sans bloc et charger le programme
     window.handleDateChange = function() {
         const dateInput = document.getElementById('progDate');
         const warning = document.getElementById('noBlockWarning');
@@ -209,7 +236,7 @@
         loadProgramForDate();
     };
 
-    // Synchronisation automatique des numéros de lit dans le programme
+    // Synchronisation automatique des lits
     function syncBedsWithActivePatients() {
         if (!currentProgramLines || currentProgramLines.length === 0 || !activePatients) return false;
         let hasChanges = false;
@@ -254,10 +281,7 @@
 
         if (syncBedsWithActivePatients()) {
             renderProgramTable();
-            const date = document.getElementById('progDate').value;
-            if (date) {
-                set(ref(db, 'programmes_operatoires/' + date), currentProgramLines);
-            }
+            autoSaveProgram();
         }
     });
 
@@ -274,6 +298,7 @@
         }
     };
 
+    // AJOUT OU MODIFICATION D'UNE LIGNE + AUTO-SAUVEGARDE
     window.saveOrAddInterventionLine = function() {
         const editIdx = parseInt(document.getElementById('editIndex').value);
         const line = {
@@ -297,6 +322,7 @@
         }
 
         renderProgramTable();
+        autoSaveProgram(); // Auto-sauvegarde instantanée dans Firebase
         resetForm();
     };
 
@@ -369,28 +395,24 @@
         `).join('');
     }
 
+    // CHANGEMENT DE STATUT + AUTO-SAUVEGARDE
     window.updateStatus = function(index, val) {
         currentProgramLines[index].statut = val;
         renderProgramTable();
+        autoSaveProgram(); // Auto-sauvegarde instantanée dans Firebase
     };
 
+    // SUPPRESSION DE LIGNE + AUTO-SAUVEGARDE
     window.removeLine = function(index) {
         if(confirm("Êtes-vous sûr de vouloir supprimer ce patient du programme opératoire ?")) {
             currentProgramLines.splice(index, 1);
             renderProgramTable();
+            autoSaveProgram(); // Auto-sauvegarde instantanée dans Firebase
         }
     };
 
     window.goToDossier = function(bedId) {
         if(bedId) window.location.href = `patients.html?bedId=${bedId}`;
-    };
-
-    window.saveCurrentProgram = function() {
-        const date = document.getElementById('progDate').value;
-        if(!date) return alert("Veuillez sélectionner une date.");
-        set(ref(db, 'programmes_operatoires/' + date), currentProgramLines).then(() => {
-            alert("Programme opératoire enregistré avec succès !");
-        });
     };
 
     window.loadProgramForDate = function() {
