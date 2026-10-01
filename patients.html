@@ -102,27 +102,34 @@
         .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
         .gallery-img { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; }
 
-        /* LÉGENDE FLOTTANTE EN BAS À DROITE */
+        /* LÉGENDE FLOTTANTE EN BAS À DROITE (REPLIABLE) */
         .legend-box {
             position: fixed;
-            bottom: 15px;
-            right: 15px;
+            bottom: 12px;
+            right: 12px;
             background: #ffffff;
             border: 1px solid #cbd5e1;
             border-radius: 12px;
-            padding: 10px 14px;
+            padding: 8px 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 990;
             font-size: 0.8em;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
         }
         .legend-title {
             font-weight: 700;
-            margin-bottom: 2px;
             color: var(--text);
             font-size: 0.85em;
+            cursor: pointer;
+            list-style: none;
+            outline: none;
+            user-select: none;
+        }
+        .legend-title::-webkit-details-marker { display: none; }
+        .legend-content {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 8px;
         }
         .legend-item {
             display: flex;
@@ -144,17 +151,17 @@
         /* LISTE FLOTTANTE DES PATIENTS À SURVEILLER EN BAS À GAUCHE */
         .surveillance-box {
             position: fixed;
-            bottom: 15px;
-            left: 15px;
+            bottom: 12px;
+            left: 12px;
             background: #ffffff;
             border: 1px solid #fca5a5;
             border-radius: 12px;
-            padding: 10px 14px;
+            padding: 10px 12px;
             box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
             z-index: 990;
             font-size: 0.8em;
-            max-width: 250px;
-            max-height: 200px;
+            width: 240px;
+            max-height: 190px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -173,14 +180,13 @@
         .surveillance-list {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 5px;
         }
         .surveillance-item {
             background: #fef2f2;
             border: 1px solid #fecaca;
             padding: 6px 8px;
             border-radius: 6px;
-            font-weight: 600;
             color: #991b1b;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -193,11 +199,49 @@
             background: #fee2e2;
             transform: translateY(-1px);
         }
+        .surveillance-bed {
+            font-size: 0.8em;
+            font-weight: 700;
+            background: #fca5a5;
+            color: #7f1d1d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .surveillance-name {
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
         .surveillance-empty {
             color: var(--text-light);
             font-style: italic;
             font-size: 0.85em;
             margin-top: 2px;
+        }
+
+        /* GESTION RESPONSIVE SPÉCIALE MOBILE POUR ÉVITER TOUTE SUPERPOSITION */
+        @media (max-width: 640px) {
+            .surveillance-box {
+                bottom: 10px;
+                left: 10px;
+                width: calc(100vw - 145px);
+                max-width: 220px;
+                max-height: 150px;
+                padding: 8px 10px;
+                font-size: 0.75em;
+            }
+            .surveillance-name {
+                max-width: 100px;
+            }
+            .legend-box {
+                bottom: 10px;
+                right: 10px;
+                padding: 6px 10px;
+                font-size: 0.75em;
+            }
         }
     </style>
 </head>
@@ -237,13 +281,15 @@
         </div>
     </div>
 
-    <!-- LÉGENDE DES COULEURS EN BAS À DROITE -->
-    <div class="legend-box">
-        <div class="legend-title">🎨 Légende Statuts</div>
-        <div class="legend-item"><span class="legend-color legend-red"></span> Rouge : À surveiller</div>
-        <div class="legend-item"><span class="legend-color legend-yellow"></span> Jaune : Au bloc / en train d'être opéré</div>
-        <div class="legend-item"><span class="legend-color legend-green"></span> Vert : Post-opératoire stable</div>
-    </div>
+    <!-- LÉGENDE DES COULEURS EN BAS À DROITE (ACCORDÉON DEPLIABLE) -->
+    <details class="legend-box" open id="legendDetails">
+        <summary class="legend-title">🎨 Légende ▾</summary>
+        <div class="legend-content">
+            <div class="legend-item"><span class="legend-color legend-red"></span> Rouge : À surveiller</div>
+            <div class="legend-item"><span class="legend-color legend-yellow"></span> Jaune : Au bloc</div>
+            <div class="legend-item"><span class="legend-color legend-green"></span> Vert : Post-op stable</div>
+        </div>
+    </details>
 
     <!-- MODAL DOSSIER PATIENT -->
     <div id="patientModal" class="modal">
@@ -442,6 +488,12 @@
         let patientsDb = {};
         let currentPhotos = [];
 
+        // Fermeture automatique de la légende au chargement sur mobile
+        if (window.innerWidth <= 640) {
+            const legendDetails = document.getElementById('legendDetails');
+            if(legendDetails) legendDetails.removeAttribute('open');
+        }
+
         // Génération des lits pour chaque étage
         function buildGrid(gridId, start, end, isRea = false) {
             const grid = document.getElementById(gridId);
@@ -486,7 +538,7 @@
         buildGrid('grid-3', 301, 308);
         buildGrid('grid-rea', 1, 6, true);
 
-        // Ecouteur temps réel Firebase pour mettre à jour les boutons, NOMS, COULEURS et LISTE À SURVEILLER
+        // Ecouteur temps réel Firebase
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
             patientsDb = snapshot.val() || {};
             let countSurveillance = 0;
@@ -507,10 +559,11 @@
                     if(statut === 'surveiller') {
                         btn.classList.add('status-surveiller');
                         countSurveillance++;
+                        // LOCALISATION (LIT) PUIS NOM DU PATIENT
                         surveillanceHtml += `
                             <div class="surveillance-item" onclick="openModal('${bedId}')">
-                                <span><b>Lit ${bedId}</b></span>
-                                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${patientsDb[bedId].nom}</span>
+                                <span class="surveillance-bed">Lit ${bedId}</span>
+                                <span class="surveillance-name">${patientsDb[bedId].nom}</span>
                             </div>
                         `;
                     }
@@ -818,7 +871,7 @@
             closeModal();
         };
 
-        // Libération du patient avec confirmation et choix de la date de sortie (par défaut aujourd'hui)
+        // Libération du patient avec confirmation
         window.archiveAndFreePatient = function() {
             const bedId = document.getElementById('currentBedId').value;
             const patient = patientsDb[bedId];
@@ -829,7 +882,6 @@
 
             const inputDate = prompt(`Entrez ou confirmez la date de sortie de ${patient.nom} (Format: AAAA-MM-JJ) :`, defaultDate);
 
-            // Si l'utilisateur clique sur Annuler
             if (inputDate === null) return;
 
             const dateSortieEffective = inputDate.trim() || today;
