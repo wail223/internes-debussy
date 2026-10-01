@@ -45,13 +45,12 @@
         
         <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
             <label><b>Date du Programme :</b></label>
-            <!-- Ajout des flèches autour du champ date -->
             <button class="nav-date-btn" onclick="changeDate(-1)" title="Jour précédent">◀</button>
             <input type="date" id="progDate" style="width: auto;" onchange="handleDateChange()">
             <button class="nav-date-btn" onclick="changeDate(1)" title="Jour suivant">▶</button>
         </div>
         <div id="noBlockWarning" style="color:#dc2626; font-size:0.85em; font-weight:bold; margin-top:5px; display:none;">
-            ⚠️️ Pas de bloc opératoire prévu pour ce jour (Mardi ou Week-end).
+            ⚠ Pas de bloc opératoire prévu pour ce jour (Mardi ou Week-end).
         </div>
     </div>
 
@@ -99,7 +98,6 @@
         <div><label>Lit + Patient</label><input type="text" id="addPatient" placeholder="402F: GUESMI NASSIMA"></div>
         <div><label>Âge</label><input type="number" id="addAge"></div>
         
-        <!-- Remplacement du champ texte GRP par une liste déroulante -->
         <div>
             <label>GRP</label>
             <select id="addGrp">
@@ -153,17 +151,31 @@
     
     let currentProgramLines = [];
     let activePatients = {};
+    let unsubscribeProgram = null;
 
-    // Initialisation de la date d'aujourd'hui
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const todayStr = `${year}-${month}-${day}`;
+    // --- CALCUL AUTOMATIQUE DE LA DATE DE DÉPART (Dimanche si Week-end, Mercredi si Mardi) ---
+    let targetDate = new Date();
+    const currentDay = targetDate.getDay(); // 0 = Dimanche, 2 = Mardi, 5 = Vendredi, 6 = Samedi
+
+    if (currentDay === 5) {
+        // Vendredi -> Aller au Dimanche (+2 jours)
+        targetDate.setDate(targetDate.getDate() + 2);
+    } else if (currentDay === 6) {
+        // Samedi -> Aller au Dimanche (+1 jour)
+        targetDate.setDate(targetDate.getDate() + 1);
+    } else if (currentDay === 2) {
+        // Mardi -> Aller au Mercredi (+1 jour)
+        targetDate.setDate(targetDate.getDate() + 1);
+    }
+
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    const defaultDateStr = `${year}-${month}-${day}`;
     
-    document.getElementById('progDate').value = todayStr;
+    document.getElementById('progDate').value = defaultDateStr;
 
-    // --- NOUVEAU : Fonction pour naviguer dans les dates via les flèches ---
+    // Fonction pour naviguer dans les dates via les flèches
     window.changeDate = function(daysToAdd) {
         const dateInput = document.getElementById('progDate');
         if(!dateInput.value) return;
@@ -176,17 +188,16 @@
         const d = String(currentDate.getDate()).padStart(2, '0');
         
         dateInput.value = `${y}-${m}-${d}`;
-        handleDateChange(); // Met à jour les couleurs et charge le programme
+        handleDateChange();
     };
 
-    // --- NOUVEAU : Fonction pour vérifier si le jour est rouge et charger le programme ---
+    // Fonction pour vérifier si le jour est sans bloc et charger le programme
     window.handleDateChange = function() {
         const dateInput = document.getElementById('progDate');
         const warning = document.getElementById('noBlockWarning');
         const dateVal = new Date(dateInput.value);
-        const dayOfWeek = dateVal.getDay(); // 0 = Dimanche, 1 = Lundi, 2 = Mardi, 5 = Vendredi, 6 = Samedi
+        const dayOfWeek = dateVal.getDay();
         
-        // Mettre en rouge pour Mardi(2), Vendredi(5) et Samedi(6)
         if (dayOfWeek === 2 || dayOfWeek === 5 || dayOfWeek === 6) {
             dateInput.classList.add('no-block-day');
             warning.style.display = 'block';
@@ -198,6 +209,40 @@
         loadProgramForDate();
     };
 
+    // Synchronisation automatique des numéros de lit dans le programme
+    function syncBedsWithActivePatients() {
+        if (!currentProgramLines || currentProgramLines.length === 0 || !activePatients) return false;
+        let hasChanges = false;
+
+        currentProgramLines.forEach(line => {
+            if (!line.patientText) return;
+
+            let pName = line.patientText;
+            if (pName.includes(':')) {
+                pName = pName.split(':').slice(1).join(':').trim();
+            } else {
+                pName = pName.trim();
+            }
+            pName = pName.toUpperCase();
+
+            if (!pName) return;
+
+            const newBedId = Object.keys(activePatients).find(bedId => {
+                const p = activePatients[bedId];
+                return p && p.nom && p.nom.trim().toUpperCase() === pName;
+            });
+
+            if (newBedId && line.bedId !== newBedId) {
+                line.bedId = newBedId;
+                line.patientText = `${newBedId}: ${activePatients[newBedId].nom.toUpperCase()}`;
+                hasChanges = true;
+            }
+        });
+
+        return hasChanges;
+    }
+
+    // Écoute en temps réel des dossiers patients hospitalisés
     onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
         activePatients = snapshot.val() || {};
         const select = document.getElementById('selectPatient');
@@ -206,6 +251,14 @@
             const p = activePatients[bedId];
             if(p.nom) { select.innerHTML += `<option value="${bedId}">${bedId} : ${p.nom}</option>`; }
         });
+
+        if (syncBedsWithActivePatients()) {
+            renderProgramTable();
+            const date = document.getElementById('progDate').value;
+            if (date) {
+                set(ref(db, 'programmes_operatoires/' + date), currentProgramLines);
+            }
+        }
     });
 
     window.autoFillPatientData = function() {
@@ -342,13 +395,16 @@
 
     window.loadProgramForDate = function() {
         const date = document.getElementById('progDate').value;
-        onValue(ref(db, 'programmes_operatoires/' + date), (snapshot) => {
+        if (unsubscribeProgram) unsubscribeProgram();
+
+        unsubscribeProgram = onValue(ref(db, 'programmes_operatoires/' + date), (snapshot) => {
             currentProgramLines = snapshot.val() || [];
+            syncBedsWithActivePatients();
             renderProgramTable();
-        }, { onlyOnce: true });
+        });
     };
 
-    // Chargement initial avec la vérification des jours rouges
+    // Chargement initial
     handleDateChange();
 </script>
 </body>
