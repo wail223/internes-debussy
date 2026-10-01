@@ -60,9 +60,9 @@
             color: #854d0e !important;
         }
         .bed-btn.status-postop {
-            background-color: #eff6ff !important;
-            border: 2px solid #3b82f6 !important;
-            color: #1e40af !important;
+            background-color: #f0fdf4 !important;
+            border: 2px solid #16a34a !important;
+            color: #15803d !important;
         }
 
         .bed-code { font-size: 0.8em; opacity: 0.8; text-transform: uppercase; }
@@ -139,7 +139,7 @@
         }
         .legend-red { background-color: #fef2f2; border: 2px solid #ef4444; }
         .legend-yellow { background-color: #fefce8; border: 2px solid #eab308; }
-        .legend-blue { background-color: #eff6ff; border: 2px solid #3b82f6; }
+        .legend-green { background-color: #f0fdf4; border: 2px solid #16a34a; }
     </style>
 </head>
 <body>
@@ -172,7 +172,7 @@
         <div class="legend-title">🎨 Légende Statuts</div>
         <div class="legend-item"><span class="legend-color legend-red"></span> Rouge : À surveiller</div>
         <div class="legend-item"><span class="legend-color legend-yellow"></span> Jaune : Au bloc / en train d'être opéré</div>
-        <div class="legend-item"><span class="legend-color legend-blue"></span> Bleu : Post-opératoire stable</div>
+        <div class="legend-item"><span class="legend-color legend-green"></span> Vert : Post-opératoire stable</div>
     </div>
 
     <!-- MODAL DOSSIER PATIENT -->
@@ -264,7 +264,7 @@
                         <option value="normal">⚪ Couleur de base (Non opéré encore)</option>
                         <option value="surveiller">🔴 À surveiller (Rouge)</option>
                         <option value="bloc">🟡 Au bloc / En train d'être opéré (Jaune)</option>
-                        <option value="postop">🔵 Post-opératoire stable (Bleu)</option>
+                        <option value="postop">🟢 Post-opératoire stable (Vert)</option>
                     </select>
                 </div>
 
@@ -490,7 +490,7 @@
                     'normal': '⚪ Normal / Non opéré',
                     'surveiller': '🔴 À surveiller',
                     'bloc': '🟡 Au bloc opératoire',
-                    'postop': '🔵 Post-opératoire stable'
+                    'postop': '🟢 Post-opératoire stable'
                 };
                 document.getElementById('vStatut').textContent = statutLabels[p.statut] || '⚪ Normal / Non opéré';
                 
