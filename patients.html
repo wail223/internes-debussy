@@ -1,6 +1,38 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
+        authDomain: "internes-debussy.firebaseapp.com",
+        databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "internes-debussy",
+        storageBucket: "internes-debussy.firebasestorage.app",
+        messagingSenderId: "614550756274",
+        appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Vérifier si l'utilisateur est connecté
+    onAuthStateChanged(auth, (user) => {
+        if (!user) {
+            // Si non connecté, redirection vers la page de connexion
+            window.location.href = "login.html";
+        }
+    });
+
+    // Fonction globale de déconnexion à appeler si besoin
+    window.logout = function() {
+        signOut(auth).then(() => {
+            window.location.href = "login.html";
+        });
+    };
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dossiers Patients - CPMC Debussy</title>
