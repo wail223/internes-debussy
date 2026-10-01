@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dossiers Patients - CPMC Debussy</title>
+    <!-- Script pour la conversion automatique des photos HEIC (iPhone) en JPEG -->
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <style>
         :root {
             --primary: #0284c7;
@@ -99,6 +101,45 @@
 
         .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
         .gallery-img { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; }
+
+        /* LÉGENDE FLOTTANTE EN BAS À DROITE */
+        .legend-box {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 10px 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 990;
+            font-size: 0.8em;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .legend-title {
+            font-weight: 700;
+            margin-bottom: 2px;
+            color: var(--text);
+            font-size: 0.85em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .legend-red { background-color: #fef2f2; border: 2px solid #ef4444; }
+        .legend-yellow { background-color: #fefce8; border: 2px solid #eab308; }
+        .legend-blue { background-color: #eff6ff; border: 2px solid #3b82f6; }
     </style>
 </head>
 <body>
@@ -107,7 +148,7 @@
         <div class="top-bar">
             <h2 style="margin:0; color: var(--primary);">🏥 CPMC Debussy</h2>
         </div>
-       <div class="nav-links">
+        <div class="nav-links">
             <a href="index.html" class="nav-btn">🏠 Accueil</a>
             <a href="patients.html" class="nav-btn active">🛏️ Lits / Hospitalisation</a>
             <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
@@ -125,6 +166,14 @@
     <div id="floor-4" class="floor active"><div class="grid" id="grid-4"></div></div>
     <div id="floor-3" class="floor"><div class="grid" id="grid-3"></div></div>
     <div id="floor-rea" class="floor"><div class="grid" id="grid-rea"></div></div>
+
+    <!-- LÉGENDE DES COULEURS EN BAS À DROITE -->
+    <div class="legend-box">
+        <div class="legend-title">🎨 Légende Statuts</div>
+        <div class="legend-item"><span class="legend-color legend-red"></span> Rouge : À surveiller</div>
+        <div class="legend-item"><span class="legend-color legend-yellow"></span> Jaune : Au bloc / en train d'être opéré</div>
+        <div class="legend-item"><span class="legend-color legend-blue"></span> Bleu : Post-opératoire stable</div>
+    </div>
 
     <!-- MODAL DOSSIER PATIENT -->
     <div id="patientModal" class="modal">
@@ -246,7 +295,7 @@
                 </div>
 
                 <div class="section-card" style="background:#fff;">
-                    <div class="section-title">☑️️ Procédures & Suivi</div>
+                    <div class="section-title">☑ Procédures & Suivi</div>
                     <div class="checkbox-group">
                         <label class="checkbox-item"><input type="checkbox" id="eCmdSang"> Commande de sang faite</label>
                         <label class="checkbox-item"><input type="checkbox" id="eCmdMed"> Commande de médicament faite</label>
@@ -293,8 +342,8 @@
                 <div class="form-group"><label>Remarques / Transmissions</label><textarea id="eRemarques" rows="3"></textarea></div>
 
                 <div class="form-group">
-                    <label>📸 Ajouter des Photos</label>
-                    <input type="file" id="ePhotos" multiple accept="image/*" onchange="handlePhotoUpload(event)">
+                    <label>📸 Ajouter des Photos (Formats supportés: JPG, PNG, HEIC...)</label>
+                    <input type="file" id="ePhotos" multiple accept="image/*,.heic,.HEIC" onchange="handlePhotoUpload(event)">
                     <div id="photosPreview" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;"></div>
                 </div>
 
@@ -567,9 +616,26 @@
             renderPhotoPreviews();
         }
 
-        window.handlePhotoUpload = function(event) {
+        // Gestion de l'upload des photos y compris le format HEIC
+        window.handlePhotoUpload = async function(event) {
             const files = Array.from(event.target.files);
-            files.forEach(file => {
+            
+            for (const file of files) {
+                let blobToRead = file;
+                const fileName = file.name.toLowerCase();
+                
+                // Conversion si format HEIC (iPhone)
+                if (fileName.endsWith('.heic') || file.type.includes('heic')) {
+                    try {
+                        if (window.heic2any) {
+                            const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 });
+                            blobToRead = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+                        }
+                    } catch (err) {
+                        console.error("Erreur lors de la conversion du fichier HEIC :", err);
+                    }
+                }
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const img = new Image();
@@ -599,8 +665,8 @@
                     };
                     img.src = e.target.result;
                 };
-                reader.readAsDataURL(file);
-            });
+                reader.readAsDataURL(blobToRead);
+            }
             event.target.value = '';
         };
 
@@ -666,14 +732,27 @@
             closeModal();
         };
 
+        // Libération du patient avec confirmation et choix de la date de sortie (par défaut aujourd'hui)
         window.archiveAndFreePatient = function() {
             const bedId = document.getElementById('currentBedId').value;
             const patient = patientsDb[bedId];
             if(!patient) return;
 
-            if(confirm(`Voulez-vous libérer le lit ${bedId} et archiver le dossier de ${patient.nom} ?`)) {
+            const today = new Date().toISOString().split('T')[0];
+            const defaultDate = patient.dateSortie || today;
+
+            const inputDate = prompt(`Entrez ou confirmez la date de sortie de ${patient.nom} (Format: AAAA-MM-JJ) :`, defaultDate);
+
+            // Si l'utilisateur clique sur Annuler
+            if (inputDate === null) return;
+
+            const dateSortieEffective = inputDate.trim() || today;
+
+            if(confirm(`Voulez-vous libérer le lit ${bedId} et archiver le dossier de ${patient.nom} avec la date de sortie du ${dateSortieEffective} ?`)) {
                 const archiveData = { 
                     ...patient, 
+                    dateSortie: dateSortieEffective,
+                    dateSortieReelle: dateSortieEffective,
                     ancienLit: bedId,
                     dateArchivage: new Date().toISOString(),
                     timestampId: Date.now()
@@ -682,7 +761,7 @@
                 push(ref(db, 'archives_patients/'), archiveData).then(() => {
                     remove(ref(db, 'dossiers_patients/' + bedId));
                     closeModal();
-                    alert("Patient archivé avec succès !");
+                    alert(`Patient ${patient.nom} libéré et archivé avec succès !`);
                 }).catch(error => {
                     console.error("Erreur d'archivage :", error);
                     alert("Une erreur est survenue lors de l'archivage.");
