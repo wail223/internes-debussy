@@ -7,38 +7,38 @@
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .login-card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 360px; text-align: center; }
-        .login-card h2 { color: #0284c7; margin-top: 0; }
+        .login-card h2 { color: #0284c7; margin-top: 0; margin-bottom: 5px; }
         .form-group { text-align: left; margin-bottom: 15px; }
         .form-group label { display: block; font-size: 0.85em; font-weight: 600; color: #334155; margin-bottom: 5px; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-        .btn-login { width: 100%; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 1em; cursor: pointer; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 15px; background: #f8fafc; }
+        .btn-login { width: 100%; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 1em; cursor: pointer; margin-top: 10px; }
         .btn-login:hover { background: #0369a1; }
-        #errorMsg { color: #dc2626; font-size: 0.85em; margin-top: 15px; display: none; background: #fef2f2; padding: 10px; border-radius: 8px; border: 1px solid #fecaca; text-align: left; word-break: break-word; }
+        #errorMsg { color: #dc2626; font-size: 0.85em; margin-top: 15px; display: none; background: #fef2f2; padding: 10px; border-radius: 8px; border: 1px solid #fecaca; text-align: center; font-weight: 600; }
     </style>
 </head>
 <body>
 
 <div class="login-card">
     <h2>🏥 CPMC Debussy</h2>
-    <p style="color: #64748b; font-size:0.9em; margin-bottom:20px;">Connexion au portail restreint</p>
+    <p style="color: #64748b; font-size:0.9em; margin-bottom:20px;">Connexion au portail</p>
 
     <div class="form-group">
-        <label>Identifiant (Pseudo ou Email)</label>
-        <input type="text" id="email" placeholder="ex: dr.wail">
+        <label>Nom d'utilisateur (Pseudo)</label>
+        <input type="text" id="username" placeholder="ex: wail" autocomplete="username">
     </div>
 
     <div class="form-group">
         <label>Mot de passe</label>
-        <input type="password" id="password" placeholder="••••••••">
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
     </div>
 
     <button class="btn-login" onclick="login()">Se connecter</button>
-    <div id="errorMsg"></div>
+    <div id="errorMsg">Nom d'utilisateur ou mot de passe incorrect.</div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
@@ -51,28 +51,50 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    // Si déjà connecté, rediriger automatiquement vers l'accueil
+    if (localStorage.getItem('cpmc_user')) {
+        window.location.href = "index.html";
+    }
 
     window.login = async function() {
-        let inputVal = document.getElementById('email').value.trim().toLowerCase();
+        const username = document.getElementById('username').value.trim().toLowerCase();
         const password = document.getElementById('password').value;
         const errorMsg = document.getElementById('errorMsg');
 
-        if (!inputVal || !password) {
-            errorMsg.innerHTML = "<b>Erreur :</b> Veuillez remplir tous les champs.";
+        errorMsg.style.display = "none";
+
+        if (!username || !password) {
+            errorMsg.textContent = "Veuillez remplir tous les champs.";
             errorMsg.style.display = "block";
             return;
         }
 
-        // Si l'utilisateur tape juste un pseudo (ex: "dr.wail"), rajouter automatiquement le suffixe
-        let fullEmail = inputVal.includes('@') ? inputVal : inputVal + "@debussy.local";
-
         try {
-            await signInWithEmailAndPassword(auth, fullEmail, password);
-            window.location.href = "index.html";
+            const userRef = ref(db, 'utilisateurs/' + username);
+            const snapshot = await get(userRef);
+
+            if (snapshot.exists()) {
+                const userData = snapshot.val();
+                if (userData.pass === password) {
+                    // Sauvegarder la session sur l'appareil (reste connecté indéfiniment)
+                    localStorage.setItem('cpmc_user', JSON.stringify({
+                        username: username,
+                        nom: userData.nom || username
+                    }));
+                    window.location.href = "index.html";
+                } else {
+                    errorMsg.textContent = "Mot de passe incorrect.";
+                    errorMsg.style.display = "block";
+                }
+            } else {
+                errorMsg.textContent = "Nom d'utilisateur inexistant.";
+                errorMsg.style.display = "block";
+            }
         } catch (error) {
-            console.error("Détails erreur Firebase :", error);
-            errorMsg.innerHTML = `<b>Code Erreur :</b> ${error.code}<br><small>${error.message}</small>`;
+            console.error("Erreur de connexion :", error);
+            errorMsg.textContent = "Erreur de connexion au serveur.";
             errorMsg.style.display = "block";
         }
     };
