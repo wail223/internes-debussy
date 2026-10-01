@@ -68,12 +68,16 @@
         .bed-code { font-size: 0.8em; opacity: 0.8; text-transform: uppercase; }
         .bed-patient-name { font-size: 0.95em; font-weight: bold; word-break: break-word; }
 
-        /* Modal */
+        /* Modal Général */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); align-items: flex-end; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
         .modal.active { display: flex; }
         .modal-content { background: var(--card); width: 100%; max-width: 650px; height: 92vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; box-sizing: border-box; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; z-index: 10; }
         .close-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2em; cursor: pointer; }
+
+        /* Modal Changement de lit spécifique */
+        #transferModal { align-items: center; }
+        #transferModal .modal-content { height: auto; max-width: 480px; border-radius: 20px; padding: 20px; }
 
         .section-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
         .section-title { font-size: 0.85em; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 10px; }
@@ -469,6 +473,34 @@
         </div>
     </div>
 
+    <!-- MODAL POPUP SÉLECTION CHANGEMENT DE LIT -->
+    <div id="transferModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin:0; color:var(--primary);">🔀 Transfert de Lit</h3>
+                <button class="close-btn" onclick="closeTransferModal()">✕</button>
+            </div>
+            <div style="margin-top: 15px;">
+                <p style="font-size:0.95em; color:var(--text); margin-bottom:15px; line-height:1.4;">
+                    Déplacer le patient <strong id="transferPatientName" style="color:var(--primary);"></strong><br>
+                    <span style="font-size:0.85em; color:var(--text-light);">Lit actuel : <b id="transferCurrentBed"></b></span>
+                </p>
+                
+                <div class="form-group">
+                    <label style="font-size:0.85em; font-weight:bold; color:var(--text);">Sélectionner le nouveau lit disponible :</label>
+                    <select id="selectNewBed" style="padding:12px; font-size:0.95em; border-radius:8px; border:1px solid #cbd5e1; width:100%; margin-top:6px; background:#f8fafc; font-weight:600;">
+                        <!-- Les lits vides seront générés dynamiquement -->
+                    </select>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:8px; margin-top:20px;">
+                    <button class="btn-main" onclick="confirmBedTransfer()" style="background:var(--success);">✅ Confirmer le transfert</button>
+                    <button class="btn-main" onclick="closeTransferModal()" style="background:transparent; color:var(--text); border:1px solid #cbd5e1;">Annuler</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, onValue, remove, push, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -487,6 +519,22 @@
         const db = getDatabase(app);
         let patientsDb = {};
         let currentPhotos = [];
+
+        // Liste exhaustive de tous les lits de l'établissement
+        const ALL_BEDS = [];
+        for(let i=401; i<=408; i++) { ALL_BEDS.push(`${i}P`, `${i}F`); }
+        for(let i=301; i<=308; i++) { ALL_BEDS.push(`${i}P`, `${i}F`); }
+        for(let i=1; i<=6; i++) { ALL_BEDS.push(`REA${i}`); }
+
+        function getBedLabel(bedId) {
+            if (bedId.startsWith('REA')) {
+                return `🚨 Réanimation — Lit R${bedId.replace('REA','')}`;
+            }
+            const floor = bedId.startsWith('4') ? '4ème Étage' : '3ème Étage';
+            const type = bedId.endsWith('P') ? 'Porte' : 'Fenêtre';
+            const room = bedId.substring(0, 3);
+            return `🛏️ ${floor} — Chambre ${room} (${type}) [Lit ${bedId}]`;
+        }
 
         // Fermeture automatique de la légende au chargement sur mobile
         if (window.innerWidth <= 640) {
@@ -559,7 +607,6 @@
                     if(statut === 'surveiller') {
                         btn.classList.add('status-surveiller');
                         countSurveillance++;
-                        // LOCALISATION (LIT) PUIS NOM DU PATIENT
                         surveillanceHtml += `
                             <div class="surveillance-item" onclick="openModal('${bedId}')">
                                 <span class="surveillance-bed">Lit ${bedId}</span>
@@ -907,38 +954,72 @@
             }
         };
 
-        window.changerDeLit = async function() {
+        // OUVRIR LE MODAL DE SÉLECTION DU NOUVEAU LIT
+        window.changerDeLit = function() {
+            const currentBedId = document.getElementById('currentBedId').value;
+            const patient = patientsDb[currentBedId];
+            
+            if (!patient || !patient.nom) return;
+
+            // Filtrer uniquement les lits réellement VIDES
+            const emptyBeds = ALL_BEDS.filter(bedId => !patientsDb[bedId] || !patientsDb[bedId].nom);
+
+            if (emptyBeds.length === 0) {
+                alert("Aucun lit n'est actuellement disponible dans tout l'établissement !");
+                return;
+            }
+
+            // Alimenter la liste déroulante avec les lits disponibles
+            const select = document.getElementById('selectNewBed');
+            select.innerHTML = '';
+            
+            emptyBeds.forEach(bedId => {
+                const opt = document.createElement('option');
+                opt.value = bedId;
+                opt.textContent = getBedLabel(bedId);
+                select.appendChild(opt);
+            });
+
+            document.getElementById('transferPatientName').textContent = patient.nom;
+            document.getElementById('transferCurrentBed').textContent = currentBedId;
+
+            document.getElementById('transferModal').classList.add('active');
+        };
+
+        window.closeTransferModal = function() {
+            document.getElementById('transferModal').classList.remove('active');
+        };
+
+        // VALIDER LE TRANSFERT DE LIT
+        window.confirmBedTransfer = async function() {
             const oldBedId = document.getElementById('currentBedId').value;
+            const newBedId = document.getElementById('selectNewBed').value;
             const patient = patientsDb[oldBedId];
-            
-            if (!patient) return;
 
-            const newBedId = prompt("Entrez le numéro du nouveau lit (ex: 401F, 305P, REA1) :\nAttention : Assurez-vous que le nouveau lit est vide.");
-            
-            if (!newBedId || newBedId.trim() === "") return;
-            const formattedNewBed = newBedId.trim().toUpperCase();
+            if (!patient || !newBedId) return;
 
-            if (formattedNewBed === oldBedId) {
+            if (newBedId === oldBedId) {
                 alert("Le patient est déjà dans ce lit !");
                 return;
             }
 
-            const newBedRef = ref(db, 'dossiers_patients/' + formattedNewBed);
+            const newBedRef = ref(db, 'dossiers_patients/' + newBedId);
 
             try {
                 const newBedSnapshot = await get(newBedRef);
                 if (newBedSnapshot.exists() && newBedSnapshot.val().nom) {
-                    alert("Opération annulée : Le lit " + formattedNewBed + " est déjà occupé !");
+                    alert("Opération annulée : Le lit " + newBedId + " est déjà occupé !");
                     return;
                 }
 
-                const newPatientData = { ...patient, bedId: formattedNewBed };
+                const newPatientData = { ...patient, bedId: newBedId };
                 await set(newBedRef, newPatientData);
                 await remove(ref(db, 'dossiers_patients/' + oldBedId));
 
-                alert(`Transfert réussi : Le patient a été déplacé vers le lit ${formattedNewBed}.`);
+                alert(`Transfert réussi : ${patient.nom} a été déplacé du lit ${oldBedId} vers le lit ${newBedId}.`);
+                closeTransferModal();
                 closeModal();
-                
+
             } catch (error) {
                 console.error("Erreur lors du changement de lit :", error);
                 alert("Une erreur s'est produite lors du transfert.");
