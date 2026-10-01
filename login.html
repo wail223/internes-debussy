@@ -13,7 +13,7 @@
         .form-group input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
         .btn-login { width: 100%; background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 1em; cursor: pointer; }
         .btn-login:hover { background: #0369a1; }
-        #errorMsg { color: #dc2626; font-size: 0.85em; margin-top: 10px; display: none; }
+        #errorMsg { color: #dc2626; font-size: 0.85em; margin-top: 15px; display: none; background: #fef2f2; padding: 10px; border-radius: 8px; border: 1px solid #fecaca; text-align: left; word-break: break-word; }
     </style>
 </head>
 <body>
@@ -23,8 +23,8 @@
     <p style="color: #64748b; font-size:0.9em; margin-bottom:20px;">Connexion au portail restreint</p>
 
     <div class="form-group">
-        <label>Identifiant / Email</label>
-        <input type="text" id="email" placeholder="ex: dr.benali@debussy.local">
+        <label>Identifiant (Pseudo ou Email)</label>
+        <input type="text" id="email" placeholder="ex: dr.wail">
     </div>
 
     <div class="form-group">
@@ -33,17 +33,12 @@
     </div>
 
     <button class="btn-login" onclick="login()">Se connecter</button>
-    <div id="errorMsg">Identifiant ou mot de passe incorrect.</div>
+    <div id="errorMsg"></div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-        getAuth, 
-        signInWithEmailAndPassword, 
-        setPersistence, 
-        browserLocalPersistence 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
@@ -58,26 +53,28 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    window.login = function() {
-        let email = document.getElementById('email').value.trim();
+    window.login = async function() {
+        let inputVal = document.getElementById('email').value.trim().toLowerCase();
         const password = document.getElementById('password').value;
         const errorMsg = document.getElementById('errorMsg');
 
-        if (!email.includes('@')) {
-            email = email + "@debussy.local";
+        if (!inputVal || !password) {
+            errorMsg.innerHTML = "<b>Erreur :</b> Veuillez remplir tous les champs.";
+            errorMsg.style.display = "block";
+            return;
         }
 
-        // Forcer la conservation de la session sur l'appareil
-        setPersistence(auth, browserLocalPersistence)
-            .then(() => {
-                return signInWithEmailAndPassword(auth, email, password);
-            })
-            .then((userCredential) => {
-                window.location.href = "index.html";
-            })
-            .catch((error) => {
-                errorMsg.style.display = "block";
-            });
+        // Si l'utilisateur tape juste un pseudo (ex: "dr.wail"), rajouter automatiquement le suffixe
+        let fullEmail = inputVal.includes('@') ? inputVal : inputVal + "@debussy.local";
+
+        try {
+            await signInWithEmailAndPassword(auth, fullEmail, password);
+            window.location.href = "index.html";
+        } catch (error) {
+            console.error("Détails erreur Firebase :", error);
+            errorMsg.innerHTML = `<b>Code Erreur :</b> ${error.code}<br><small>${error.message}</small>`;
+            errorMsg.style.display = "block";
+        }
     };
 </script>
 
