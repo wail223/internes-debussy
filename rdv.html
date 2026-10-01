@@ -7,9 +7,12 @@
     <style>
         body { font-family: -apple-system, sans-serif; padding: 20px; max-width: 400px; margin: auto; background: #f4f4f9; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        select, input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+        select, input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
         button { background: #007aff; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #0056b3; }
         #resultat { margin-top: 15px; font-weight: bold; font-size: 18px; color: #333; text-align: center; }
+        .rdv-date { color: #007aff; margin-top: 5px; text-transform: capitalize; }
+        .rdv-count { color: #dc2626; font-size: 0.9em; margin-top: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -26,7 +29,7 @@
     </select>
 
     <label>Délai demandé (en jours) :</label>
-    <input type="number" id="delai" placeholder="ex: 15" value="15">
+    <input type="number" id="delai" placeholder="ex: 15" value="15" min="1">
 
     <button onclick="calculerRDV()">Calculer la date</button>
 
@@ -38,16 +41,64 @@
         let targetDay = parseInt(document.getElementById('jourMedecin').value);
         let delai = parseInt(document.getElementById('delai').value);
         
-        let dateRDV = new Date();
-        dateRDV.setDate(dateRDV.getDate() + delai);
-        
-        // Ajuster au jour de la semaine ciblé
-        while (dateRDV.getDay() !== targetDay) {
-            dateRDV.setDate(dateRDV.getDate() + 1);
+        if (isNaN(delai) || delai < 1) {
+            document.getElementById('resultat').innerHTML = "<span style='color:#dc2626; font-size:0.85em;'>Veuillez entrer un délai valide.</span>";
+            return;
+        }
+
+        let today = new Date();
+        today.setHours(0, 0, 0, 0); // Réinitialiser l'heure pour un calcul exact des jours
+
+        // Date exacte après le nombre de jours demandés
+        let targetDate = new Date(today);
+        targetDate.setDate(targetDate.getDate() + delai);
+
+        // 1. Trouver l'option APRES ou EGAL à la date cible
+        let dateAfter = new Date(targetDate);
+        while (dateAfter.getDay() !== targetDay) {
+            dateAfter.setDate(dateAfter.getDate() + 1);
+        }
+
+        // 2. Trouver l'option AVANT ou EGAL à la date cible
+        let dateBefore = new Date(targetDate);
+        while (dateBefore.getDay() !== targetDay) {
+            dateBefore.setDate(dateBefore.getDate() - 1);
+        }
+
+        // Calcul du nombre total de jours depuis aujourd'hui
+        let daysBefore = Math.round((dateBefore - today) / (1000 * 60 * 60 * 24));
+        let daysAfter = Math.round((dateAfter - today) / (1000 * 60 * 60 * 24));
+
+        let selectedDate;
+        let finalDaysCount;
+
+        // Vérifier si l'option "Avant" est bien dans le futur (> 0 jours depuis aujourd'hui)
+        if (daysBefore > 0) {
+            let gapBefore = Math.abs(daysBefore - delai);
+            let gapAfter = Math.abs(daysAfter - delai);
+
+            // Choisir la date dont l'écart avec le délai est le plus petit
+            if (gapBefore <= gapAfter) {
+                selectedDate = dateBefore;
+                finalDaysCount = daysBefore;
+            } else {
+                selectedDate = dateAfter;
+                finalDaysCount = daysAfter;
+            }
+        } else {
+            // Si la date "Avant" est aujourd'hui ou dans le passé, prendre obligatoirement l'option "Après"
+            selectedDate = dateAfter;
+            finalDaysCount = daysAfter;
         }
 
         let options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('resultat').innerText = "Prochain RDV :\n" + dateRDV.toLocaleDateString('fr-FR', options);
+        let dateFormatee = selectedDate.toLocaleDateString('fr-FR', options);
+
+        document.getElementById('resultat').innerHTML = `
+            <div>Prochain RDV :</div>
+            <div class="rdv-date">${dateFormatee}</div>
+            <div class="rdv-count">(rdv dans ${finalDaysCount} jour${finalDaysCount > 1 ? 's' : ''})</div>
+        `;
     }
 </script>
 
