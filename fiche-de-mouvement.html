@@ -202,12 +202,15 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Date d'aujourd'hui
+        // Date d'aujourd'hui format JJ/MM/AAAA pour l'affichage
         const today = new Date();
         const dd = String(today.getDate()).padStart(2, '0');
         const mm = String(today.getMonth() + 1).padStart(2, '0'); 
         const yyyy = today.getFullYear();
         document.getElementById('currentDate').innerText = `${dd}/${mm}/${yyyy}`;
+
+        // Date d'aujourd'hui format YYYY-MM-DD pour la comparaison Firebase
+        const todayStr = `${yyyy}-${mm}-${dd}`;
 
         const lits4eme = [
             "401P", "401F", "402P", "402F", "403P", "403F", "404P", "404F",
@@ -215,7 +218,7 @@
         ];
 
         let patientsData = {};
-        let archivesInterventionsData = {};
+        let programmesOperatoiresData = {};
 
         function formatDate(dateString) {
             if (!dateString) return "";
@@ -224,22 +227,50 @@
             return dateString;
         }
 
-        // NOUVELLE FONCTION DE RECHERCHE CORRIGÉE
+        // Nouvelle logique de recherche dans programmes_operatoires
         function getInterventionPourPatient(nomPatient) {
             if (!nomPatient) return "";
             const nomCherche = nomPatient.toLowerCase().trim();
             
-            for (const key in archivesInterventionsData) {
-                const archive = archivesInterventionsData[key];
-                
-                // On récupère le nom dans l'archive (qui peut être sous .patient ou .nom)
-                const nomDansArchive = (archive.patient || archive.nom || "").toLowerCase();
-                
-                // On vérifie si le nom de l'archive CONTIENT le nom du patient (ex: "406P: BELBEGRA" contient "BELBEGRA")
-                if (nomDansArchive.includes(nomCherche) && nomCherche !== "") {
-                    return archive.intervention || archive.acte || archive.typeIntervention || archive.operation || "";
+            let derniereIntervention = null;
+            let datePlusRecente = "0000-00-00";
+
+            // Parcourir toutes les dates dans programmes_operatoires
+            for (const dateKey in programmesOperatoiresData) {
+                // On ignore les dates futures
+                if (dateKey <= todayStr) {
+                    const listeInterventionsJour = programmesOperatoiresData[dateKey];
+                    
+                    // Parcourir les opérations de cette date (0, 1, 2...)
+                    for (const index in listeInterventionsJour) {
+                        const operation = listeInterventionsJour[index];
+                        
+                        // Le nom se trouve dans patientText (ex: "401F: HAOUATI KHADIDJA")
+                        const nomDansArchive = (operation.patientText || operation.patient || operation.nom || "").toLowerCase();
+                        
+                        if (nomDansArchive.includes(nomCherche) && nomCherche !== "") {
+                            // On garde toujours l'opération la plus récente trouvée pour ce patient
+                            if (dateKey >= datePlusRecente) {
+                                datePlusRecente = dateKey;
+                                derniereIntervention = operation;
+                            }
+                        }
+                    }
                 }
             }
+
+            // Si on a trouvé une intervention pour ce patient
+            if (derniereIntervention) {
+                const statut = (derniereIntervention.status || derniereIntervention.statut || "").toLowerCase();
+                
+                // Si l'état de l'intervention la plus récente est reprogrammée, on laisse vide
+                if (statut.includes("reprogrammée") || statut.includes("reprogrammee") || statut.includes("reprogrammee")) {
+                    return "";
+                }
+                
+                return derniereIntervention.intervention || "";
+            }
+
             return ""; 
         }
 
@@ -273,14 +304,13 @@
             renderTable();
         });
 
-        // Lecture des données d'archives pour remplir les interventions
-        onValue(ref(db, 'archives_interventions/'), (snapshot) => {
-            archivesInterventionsData = snapshot.val() || {};
+        // NOUVEAU CHEMIN : On écoute 'programmes_operatoires/' au lieu de 'archives_interventions/'
+        onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
+            programmesOperatoiresData = snapshot.val() || {};
             renderTable();
         });
     </script>
 
-    <!-- Paramètres d'export PDF ajustés pour éviter les coupures -->
     <script>
         function generatePDF() {
             const element = document.getElementById('documentContent');
