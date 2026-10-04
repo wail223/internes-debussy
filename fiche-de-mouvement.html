@@ -47,12 +47,13 @@
             font-size: 14px;
         }
 
+        /* CORRECTION ICI : Ajustement des dimensions pour éviter le débordement */
         .page-a4 {
             background: white;
-            width: 297mm;
-            min-height: 210mm;
+            width: 100%;
+            max-width: 1100px;
             margin: 0 auto;
-            padding: 15mm;
+            padding: 20px 30px;
             box-sizing: border-box;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
@@ -100,13 +101,13 @@
             text-align: center;
         }
 
-        th:nth-child(1) { width: 6%; }  /* N° Lit */
-        th:nth-child(2) { width: 22%; } /* Nom / Prénom */
-        th:nth-child(3) { width: 5%; }  /* Age */
-        th:nth-child(4) { width: 25%; } /* Pathologie */
-        th:nth-child(5) { width: 7%; }  /* Gpg */
-        th:nth-child(6) { width: 20%; } /* Intervention */
-        th:nth-child(7) { width: 15%; } /* Date d'entrée */
+        th:nth-child(1) { width: 6%; }  
+        th:nth-child(2) { width: 22%; } 
+        th:nth-child(3) { width: 5%; }  
+        th:nth-child(4) { width: 25%; } 
+        th:nth-child(5) { width: 7%; }  
+        th:nth-child(6) { width: 20%; } 
+        th:nth-child(7) { width: 15%; } 
 
         td[contenteditable="true"]:hover, span[contenteditable="true"]:hover {
             background-color: #fefce8;
@@ -123,7 +124,7 @@
             .page-a4 {
                 box-shadow: none;
                 width: 100%;
-                min-height: auto;
+                max-width: none;
                 padding: 0;
                 margin: 0;
             }
@@ -202,7 +203,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- Date d'aujourd'hui ---
+        // Date d'aujourd'hui
         const today = new Date();
         const dd = String(today.getDate()).padStart(2, '0');
         const mm = String(today.getMonth() + 1).padStart(2, '0'); 
@@ -224,7 +225,7 @@
             return dateString;
         }
 
-        // --- Recherche de l'intervention ---
+        // Recherche de l'intervention
         function getInterventionPourPatient(nomPatient) {
             if (!nomPatient) return "";
             const nomCherche = nomPatient.toLowerCase().trim();
@@ -232,11 +233,10 @@
             for (const key in archivesInterventionsData) {
                 const archive = archivesInterventionsData[key];
                 if (archive.nom && archive.nom.toLowerCase().trim() === nomCherche) {
-                    // Vérifie plusieurs noms de variables possibles selon votre structure
                     return archive.intervention || archive.acte || archive.typeIntervention || archive.operation || "";
                 }
             }
-            return ""; // Si non trouvé, retourne vide
+            return ""; 
         }
 
         function renderTable() {
@@ -246,7 +246,6 @@
             lits4eme.forEach(litId => {
                 const patient = patientsData[litId];
                 
-                // --- Condition : n'afficher que si le lit n'est pas vide ---
                 if (patient && patient.nom && patient.nom.trim() !== "") {
                     const interventionTrouvee = getInterventionPourPatient(patient.nom);
                     
@@ -265,28 +264,31 @@
             });
         }
 
-        // Récupérer les données des patients
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
             patientsData = snapshot.val() || {};
             renderTable();
         });
 
-        // Récupérer les archives d'interventions
         onValue(ref(db, 'archives_interventions/'), (snapshot) => {
             archivesInterventionsData = snapshot.val() || {};
-            renderTable(); // Met à jour le tableau une fois l'archive chargée
+            renderTable();
         });
     </script>
 
+    <!-- CORRECTION ICI : Ajustement précis de la génération PDF -->
     <script>
         function generatePDF() {
             const element = document.getElementById('documentContent');
             const opt = {
-                margin:       10,
+                margin:       8, // Réduction de la marge pour laisser de la place au tableau
                 filename:     'Fiche_Mouvement_4eme.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                image:        { type: 'jpeg', quality: 1 },
+                html2canvas:  { 
+                    scale: 2, 
+                    windowWidth: 1200 // Force une largeur de capture large pour éviter de compresser le tableau
+                },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
+                pagebreak:    { mode: 'avoid-all' } // Empêche strictement de couper sur une 2ème page
             };
             html2pdf().set(opt).from(element).save();
         }
