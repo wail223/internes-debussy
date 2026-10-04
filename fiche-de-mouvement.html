@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fiche de Mouvement des Malades - 4ème Étage</title>
-    <!-- Script pour générer le PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* Styles pour l'écran */
         body {
-            font-family: 'Times New Roman', Times, serif; /* Police type document officiel */
+            font-family: 'Times New Roman', Times, serif;
             background-color: #f1f5f9;
             margin: 0;
             padding: 20px;
@@ -21,7 +19,7 @@
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             display: flex;
             gap: 15px;
             justify-content: center;
@@ -41,7 +39,14 @@
         .btn-pdf { background-color: #16a34a; }
         .btn-back { background-color: #64748b; text-decoration: none; }
 
-        /* Conteneur principal A4 Paysage */
+        .edit-tip {
+            text-align: center;
+            color: #0369a1;
+            margin-bottom: 20px;
+            font-family: sans-serif;
+            font-size: 14px;
+        }
+
         .page-a4 {
             background: white;
             width: 297mm;
@@ -52,7 +57,6 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
-        /* En-tête du document */
         .doc-header {
             text-align: center;
             font-weight: bold;
@@ -76,11 +80,8 @@
             font-size: 14px;
         }
 
-        .doc-title-container p {
-            margin: 5px 0;
-        }
+        .doc-title-container p { margin: 5px 0; }
 
-        /* Tableau */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -99,7 +100,6 @@
             text-align: center;
         }
 
-        /* Largeur des colonnes basée sur la photo */
         th:nth-child(1) { width: 6%; }  /* N° Lit */
         th:nth-child(2) { width: 22%; } /* Nom / Prénom */
         th:nth-child(3) { width: 5%; }  /* Age */
@@ -108,25 +108,18 @@
         th:nth-child(6) { width: 20%; } /* Intervention */
         th:nth-child(7) { width: 15%; } /* Date d'entrée */
 
-        /* Édition autorisée avec un léger indicateur au survol */
-        td[contenteditable="true"]:hover {
+        td[contenteditable="true"]:hover, span[contenteditable="true"]:hover {
             background-color: #fefce8;
             cursor: text;
         }
 
-        /* Styles Spécifiques pour l'Impression */
         @media print {
             @page {
-                size: A4 landscape; /* Force le format A4 Paysage */
+                size: A4 landscape;
                 margin: 10mm;
             }
-            body {
-                background: none;
-                padding: 0;
-            }
-            .controls-bar {
-                display: none; /* Cache les boutons à l'impression */
-            }
+            body { background: none; padding: 0; }
+            .controls-bar, .edit-tip { display: none; }
             .page-a4 {
                 box-shadow: none;
                 width: 100%;
@@ -134,7 +127,7 @@
                 padding: 0;
                 margin: 0;
             }
-            td[contenteditable="true"]:hover {
+            td[contenteditable="true"]:hover, span[contenteditable="true"]:hover {
                 background-color: transparent;
             }
         }
@@ -142,16 +135,17 @@
 </head>
 <body>
 
-    <!-- Barre de boutons (non visible à l'impression) -->
-    <div class="controls-bar" id="controlsBar">
+    <div class="controls-bar">
         <a href="patients.html" class="btn btn-back">⬅ Retour aux Lits</a>
         <button class="btn btn-print" onclick="window.print()">🖨️ Imprimer</button>
         <button class="btn btn-pdf" onclick="generatePDF()">💾 Enregistrer en PDF</button>
     </div>
+    
+    <div class="edit-tip">
+        💡 <b>Astuce :</b> Cliquez directement sur les cases du tableau ou sur la date pour modifier le texte avant d'imprimer.
+    </div>
 
-    <!-- Contenu du document à imprimer/sauvegarder -->
     <div class="page-a4" id="documentContent">
-        
         <div class="doc-header">
             Etablissement Publique Hospitalier Spécialisé Centre Pierre et Marie Curie<br>
             CPMC « C » ex clinique Debussy<br>
@@ -164,7 +158,7 @@
                 Chef de Service
             </div>
             <div style="text-align: right; margin-right: 50px;">
-                Alger, le <span contenteditable="true" style="min-width: 100px; display: inline-block; border-bottom: 1px dotted #000;"></span>
+                Alger, le <span id="currentDate" contenteditable="true" style="min-width: 100px; display: inline-block; border-bottom: 1px dotted #000; text-align: center;"></span>
             </div>
         </div>
 
@@ -191,12 +185,10 @@
         </table>
     </div>
 
-    <!-- Script Firebase et Logique -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Configuration Firebase (Identique à patients.html)
         const firebaseConfig = {
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
             authDomain: "internes-debussy.firebaseapp.com",
@@ -210,66 +202,85 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Définir les 16 lits du 4ème étage dans l'ordre (Porte puis Fenêtre)
+        // --- Date d'aujourd'hui ---
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0'); 
+        const yyyy = today.getFullYear();
+        document.getElementById('currentDate').innerText = `${dd}/${mm}/${yyyy}`;
+
         const lits4eme = [
             "401P", "401F", "402P", "402F", "403P", "403F", "404P", "404F",
             "405P", "405F", "406P", "406F", "407P", "407F", "408P", "408F"
         ];
 
-        // Formatage de la date (YYYY-MM-DD vers JJ/MM/AAAA)
+        let patientsData = {};
+        let archivesInterventionsData = {};
+
         function formatDate(dateString) {
             if (!dateString) return "";
             const parts = dateString.split('-');
-            if (parts.length === 3) {
-                return `${parts[2]}/${parts[1]}/${parts[0]}`;
-            }
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
             return dateString;
         }
 
-        // Ecouteur temps réel Firebase
-        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
-            const data = snapshot.val() || {};
+        // --- Recherche de l'intervention ---
+        function getInterventionPourPatient(nomPatient) {
+            if (!nomPatient) return "";
+            const nomCherche = nomPatient.toLowerCase().trim();
+            
+            for (const key in archivesInterventionsData) {
+                const archive = archivesInterventionsData[key];
+                if (archive.nom && archive.nom.toLowerCase().trim() === nomCherche) {
+                    // Vérifie plusieurs noms de variables possibles selon votre structure
+                    return archive.intervention || archive.acte || archive.typeIntervention || archive.operation || "";
+                }
+            }
+            return ""; // Si non trouvé, retourne vide
+        }
+
+        function renderTable() {
             const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = ""; // Vider le tableau
+            tbody.innerHTML = ""; 
 
             lits4eme.forEach(litId => {
-                const patient = data[litId];
-                const tr = document.createElement('tr');
+                const patient = patientsData[litId];
                 
-                if (patient && patient.nom) {
-                    // Si un patient est présent
+                // --- Condition : n'afficher que si le lit n'est pas vide ---
+                if (patient && patient.nom && patient.nom.trim() !== "") {
+                    const interventionTrouvee = getInterventionPourPatient(patient.nom);
+                    
+                    const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td contenteditable="true" style="text-align:center;">${litId}</td>
                         <td contenteditable="true">${patient.nom || ""}</td>
                         <td contenteditable="true" style="text-align:center;">${patient.age || ""}</td>
                         <td contenteditable="true">${patient.diag || ""}</td>
                         <td contenteditable="true" style="text-align:center;">${patient.grp || ""}</td>
-                        <td contenteditable="true"></td> <!-- Intervention laissée vide modifiable -->
+                        <td contenteditable="true">${interventionTrouvee}</td>
                         <td contenteditable="true" style="text-align:center;">${formatDate(patient.dateEntree) || ""}</td>
                     `;
-                } else {
-                    // Si le lit est vide (Création d'une ligne vide modifiable)
-                    tr.innerHTML = `
-                        <td contenteditable="true" style="text-align:center;">${litId}</td>
-                        <td contenteditable="true"></td>
-                        <td contenteditable="true"></td>
-                        <td contenteditable="true"></td>
-                        <td contenteditable="true"></td>
-                        <td contenteditable="true"></td>
-                        <td contenteditable="true"></td>
-                    `;
+                    tbody.appendChild(tr);
                 }
-                tbody.appendChild(tr);
             });
+        }
+
+        // Récupérer les données des patients
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+            patientsData = snapshot.val() || {};
+            renderTable();
+        });
+
+        // Récupérer les archives d'interventions
+        onValue(ref(db, 'archives_interventions/'), (snapshot) => {
+            archivesInterventionsData = snapshot.val() || {};
+            renderTable(); // Met à jour le tableau une fois l'archive chargée
         });
     </script>
 
-    <!-- Fonction d'export PDF -->
     <script>
         function generatePDF() {
             const element = document.getElementById('documentContent');
-            
-            // Options pour html2pdf
             const opt = {
                 margin:       10,
                 filename:     'Fiche_Mouvement_4eme.pdf',
@@ -277,8 +288,6 @@
                 html2canvas:  { scale: 2 },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
             };
-
-            // Lance le téléchargement
             html2pdf().set(opt).from(element).save();
         }
     </script>
