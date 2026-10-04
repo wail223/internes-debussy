@@ -314,18 +314,28 @@
     <script>
         function generatePDF() {
             const element = document.getElementById('documentContent');
+            
+            // Désactivation temporaire du centrage pour éviter que html2canvas ne coupe la gauche
+            element.style.margin = "0";
+            element.style.maxWidth = "none";
+
             const opt = {
-                margin:       8,
+                margin:       10, // Marge propre de 10mm sur tout le tour
                 filename:     'Fiche_Mouvement_4eme.pdf',
                 image:        { type: 'jpeg', quality: 1 },
                 html2canvas:  { 
                     scale: 2, 
-                    windowWidth: 1200 
+                    scrollX: 0, 
+                    scrollY: 0 
                 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
-                pagebreak:    { mode: 'avoid-all' } 
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
             };
-            html2pdf().set(opt).from(element).save();
+
+            // Génération du PDF puis restauration de l'affichage centré normal
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.style.margin = "0 auto";
+                element.style.maxWidth = "1100px";
+            });
         }
     </script>
 </body>
