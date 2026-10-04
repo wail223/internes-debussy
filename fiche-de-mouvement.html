@@ -47,7 +47,6 @@
             font-size: 14px;
         }
 
-        /* CORRECTION ICI : Ajustement des dimensions pour éviter le débordement */
         .page-a4 {
             background: white;
             width: 100%;
@@ -225,14 +224,19 @@
             return dateString;
         }
 
-        // Recherche de l'intervention
+        // NOUVELLE FONCTION DE RECHERCHE CORRIGÉE
         function getInterventionPourPatient(nomPatient) {
             if (!nomPatient) return "";
             const nomCherche = nomPatient.toLowerCase().trim();
             
             for (const key in archivesInterventionsData) {
                 const archive = archivesInterventionsData[key];
-                if (archive.nom && archive.nom.toLowerCase().trim() === nomCherche) {
+                
+                // On récupère le nom dans l'archive (qui peut être sous .patient ou .nom)
+                const nomDansArchive = (archive.patient || archive.nom || "").toLowerCase();
+                
+                // On vérifie si le nom de l'archive CONTIENT le nom du patient (ex: "406P: BELBEGRA" contient "BELBEGRA")
+                if (nomDansArchive.includes(nomCherche) && nomCherche !== "") {
                     return archive.intervention || archive.acte || archive.typeIntervention || archive.operation || "";
                 }
             }
@@ -269,26 +273,27 @@
             renderTable();
         });
 
+        // Lecture des données d'archives pour remplir les interventions
         onValue(ref(db, 'archives_interventions/'), (snapshot) => {
             archivesInterventionsData = snapshot.val() || {};
             renderTable();
         });
     </script>
 
-    <!-- CORRECTION ICI : Ajustement précis de la génération PDF -->
+    <!-- Paramètres d'export PDF ajustés pour éviter les coupures -->
     <script>
         function generatePDF() {
             const element = document.getElementById('documentContent');
             const opt = {
-                margin:       8, // Réduction de la marge pour laisser de la place au tableau
+                margin:       8,
                 filename:     'Fiche_Mouvement_4eme.pdf',
                 image:        { type: 'jpeg', quality: 1 },
                 html2canvas:  { 
                     scale: 2, 
-                    windowWidth: 1200 // Force une largeur de capture large pour éviter de compresser le tableau
+                    windowWidth: 1200 
                 },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
-                pagebreak:    { mode: 'avoid-all' } // Empêche strictement de couper sur une 2ème page
+                pagebreak:    { mode: 'avoid-all' } 
             };
             html2pdf().set(opt).from(element).save();
         }
