@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiche de Mouvement des Malades - 4ème Étage</title>
+    <!-- Script pour générer le PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        /* Styles pour l'écran */
+        body {
+            font-family: 'Times New Roman', Times, serif; /* Police type document officiel */
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            color: #000;
+        }
+
+        .controls-bar {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-family: system-ui, -apple-system, sans-serif;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+        }
+        .btn-print { background-color: #0284c7; }
+        .btn-pdf { background-color: #16a34a; }
+        .btn-back { background-color: #64748b; text-decoration: none; }
+
+        /* Conteneur principal A4 Paysage */
+        .page-a4 {
+            background: white;
+            width: 297mm;
+            min-height: 210mm;
+            margin: 0 auto;
+            padding: 15mm;
+            box-sizing: border-box;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        /* En-tête du document */
+        .doc-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            line-height: 1.4;
+            margin-bottom: 20px;
+        }
+
+        .doc-sub-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .doc-title-container {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .doc-title-container p {
+            margin: 5px 0;
+        }
+
+        /* Tableau */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 8px 5px;
+            text-align: left;
+        }
+
+        th {
+            font-weight: bold;
+            background-color: transparent;
+            text-align: center;
+        }
+
+        /* Largeur des colonnes basée sur la photo */
+        th:nth-child(1) { width: 6%; }  /* N° Lit */
+        th:nth-child(2) { width: 22%; } /* Nom / Prénom */
+        th:nth-child(3) { width: 5%; }  /* Age */
+        th:nth-child(4) { width: 25%; } /* Pathologie */
+        th:nth-child(5) { width: 7%; }  /* Gpg */
+        th:nth-child(6) { width: 20%; } /* Intervention */
+        th:nth-child(7) { width: 15%; } /* Date d'entrée */
+
+        /* Édition autorisée avec un léger indicateur au survol */
+        td[contenteditable="true"]:hover {
+            background-color: #fefce8;
+            cursor: text;
+        }
+
+        /* Styles Spécifiques pour l'Impression */
+        @media print {
+            @page {
+                size: A4 landscape; /* Force le format A4 Paysage */
+                margin: 10mm;
+            }
+            body {
+                background: none;
+                padding: 0;
+            }
+            .controls-bar {
+                display: none; /* Cache les boutons à l'impression */
+            }
+            .page-a4 {
+                box-shadow: none;
+                width: 100%;
+                min-height: auto;
+                padding: 0;
+                margin: 0;
+            }
+            td[contenteditable="true"]:hover {
+                background-color: transparent;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barre de boutons (non visible à l'impression) -->
+    <div class="controls-bar" id="controlsBar">
+        <a href="patients.html" class="btn btn-back">⬅ Retour aux Lits</a>
+        <button class="btn btn-print" onclick="window.print()">🖨️ Imprimer</button>
+        <button class="btn btn-pdf" onclick="generatePDF()">💾 Enregistrer en PDF</button>
+    </div>
+
+    <!-- Contenu du document à imprimer/sauvegarder -->
+    <div class="page-a4" id="documentContent">
+        
+        <div class="doc-header">
+            Etablissement Publique Hospitalier Spécialisé Centre Pierre et Marie Curie<br>
+            CPMC « C » ex clinique Debussy<br>
+            08 Avenue Mustapha Sayed el ouali
+        </div>
+
+        <div class="doc-sub-header">
+            <div>
+                Pr. C. CHEKMAN<br>
+                Chef de Service
+            </div>
+            <div style="text-align: right; margin-right: 50px;">
+                Alger, le <span contenteditable="true" style="min-width: 100px; display: inline-block; border-bottom: 1px dotted #000;"></span>
+            </div>
+        </div>
+
+        <div class="doc-title-container">
+            <p>Fiche de Mouvement des Malades</p>
+            <p>Service 4<sup>ème</sup> étage</p>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>N° Lit</th>
+                    <th>Nom /Prénom</th>
+                    <th>Age</th>
+                    <th>Pathologie</th>
+                    <th>Gpg</th>
+                    <th>Intervention</th>
+                    <th>Date d'entrée</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Les lignes seront générées ici par JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Script Firebase et Logique -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Configuration Firebase (Identique à patients.html)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
+            authDomain: "internes-debussy.firebaseapp.com",
+            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "internes-debussy",
+            storageBucket: "internes-debussy.firebasestorage.app",
+            messagingSenderId: "614550756274",
+            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Définir les 16 lits du 4ème étage dans l'ordre (Porte puis Fenêtre)
+        const lits4eme = [
+            "401P", "401F", "402P", "402F", "403P", "403F", "404P", "404F",
+            "405P", "405F", "406P", "406F", "407P", "407F", "408P", "408F"
+        ];
+
+        // Formatage de la date (YYYY-MM-DD vers JJ/MM/AAAA)
+        function formatDate(dateString) {
+            if (!dateString) return "";
+            const parts = dateString.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            return dateString;
+        }
+
+        // Ecouteur temps réel Firebase
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+            const data = snapshot.val() || {};
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = ""; // Vider le tableau
+
+            lits4eme.forEach(litId => {
+                const patient = data[litId];
+                const tr = document.createElement('tr');
+                
+                if (patient && patient.nom) {
+                    // Si un patient est présent
+                    tr.innerHTML = `
+                        <td contenteditable="true" style="text-align:center;">${litId}</td>
+                        <td contenteditable="true">${patient.nom || ""}</td>
+                        <td contenteditable="true" style="text-align:center;">${patient.age || ""}</td>
+                        <td contenteditable="true">${patient.diag || ""}</td>
+                        <td contenteditable="true" style="text-align:center;">${patient.grp || ""}</td>
+                        <td contenteditable="true"></td> <!-- Intervention laissée vide modifiable -->
+                        <td contenteditable="true" style="text-align:center;">${formatDate(patient.dateEntree) || ""}</td>
+                    `;
+                } else {
+                    // Si le lit est vide (Création d'une ligne vide modifiable)
+                    tr.innerHTML = `
+                        <td contenteditable="true" style="text-align:center;">${litId}</td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                        <td contenteditable="true"></td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            });
+        });
+    </script>
+
+    <!-- Fonction d'export PDF -->
+    <script>
+        function generatePDF() {
+            const element = document.getElementById('documentContent');
+            
+            // Options pour html2pdf
+            const opt = {
+                margin:       10,
+                filename:     'Fiche_Mouvement_4eme.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            };
+
+            // Lance le téléchargement
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+</body>
+</html>
