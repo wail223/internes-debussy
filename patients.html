@@ -719,7 +719,22 @@
                 document.getElementById('vProtocoleSortie').textContent = p.protocoleSortie ? '✅ Prêt' : '❌ Non fait';
 
                 document.getElementById('vDateEntree').textContent = p.dateEntree || '-';
-                document.getElementById('vDateIntervention').textContent = p.dateIntervention || '-';
+                let dateInterventionTexte = p.dateIntervention || '-';
+if (p.dateIntervention) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Réinitialise l'heure pour comparer uniquement les dates
+    const interDate = new Date(p.dateIntervention);
+    interDate.setHours(0, 0, 0, 0);
+    
+    // Calcule la différence en jours
+    const diffDays = Math.round((today - interDate) / (1000 * 60 * 60 * 24));
+    
+    // Si la date est aujourd'hui (J0) ou passée (J1, J2...), on ajoute le préfixe
+    if (diffDays >= 0) {
+        dateInterventionTexte = `(J${diffDays}) ${p.dateIntervention}`;
+    }
+}
+document.getElementById('vDateIntervention').textContent = dateInterventionTexte;
                 document.getElementById('vDateSortie').textContent = p.dateSortie || '-';
                 document.getElementById('vDiag').textContent = p.diag || '-';
                 document.getElementById('vDecRea').textContent = p.decRea || '-';
