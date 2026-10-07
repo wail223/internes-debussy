@@ -199,3 +199,946 @@
             border-radius: 6px;
             color: #991b1b;
             cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .surveillance-item:hover {
+            background: #fee2e2;
+            transform: translateY(-1px);
+        }
+        .surveillance-bed {
+            font-size: 0.8em;
+            font-weight: 700;
+            background: #fca5a5;
+            color: #7f1d1d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .surveillance-name {
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+        .surveillance-empty {
+            color: var(--text-light);
+            font-style: italic;
+            font-size: 0.85em;
+            margin-top: 2px;
+        }
+
+        /* GESTION RESPONSIVE SPÉCIALE MOBILE POUR ÉVITER TOUTE SUPERPOSITION */
+        @media (max-width: 640px) {
+            .surveillance-box {
+                bottom: 10px;
+                left: 10px;
+                width: calc(100vw - 145px);
+                max-width: 220px;
+                max-height: 150px;
+                padding: 8px 10px;
+                font-size: 0.75em;
+            }
+            .surveillance-name {
+                max-width: 100px;
+            }
+            .legend-box {
+                bottom: 10px;
+                right: 10px;
+                padding: 6px 10px;
+                font-size: 0.75em;
+            }
+        }
+        
+        /* Modal Visionneuse de Photos */
+        #photoViewerModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); z-index: 2000; align-items: center; justify-content: center;
+        }
+        #photoViewerModal.active { display: flex; }
+        #photoViewerImg { max-width: 95vw; max-height: 95vh; border-radius: 8px; object-fit: contain; }
+        .close-photo-btn {
+            position: absolute; top: 20px; right: 20px; background: rgba(255, 255, 255, 0.2);
+            color: white; border: none; border-radius: 50%; width: 40px; height: 40px;
+            font-size: 1.5em; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .close-photo-btn:hover { background: rgba(255, 255, 255, 0.4); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="top-bar">
+            <h2 style="margin:0; color: var(--primary);">🏥 CPMC Debussy</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="patients.html" class="nav-btn active">🛏️ Lits / Hospitalisation</a>
+            <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
+            <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
+            <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
+            <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
+        </div>
+    </div>
+
+    <div class="floor-selector">
+        <button class="floor-btn active" onclick="switchFloor('floor-4', this)">4ème Étage</button>
+        <button class="floor-btn" onclick="switchFloor('floor-3', this)">3ème Étage</button>
+        <button class="floor-btn" onclick="switchFloor('floor-rea', this)">🚨 Réanimation</button>
+    </div>
+
+    <div id="floor-4" class="floor active"><div class="grid" id="grid-4"></div></div>
+    <div id="floor-3" class="floor"><div class="grid" id="grid-3"></div></div>
+    <div id="floor-rea" class="floor"><div class="grid" id="grid-rea"></div></div>
+
+    <!-- LISTE FLOTTANTE DES PATIENTS À SURVEILLER (EN BAS À GAUCHE) -->
+    <div class="surveillance-box">
+        <div class="surveillance-title">
+            <span>🔴 À Surveiller</span>
+            <span id="surveillanceCount" style="background:#ef4444; color:white; padding:1px 6px; border-radius:10px; font-size:0.8em;">0</span>
+        </div>
+        <div class="surveillance-list" id="surveillanceList">
+            <span class="surveillance-empty">Aucun patient</span>
+        </div>
+    </div>
+
+    <!-- LÉGENDE DES COULEURS EN BAS À DROITE (ACCORDÉON DEPLIABLE) -->
+    <details class="legend-box" open id="legendDetails">
+        <summary class="legend-title">🎨 Légende ▾</summary>
+        <div class="legend-content">
+            <div class="legend-item"><span class="legend-color legend-red"></span> Rouge : À surveiller</div>
+            <div class="legend-item"><span class="legend-color legend-yellow"></span> Jaune : Au bloc</div>
+            <div class="legend-item"><span class="legend-color legend-green"></span> Vert : Post-op stable</div>
+        </div>
+    </details>
+
+    <!-- MODAL DOSSIER PATIENT -->
+    <div id="patientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle" style="margin:0;">Lit --</h3>
+                <button class="close-btn" onclick="closeModal()">✕</button>
+            </div>
+            
+            <input type="hidden" id="currentBedId">
+
+            <!-- VUE LECTURE DOSSIER -->
+            <div id="dossierView" style="margin-top: 15px;">
+                <div class="section-card">
+                    <div class="section-title">👤 Identité & Dossier</div>
+                    <div class="data-row"><span class="data-label">N° Dossier</span> <span class="data-value" id="vNumDossier">-</span></div>
+                    <div class="data-row"><span class="data-label">Médecin Traitant</span> <span class="data-value" id="vMedecinTraitant">-</span></div>
+                    <div class="data-row"><span class="data-label">État / Statut</span> <span class="data-value" id="vStatut">-</span></div>
+                    <div class="data-row"><span class="data-label">Nom & Prénom</span> <span class="data-value" id="vName">-</span></div>
+                    <div class="data-row"><span class="data-label">Téléphone</span> <span class="data-value" id="vTel">-</span></div>
+                    <div class="data-row"><span class="data-label">Date de Naissance</span> <span class="data-value" id="vDob">-</span></div>
+                    <div class="data-row"><span class="data-label">Âge / Groupe</span> <span class="data-value" id="vAgeGrp">-</span></div>
+                    <div class="data-row"><span class="data-label">Poids / Taille / BMI</span> <span class="data-value" id="vBmi">-</span></div>
+                    <div class="data-row"><span class="data-label" style="color:var(--danger)">Allergies</span> <span class="data-value" style="color:var(--danger)" id="vAllergies">Aucune</span></div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">☑️ Procédures & Suivi</div>
+                    <div class="data-row"><span class="data-label">Commande de sang</span> <span class="data-value" id="vCmdSang">❌ Non faite</span></div>
+                    <div class="data-row"><span class="data-label">Commande de médicament</span> <span class="data-value" id="vCmdMed">❌ Non faite</span></div>
+                    <div class="data-row"><span class="data-label">Protocole de sortie</span> <span class="data-value" id="vProtocoleSortie">❌ Non fait</span></div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">📅 Dates Clés</div>
+                    <div class="data-row"><span class="data-label">Date d'entrée</span> <span class="data-value" id="vDateEntree">-</span></div>
+                    <div class="data-row"><span class="data-label">Date d'intervention</span> <span class="data-value" id="vDateIntervention">-</span></div>
+                    <div class="data-row"><span class="data-label">Date de sortie prévisionnelle</span> <span class="data-value" id="vDateSortie">-</span></div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">🩺 Motif, ATCD & Décisions</div>
+                    <div class="data-row"><span class="data-label">Diagnostic</span> <span class="data-value" id="vDiag">-</span></div>
+                    <div class="data-row"><span class="data-label">Décision Réa</span> <span class="data-value" id="vDecRea">-</span></div>
+                    <div class="data-row"><span class="data-label">Colloque</span> <span class="data-value" id="vDecColloque">-</span></div>
+                    <div class="data-label" style="margin-top:6px;">Antécédents :</div>
+                    <div class="data-text" id="vAtcd">-</div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">🔬 Bilans & Imagerie (Résultats)</div>
+                    <div class="data-label">Bilan Complet :</div><div class="data-text" id="vBilanComplet">-</div>
+                    <div class="data-label" style="margin-top:6px;">Échographie :</div><div class="data-text" id="vEcho">-</div>
+                    <div class="data-label" style="margin-top:6px;">TDM TAP :</div><div class="data-text" id="vTdmTap">-</div>
+                    <div class="data-label" style="margin-top:6px;">TDM :</div><div class="data-text" id="vTdm">-</div>
+                    <div class="data-label" style="margin-top:6px;">IRM :</div><div class="data-text" id="vIrm">-</div>
+                    <div class="data-label" style="margin-top:6px;">Endoscopie :</div><div class="data-text" id="vEndo">-</div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">📌 Remarques & Photos</div>
+                    <div class="data-text" id="vRemarques">-</div>
+                    
+                    <div style="margin-top:10px;">
+                        <button id="btnTogglePhotos" class="btn-main" style="background:#64748b; font-size:0.85em; display:none;" onclick="togglePhotosView()">📸 Afficher les photos (<span id="photoCount">0</span>)</button>
+                        <div id="photosContainer" class="gallery-grid" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <!-- BOUTONS D'ACTION -->
+                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:15px;">
+                    <button class="btn-main btn-warning" style="flex:1; min-width:140px;" onclick="switchToEdit()">✏️ Modifier</button>
+                    <button class="btn-main" style="flex:1; min-width:140px; background:var(--primary);" onclick="changerDeLit()">🔀 Changer Lit</button>
+                    <button class="btn-main btn-danger" style="flex:1; min-width:140px;" onclick="archiveAndFreePatient()">📦 Libérer (Archiver)</button>
+                </div>
+            </div>
+
+            <!-- VUE FORMULAIRE EDITION -->
+            <div id="formView" style="display:none; margin-top: 15px;">
+                <div class="grid-2">
+                    <div class="form-group"><label>N° Dossier</label><input type="text" id="eNumDossier" placeholder="Ex: DOS-2026-001"></div>
+                    <div class="form-group"><label>Médecin Traitant</label><input type="text" id="eMedecinTraitant" placeholder="Ex: Dr. Benali"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>État / Code Couleur du Patient</label>
+                    <select id="eStatut">
+                        <option value="normal">⚪ Couleur de base (Non opéré encore)</option>
+                        <option value="surveiller">🔴 À surveiller (Rouge)</option>
+                        <option value="bloc">🟡 Au bloc / En train d'être opéré (Jaune)</option>
+                        <option value="postop">🟢 Post-opératoire stable (Vert)</option>
+                    </select>
+                </div>
+
+                <div class="form-group"><label>Nom & Prénom</label><input type="text" id="eName" placeholder="Ex: GUESMI NASSIMA"></div>
+                
+                <div class="grid-2">
+                    <div class="form-group"><label>N° Téléphone</label><input type="tel" id="eTel" placeholder="06XXXXXXXX"></div>
+                    <div class="form-group"><label>Groupe Sanguin</label>
+                        <select id="eGrp">
+                            <option value="Indéterminé">Indéterminé</option>
+                            <option value="A+">A+</option><option value="A-">A-</option>
+                            <option value="B+">B+</option><option value="B-">B-</option>
+                            <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                            <option value="O+">O+</option><option value="O-">O-</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-3">
+                    <div class="form-group"><label>Date de Naissance</label><input type="date" id="eDob" onchange="calcAgeFromDob()"></div>
+                    <div class="form-group"><label>Âge (ans)</label><input type="number" id="eAge"></div>
+                    <div class="form-group"><label>Poids (kg)</label><input type="number" id="ePoids" oninput="calcBMI()"></div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group"><label>Taille (cm)</label><input type="number" id="eTaille" oninput="calcBMI()"></div>
+                    <div class="form-group"><label>BMI Calculated</label><input type="text" id="eBmi" readonly style="background:#e2e8f0;"></div>
+                </div>
+
+                <div class="section-card" style="background:#fff;">
+                    <div class="section-title">☑ Procédures & Suivi</div>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" id="eCmdSang"> Commande de sang faite</label>
+                        <label class="checkbox-item"><input type="checkbox" id="eCmdMed"> Commande de médicament faite</label>
+                        <label class="checkbox-item"><input type="checkbox" id="eProtocoleSortie"> Protocole de sortie prêt</label>
+                    </div>
+                </div>
+
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label>Date Entrée</label>
+                        <div style="display:flex; gap:4px;">
+                            <input type="date" id="eDateEntree" style="flex:1;">
+                            <button type="button" class="btn-today" onclick="setToday('eDateEntree')">Aujourd'hui</button>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>Date Intervention</label><input type="date" id="eDateIntervention"></div>
+                    <div class="form-group">
+                        <label>Date Sortie Prévue</label>
+                        <div style="display:flex; gap:4px;">
+                            <input type="date" id="eDateSortie" style="flex:1;">
+                            <button type="button" class="btn-today" onclick="setToday('eDateSortie')">Aujourd'hui</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group"><label>Allergies</label><input type="text" id="eAllergies"></div>
+                <div class="form-group"><label>Diagnostic Main</label><input type="text" id="eDiag"></div>
+                <div class="form-group"><label>Antécédents</label><textarea id="eAtcd" rows="2"></textarea></div>
+
+                <div class="grid-2">
+                    <div class="form-group"><label>Décision Réa</label><input type="text" id="eDecRea" placeholder="Ex: Oui (Lit réservé) / Non"></div>
+                    <div class="form-group"><label>Décision Colloque</label><input type="text" id="eDecColloque" placeholder="Ex: Opérable"></div>
+                </div>
+                <div class="form-group"><label>Date Colloque</label><input type="date" id="eDateColloque"></div>
+
+                <div class="form-group"><label>🔬 Bilans Complets (FNS, TP, TCA, Bilan Rénal...)</label><textarea id="eBilanComplet" rows="3"></textarea></div>
+                <div class="grid-2">
+                    <div class="form-group"><label>Échographie</label><input type="text" id="eEcho"></div>
+                    <div class="form-group"><label>TDM TAP</label><input type="text" id="eTdmTap"></div>
+                    <div class="form-group"><label>TDM</label><input type="text" id="eTdm"></div>
+                    <div class="form-group"><label>IRM</label><input type="text" id="eIrm"></div>
+                </div>
+                <div class="form-group"><label>Endoscopie</label><input type="text" id="eEndo"></div>
+                <div class="form-group"><label>Remarques / Transmissions</label><textarea id="eRemarques" rows="3"></textarea></div>
+
+                <div class="form-group">
+                    <label>📸 Ajouter des Photos (Formats supportés: JPG, PNG, HEIC...)</label>
+                    <input type="file" id="ePhotos" multiple accept="image/*,.heic,.HEIC" onchange="handlePhotoUpload(event)">
+                    <div id="photosPreview" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;"></div>
+                </div>
+
+                <button class="btn-main" onclick="savePatient()" style="background:var(--success); margin-bottom:8px;">💾 Enregistrer</button>
+                <button class="btn-main" onclick="switchToView()" style="background:transparent; color:var(--text); border:1px solid #cbd5e1;">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL POPUP SÉLECTION CHANGEMENT DE LIT -->
+    <div id="transferModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin:0; color:var(--primary);">🔀 Transfert de Lit</h3>
+                <button class="close-btn" onclick="closeTransferModal()">✕</button>
+            </div>
+            <div style="margin-top: 15px;">
+                <p style="font-size:0.95em; color:var(--text); margin-bottom:15px; line-height:1.4;">
+                    Déplacer le patient <strong id="transferPatientName" style="color:var(--primary);"></strong><br>
+                    <span style="font-size:0.85em; color:var(--text-light);">Lit actuel : <b id="transferCurrentBed"></b></span>
+                </p>
+                
+                <div class="form-group">
+                    <label style="font-size:0.85em; font-weight:bold; color:var(--text);">Sélectionner le nouveau lit disponible :</label>
+                    <select id="selectNewBed" style="padding:12px; font-size:0.95em; border-radius:8px; border:1px solid #cbd5e1; width:100%; margin-top:6px; background:#f8fafc; font-weight:600;">
+                        <!-- Les lits vides seront générés dynamiquement -->
+                    </select>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:8px; margin-top:20px;">
+                    <button class="btn-main" onclick="confirmBedTransfer()" style="background:var(--success);">✅ Confirmer le transfert</button>
+                    <button class="btn-main" onclick="closeTransferModal()" style="background:transparent; color:var(--text); border:1px solid #cbd5e1;">Annuler</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VISIONNEUSE PHOTO PLEIN ÉCRAN -->
+    <div id="photoViewerModal" onclick="closePhotoViewer()">
+        <button class="close-photo-btn" onclick="closePhotoViewer()">✕</button>
+        <img id="photoViewerImg" src="" alt="Aperçu de l'image">
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove, push, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
+            authDomain: "internes-debussy.firebaseapp.com",
+            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "internes-debussy",
+            storageBucket: "internes-debussy.firebasestorage.app",
+            messagingSenderId: "614550756274",
+            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        let patientsDb = {};
+        let programmesOperatoiresData = {};
+        let currentPhotos = [];
+
+        // Liste exhaustive de tous les lits de l'établissement
+        const ALL_BEDS = [];
+        for(let i=401; i<=408; i++) { ALL_BEDS.push(`${i}P`, `${i}F`); }
+        for(let i=301; i<=308; i++) { ALL_BEDS.push(`${i}P`, `${i}F`); }
+        for(let i=1; i<=6; i++) { ALL_BEDS.push(`REA${i}`); }
+
+        function getBedLabel(bedId) {
+            if (bedId.startsWith('REA')) {
+                return `🚨 Réanimation — Lit R${bedId.replace('REA','')}`;
+            }
+            const floor = bedId.startsWith('4') ? '4ème Étage' : '3ème Étage';
+            const type = bedId.endsWith('P') ? 'Porte' : 'Fenêtre';
+            const room = bedId.substring(0, 3);
+            return `🛏️ ${floor} — Chambre ${room} (${type}) [Lit ${bedId}]`;
+        }
+
+        // Fermeture automatique de la légende au chargement sur mobile
+        if (window.innerWidth <= 640) {
+            const legendDetails = document.getElementById('legendDetails');
+            if(legendDetails) legendDetails.removeAttribute('open');
+        }
+
+        // Génération des lits pour chaque étage
+        function buildGrid(gridId, start, end, isRea = false) {
+            const grid = document.getElementById(gridId);
+            grid.innerHTML = "";
+            if(isRea) {
+                const room = document.createElement('div');
+                room.className = 'room-card';
+                room.style.gridColumn = "1 / -1";
+                let bedsHtml = '<div class="beds" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:10px;">';
+                for(let i=1; i<=6; i++) {
+                    bedsHtml += `
+                        <button id="btn-REA${i}" class="bed-btn" onclick="openModal('REA${i}')">
+                            <span class="bed-code">🚨 Lit Réa R${i}</span>
+                            <span class="bed-patient-name" id="name-REA${i}">(Vide)</span>
+                        </button>`;
+                }
+                bedsHtml += '</div>';
+                room.innerHTML = `<h4 class="room-title">Salle de Réanimation</h4>` + bedsHtml;
+                grid.appendChild(room);
+            } else {
+                for (let i = start; i <= end; i++) {
+                    const room = document.createElement('div');
+                    room.className = 'room-card';
+                    room.innerHTML = `
+                        <h4 class="room-title">Chambre ${i}</h4>
+                        <div class="beds">
+                            <button id="btn-${i}P" class="bed-btn" onclick="openModal('${i}P')">
+                                <span class="bed-code">🛏️ ${i}P (Porte)</span>
+                                <span class="bed-patient-name" id="name-${i}P">(Vide)</span>
+                            </button>
+                            <button id="btn-${i}F" class="bed-btn" onclick="openModal('${i}F')">
+                                <span class="bed-code">🛏️ ${i}F (Fenêtre)</span>
+                                <span class="bed-patient-name" id="name-${i}F">(Vide)</span>
+                            </button>
+                        </div>`;
+                    grid.appendChild(room);
+                }
+            }
+        }
+
+        buildGrid('grid-4', 401, 408);
+        buildGrid('grid-3', 301, 308);
+        buildGrid('grid-rea', 1, 6, true);
+
+        // Ecouteur temps réel Firebase Dossiers Patients
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+            patientsDb = snapshot.val() || {};
+            let countSurveillance = 0;
+            let surveillanceHtml = '';
+
+            document.querySelectorAll('.bed-btn').forEach(btn => {
+                const bedId = btn.id.replace('btn-', '');
+                const nameSpan = document.getElementById(`name-${bedId}`);
+                
+                // Réinitialisation des classes de couleur
+                btn.classList.remove('occupied', 'status-surveiller', 'status-bloc', 'status-postop');
+                
+                if(patientsDb[bedId] && patientsDb[bedId].nom) {
+                    btn.classList.add('occupied');
+                    
+                    // Application de la couleur en fonction du statut
+                    const statut = patientsDb[bedId].statut;
+                    if(statut === 'surveiller') {
+                        btn.classList.add('status-surveiller');
+                        countSurveillance++;
+                        surveillanceHtml += `
+                            <div class="surveillance-item" onclick="openModal('${bedId}')">
+                                <span class="surveillance-bed">Lit ${bedId}</span>
+                                <span class="surveillance-name">${patientsDb[bedId].nom}</span>
+                            </div>
+                        `;
+                    }
+                    else if(statut === 'bloc') btn.classList.add('status-bloc');
+                    else if(statut === 'postop') btn.classList.add('status-postop');
+
+                    if(nameSpan) nameSpan.textContent = patientsDb[bedId].nom.toUpperCase();
+                } else {
+                    if(nameSpan) nameSpan.textContent = "(Vide)";
+                }
+            });
+
+            // Mise à jour du bloc flottant "À Surveiller"
+            document.getElementById('surveillanceCount').textContent = countSurveillance;
+            document.getElementById('surveillanceList').innerHTML = surveillanceHtml || '<span class="surveillance-empty">Aucun patient</span>';
+        });
+
+        // Ecouteur des programmes opératoires pour récupérer la date si non tapée manuellement
+        onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
+            programmesOperatoiresData = snapshot.val() || {};
+        });
+
+        // Helper de formatage de date JJ/MM/AAAA
+        function formatDate(dateStr) {
+            if (!dateStr) return "-";
+            const parts = dateStr.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            return dateStr;
+        }
+
+        // Calcul automatique du Post-Op (J0, J1, J2...)
+        function getInterventionDisplayDate(patient) {
+            let dateStr = patient.dateIntervention || "";
+            
+            // Si aucune date saisie directement, recherche automatique dans les programmes opératoires
+            if (!dateStr && patient.nom && programmesOperatoiresData) {
+                const nomCherche = patient.nom.toLowerCase().trim();
+                let datePlusRecente = "";
+                
+                for (const dateKey in programmesOperatoiresData) {
+                    const listeOps = programmesOperatoiresData[dateKey];
+                    for (const index in listeOps) {
+                        const op = listeOps[index];
+                        const nomOp = (op.patientText || op.patient || op.nom || "").toLowerCase();
+                        if (nomOp.includes(nomCherche) && nomCherche !== "") {
+                            const statut = (op.status || op.statut || "").toLowerCase();
+                            if (!statut.includes("reprogramm")) {
+                                if (dateKey > datePlusRecente) {
+                                    datePlusRecente = dateKey;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (datePlusRecente) {
+                    dateStr = datePlusRecente;
+                }
+            }
+
+            if (!dateStr) return "-";
+
+            // Calcul du nombre de jours Post-Op
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1;
+                const day = parseInt(parts[2], 10);
+                
+                const interDate = new Date(year, month, day);
+                interDate.setHours(0, 0, 0, 0);
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const diffDays = Math.floor((today - interDate) / (1000 * 60 * 60 * 24));
+                const formattedDate = `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`;
+
+                // Si le patient est en post-op (intervention aujourd'hui ou dans le passé)
+                if (diffDays >= 0) {
+                    return `(J${diffDays}) ${formattedDate}`;
+                } else {
+                    return formattedDate;
+                }
+            }
+
+            return dateStr;
+        }
+
+        window.switchFloor = function(floorId, btn) {
+            document.querySelectorAll('.floor').forEach(f => f.classList.remove('active'));
+            document.querySelectorAll('.floor-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(floorId).classList.add('active');
+            btn.classList.add('active');
+        };
+
+        window.calcBMI = function() {
+            const p = parseFloat(document.getElementById('ePoids').value);
+            const t = parseFloat(document.getElementById('eTaille').value) / 100;
+            if(p && t) {
+                document.getElementById('eBmi').value = (p / (t * t)).toFixed(1);
+            }
+        };
+
+        window.calcAgeFromDob = function() {
+            const dobVal = document.getElementById('eDob').value;
+            if (!dobVal) return;
+            const dob = new Date(dobVal);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            if (age >= 0) {
+                document.getElementById('eAge').value = age;
+            }
+        };
+
+        window.setToday = function(inputId) {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById(inputId).value = today;
+        };
+
+        window.openModal = function(bedId) {
+            document.getElementById('currentBedId').value = bedId;
+            document.getElementById('modalTitle').textContent = `Lit ${bedId}`;
+            const p = patientsDb[bedId];
+            
+            if(p && p.nom) {
+                document.getElementById('vNumDossier').textContent = p.numDossier || '-';
+                document.getElementById('vMedecinTraitant').textContent = p.medecinTraitant || '-';
+                
+                const statutLabels = {
+                    'normal': '⚪ Normal / Non opéré',
+                    'surveiller': '🔴 À surveiller',
+                    'bloc': '🟡 Au bloc opératoire',
+                    'postop': '🟢 Post-opératoire stable'
+                };
+                document.getElementById('vStatut').textContent = statutLabels[p.statut] || '⚪ Normal / Non opéré';
+                
+                document.getElementById('vName').textContent = p.nom;
+                document.getElementById('vTel').textContent = p.telephone || '-';
+                document.getElementById('vDob').textContent = p.dob ? formatDate(p.dob) : '-';
+                document.getElementById('vAgeGrp').textContent = `${p.age || '-'} ans (${p.grp || 'Indéterminé'})`;
+                document.getElementById('vBmi').textContent = `${p.poids || '-'} kg / ${p.taille || '-'} cm (BMI: ${p.bmi || '-'})`;
+                document.getElementById('vAllergies').textContent = p.allergies || 'Aucune';
+                
+                document.getElementById('vCmdSang').textContent = p.cmdSang ? '✅ Fait' : '❌ Non faite';
+                document.getElementById('vCmdMed').textContent = p.cmdMed ? '✅ Fait' : '❌ Non faite';
+                document.getElementById('vProtocoleSortie').textContent = p.protocoleSortie ? '✅ Prêt' : '❌ Non fait';
+
+                document.getElementById('vDateEntree').textContent = formatDate(p.dateEntree);
+                document.getElementById('vDateIntervention').textContent = getInterventionDisplayDate(p);
+                document.getElementById('vDateSortie').textContent = formatDate(p.dateSortie);
+                document.getElementById('vDiag').textContent = p.diag || '-';
+                document.getElementById('vDecRea').textContent = p.decRea || '-';
+                document.getElementById('vDecColloque').textContent = p.decColloque ? `${p.decColloque} (${formatDate(p.dateColloque)})` : '-';
+                document.getElementById('vAtcd').textContent = p.atcd || 'Aucun';
+                document.getElementById('vBilanComplet').textContent = p.bilanComplet || 'Non saisi';
+                document.getElementById('vEcho').textContent = p.echo || '-';
+                document.getElementById('vTdmTap').textContent = p.tdmTap || '-';
+                document.getElementById('vTdm').textContent = p.tdm || '-';
+                document.getElementById('vIrm').textContent = p.irm || '-';
+                document.getElementById('vEndo').textContent = p.endo || '-';
+                document.getElementById('vRemarques').textContent = p.remarques || '-';
+                
+                currentPhotos = p.photos || [];
+                const photoBtn = document.getElementById('btnTogglePhotos');
+                const photoCount = document.getElementById('photoCount');
+                if (currentPhotos.length > 0) {
+                    photoBtn.style.display = 'block';
+                    photoCount.textContent = currentPhotos.length;
+                } else {
+                    photoBtn.style.display = 'none';
+                }
+                document.getElementById('photosContainer').style.display = 'none';
+
+                switchToView();
+            } else {
+                currentPhotos = [];
+                resetEditForm();
+                switchToEdit();
+            }
+            document.getElementById('patientModal').classList.add('active');
+        };
+
+        window.togglePhotosView = function() {
+            const container = document.getElementById('photosContainer');
+            if (container.style.display === 'none') {
+                container.innerHTML = '';
+                currentPhotos.forEach(src => {
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.className = 'gallery-img';
+                    img.onclick = () => openPhotoViewer(src); 
+                    container.appendChild(img);
+                });
+                container.style.display = 'grid';
+            } else {
+                container.style.display = 'none';
+            }
+        };
+
+        window.openPhotoViewer = function(src) {
+            document.getElementById('photoViewerImg').src = src;
+            document.getElementById('photoViewerModal').classList.add('active');
+        };
+        
+        window.closePhotoViewer = function() {
+            document.getElementById('photoViewerModal').classList.remove('active');
+        };
+
+        window.closeModal = function() { document.getElementById('patientModal').classList.remove('active'); };
+        
+        window.switchToEdit = function() {
+            document.getElementById('dossierView').style.display = 'none';
+            document.getElementById('formView').style.display = 'block';
+            const bedId = document.getElementById('currentBedId').value;
+            const p = patientsDb[bedId] || {};
+            
+            document.getElementById('eNumDossier').value = p.numDossier || '';
+            document.getElementById('eMedecinTraitant').value = p.medecinTraitant || '';
+            document.getElementById('eStatut').value = p.statut || 'normal';
+            document.getElementById('eName').value = p.nom || '';
+            document.getElementById('eTel').value = p.telephone || '';
+            document.getElementById('eGrp').value = p.grp || 'Indéterminé';
+            document.getElementById('eDob').value = p.dob || '';
+            document.getElementById('eAge').value = p.age || '';
+            document.getElementById('ePoids').value = p.poids || '';
+            document.getElementById('eTaille').value = p.taille || '';
+            document.getElementById('eBmi').value = p.bmi || '';
+            
+            document.getElementById('eCmdSang').checked = !!p.cmdSang;
+            document.getElementById('eCmdMed').checked = !!p.cmdMed;
+            document.getElementById('eProtocoleSortie').checked = !!p.protocoleSortie;
+
+            document.getElementById('eDateEntree').value = p.dateEntree || '';
+            document.getElementById('eDateIntervention').value = p.dateIntervention || '';
+            document.getElementById('eDateSortie').value = p.dateSortie || '';
+            document.getElementById('eAllergies').value = p.allergies || '';
+            document.getElementById('eDiag').value = p.diag || '';
+            document.getElementById('eAtcd').value = p.atcd || '';
+            document.getElementById('eDecRea').value = p.decRea || '';
+            document.getElementById('eDecColloque').value = p.decColloque || '';
+            document.getElementById('eDateColloque').value = p.dateColloque || '';
+            document.getElementById('eBilanComplet').value = p.bilanComplet || '';
+            document.getElementById('eEcho').value = p.echo || '';
+            document.getElementById('eTdmTap').value = p.tdmTap || '';
+            document.getElementById('eTdm').value = p.tdm || '';
+            document.getElementById('eIrm').value = p.irm || '';
+            document.getElementById('eEndo').value = p.endo || '';
+            document.getElementById('eRemarques').value = p.remarques || '';
+            
+            currentPhotos = p.photos || [];
+            renderPhotoPreviews();
+        };
+
+        window.switchToView = function() {
+            document.getElementById('formView').style.display = 'none';
+            document.getElementById('dossierView').style.display = 'block';
+        };
+
+        function resetEditForm() {
+            document.querySelectorAll('#formView input, #formView textarea').forEach(i => i.value = '');
+            document.querySelectorAll('#formView input[type="checkbox"]').forEach(i => i.checked = false);
+            document.getElementById('eGrp').value = 'Indéterminé';
+            document.getElementById('eStatut').value = 'normal';
+            currentPhotos = [];
+            renderPhotoPreviews();
+        }
+
+        // Gestion de l'upload des photos y compris le format HEIC
+        window.handlePhotoUpload = async function(event) {
+            const files = Array.from(event.target.files);
+            
+            for (const file of files) {
+                let blobToRead = file;
+                const fileName = file.name.toLowerCase();
+                
+                // Conversion si format HEIC (iPhone)
+                if (fileName.endsWith('.heic') || file.type.includes('heic')) {
+                    try {
+                        if (window.heic2any) {
+                            const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 });
+                            blobToRead = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+                        }
+                    } catch (err) {
+                        console.error("Erreur lors de la conversion du fichier HEIC :", err);
+                    }
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const maxDim = 800;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height) {
+                            if (width > maxDim) {
+                                height *= maxDim / width;
+                                width = maxDim;
+                            }
+                        } else {
+                            if (height > maxDim) {
+                                width *= maxDim / height;
+                                height = maxDim;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        currentPhotos.push(dataUrl);
+                        renderPhotoPreviews();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(blobToRead);
+            }
+            event.target.value = '';
+        };
+
+        function renderPhotoPreviews() {
+            const previewDiv = document.getElementById('photosPreview');
+            previewDiv.innerHTML = '';
+            currentPhotos.forEach((src, index) => {
+                const container = document.createElement('div');
+                container.style.position = 'relative';
+                container.style.display = 'inline-block';
+                container.innerHTML = `
+                    <img src="${src}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;">
+                    <button type="button" onclick="removePhoto(${index})" style="position:absolute; top:-5px; right:-5px; background:var(--danger); color:white; border:none; border-radius:50%; width:18px; height:18px; font-size:10px; cursor:pointer;">✕</button>
+                `;
+                previewDiv.appendChild(container);
+            });
+        }
+
+        window.removePhoto = function(index) {
+            currentPhotos.splice(index, 1);
+            renderPhotoPreviews();
+        };
+
+        window.savePatient = function() {
+            const bedId = document.getElementById('currentBedId').value;
+            const data = {
+                bedId: bedId,
+                numDossier: document.getElementById('eNumDossier').value.trim(),
+                medecinTraitant: document.getElementById('eMedecinTraitant').value.trim(),
+                statut: document.getElementById('eStatut').value,
+                nom: document.getElementById('eName').value.trim().toUpperCase(),
+                telephone: document.getElementById('eTel').value,
+                grp: document.getElementById('eGrp').value,
+                dob: document.getElementById('eDob').value,
+                age: document.getElementById('eAge').value,
+                poids: document.getElementById('ePoids').value,
+                taille: document.getElementById('eTaille').value,
+                bmi: document.getElementById('eBmi').value,
+                cmdSang: document.getElementById('eCmdSang').checked,
+                cmdMed: document.getElementById('eCmdMed').checked,
+                protocoleSortie: document.getElementById('eProtocoleSortie').checked,
+                dateEntree: document.getElementById('eDateEntree').value,
+                dateIntervention: document.getElementById('eDateIntervention').value,
+                dateSortie: document.getElementById('eDateSortie').value,
+                allergies: document.getElementById('eAllergies').value,
+                diag: document.getElementById('eDiag').value,
+                atcd: document.getElementById('eAtcd').value,
+                decRea: document.getElementById('eDecRea').value,
+                decColloque: document.getElementById('eDecColloque').value,
+                dateColloque: document.getElementById('eDateColloque').value,
+                bilanComplet: document.getElementById('eBilanComplet').value,
+                echo: document.getElementById('eEcho').value,
+                tdmTap: document.getElementById('eTdmTap').value,
+                tdm: document.getElementById('eTdm').value,
+                irm: document.getElementById('eIrm').value,
+                endo: document.getElementById('eEndo').value,
+                remarques: document.getElementById('eRemarques').value,
+                photos: currentPhotos
+            };
+
+            if(!data.nom) return alert("Le nom est obligatoire !");
+            set(ref(db, 'dossiers_patients/' + bedId), data);
+            closeModal();
+        };
+
+        // Libération du patient avec confirmation
+        window.archiveAndFreePatient = function() {
+            const bedId = document.getElementById('currentBedId').value;
+            const patient = patientsDb[bedId];
+            if(!patient) return;
+
+            const today = new Date().toISOString().split('T')[0];
+            const defaultDate = patient.dateSortie || today;
+
+            const inputDate = prompt(`Entrez ou confirmez la date de sortie de ${patient.nom} (Format: AAAA-MM-JJ) :`, defaultDate);
+
+            if (inputDate === null) return;
+
+            const dateSortieEffective = inputDate.trim() || today;
+
+            if(confirm(`Voulez-vous libérer le lit ${bedId} et archiver le dossier de ${patient.nom} avec la date de sortie du ${dateSortieEffective} ?`)) {
+                const archiveData = { 
+                    ...patient, 
+                    dateSortie: dateSortieEffective,
+                    dateSortieReelle: dateSortieEffective,
+                    ancienLit: bedId,
+                    dateArchivage: new Date().toISOString(),
+                    timestampId: Date.now()
+                };
+
+                push(ref(db, 'archives_patients/'), archiveData).then(() => {
+                    remove(ref(db, 'dossiers_patients/' + bedId));
+                    closeModal();
+                    alert(`Patient ${patient.nom} libéré et archivé avec succès !`);
+                }).catch(error => {
+                    console.error("Erreur d'archivage :", error);
+                    alert("Une erreur est survenue lors de l'archivage.");
+                });
+            }
+        };
+
+        // OUVRIR LE MODAL DE SÉLECTION DU NOUVEAU LIT
+        window.changerDeLit = function() {
+            const currentBedId = document.getElementById('currentBedId').value;
+            const patient = patientsDb[currentBedId];
+            
+            if (!patient || !patient.nom) return;
+
+            // Filtrer uniquement les lits réellement VIDES
+            const emptyBeds = ALL_BEDS.filter(bedId => !patientsDb[bedId] || !patientsDb[bedId].nom);
+
+            if (emptyBeds.length === 0) {
+                alert("Aucun lit n'est actuellement disponible dans tout l'établissement !");
+                return;
+            }
+
+            // Alimenter la liste déroulante avec les lits disponibles
+            const select = document.getElementById('selectNewBed');
+            select.innerHTML = '';
+            
+            emptyBeds.forEach(bedId => {
+                const opt = document.createElement('option');
+                opt.value = bedId;
+                opt.textContent = getBedLabel(bedId);
+                select.appendChild(opt);
+            });
+
+            document.getElementById('transferPatientName').textContent = patient.nom;
+            document.getElementById('transferCurrentBed').textContent = currentBedId;
+
+            document.getElementById('transferModal').classList.add('active');
+        };
+
+        window.closeTransferModal = function() {
+            document.getElementById('transferModal').classList.remove('active');
+        };
+
+        // VALIDER LE TRANSFERT DE LIT
+        window.confirmBedTransfer = async function() {
+            const oldBedId = document.getElementById('currentBedId').value;
+            const newBedId = document.getElementById('selectNewBed').value;
+            const patient = patientsDb[oldBedId];
+
+            if (!patient || !newBedId) return;
+
+            if (newBedId === oldBedId) {
+                alert("Le patient est déjà dans ce lit !");
+                return;
+            }
+
+            const newBedRef = ref(db, 'dossiers_patients/' + newBedId);
+
+            try {
+                const newBedSnapshot = await get(newBedRef);
+                if (newBedSnapshot.exists() && newBedSnapshot.val().nom) {
+                    alert("Opération annulée : Le lit " + newBedId + " est déjà occupé !");
+                    return;
+                }
+
+                const newPatientData = { ...patient, bedId: newBedId };
+                await set(newBedRef, newPatientData);
+                await remove(ref(db, 'dossiers_patients/' + oldBedId));
+
+                alert(`Transfert réussi : ${patient.nom} a été déplacé du lit ${oldBedId} vers le lit ${newBedId}.`);
+                closeTransferModal();
+                closeModal();
+
+            } catch (error) {
+                console.error("Erreur lors du changement de lit :", error);
+                alert("Une erreur s'est produite lors du transfert.");
+            }
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const bedFromUrl = urlParams.get('bedId');
+        if(bedFromUrl) {
+            setTimeout(() => openModal(bedFromUrl), 500);
+        }
+    </script>
+</body>
+</html>
