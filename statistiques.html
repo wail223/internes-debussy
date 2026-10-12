@@ -99,23 +99,24 @@
         <div class="detail-section" style="grid-column: 1 / -1;">
             <h4>🫀 Recherche par Pathologie / Organe</h4>
             <div style="color: var(--text-light); font-size: 0.85em; margin-bottom: 10px;">
-                Recherche intelligente (tolérance aux fautes/accents) croisant 3 bases : <b>Patients actuels</b>, <b>Archives Patients</b>, et <b>Registre des Interventions</b>.
+                Recherche intelligente (tolérance aux fautes/accents/abréviations) croisant 3 bases : <b>Patients actuels</b>, <b>Archives Patients</b>, et <b>Registre des Interventions</b>.
             </div>
             
+            <!-- LISTE MISE À JOUR AVEC VOS ABRÉVIATIONS ET TERMES -->
             <select id="organSelect" class="organ-select">
                 <option value="">-- Choisissez un organe / pathologie --</option>
-                <option value="colon,colique,colectomie">Côlon / Colique</option>
-                <option value="endometre,uterus,uterin,hysterectomie,adk">Endomètre / Utérus / ADK</option>
+                <option value="colon,colique,colectomie,resection anterieure">Côlon / Colique</option>
+                <option value="endometre,uterus,uterin,hysterectomie,adk,ht + ab,ht+ab,ht,gp+cd,chirurgie d'intervalle">Endomètre / Utérus / Ovaire (HT+AB, GP+CD)</option>
                 <option value="estomac,gastrique,cardio,gastrectomie">Estomac / Gastrique</option>
                 <option value="thyroide,thyroidien,thyroidectomie">Thyroïde</option>
-                <option value="parathyroide,parathyroidectomie">Parathyroïde</option>
-                <option value="rectum,rectal,proctectomie">Rectum</option>
-                <option value="sein,mammaire,mastectomie,tumorectomie">Sein / Mammaire</option>
-                <option value="vesicule,biliaire,cholecystectomie">Vésicule biliaire</option>
-                <option value="foie,hepatique,hepatectomie">Foie / Hépatique</option>
+                <option value="parathyroide,parathyroidectomie,parathyoidectomir">Parathyroïde</option>
+                <option value="rectum,rectal,proctectomie,amputation">Rectum</option>
+                <option value="sein,mammaire,mastectomie,tumorectomie,t+gs,t.t,patey,curage">Sein / Mammaire (Mastectomie, T.T, T+GS)</option>
+                <option value="vesicule,biliaire,cholecystectomie,chell">Vésicule biliaire (CHELL)</option>
+                <option value="foie,hepatique,hepatectomie,bisegmentectomie,exerese">Foie / Hépatique (Exérèse)</option>
                 <option value="pancreas,pancreatique,dpc">Pancréas</option>
-                <option value="ovaire,ovarien,annexectomie">Ovaire</option>
                 <option value="hernie,eventration,parietale">Hernie / Éventration</option>
+                <option value="exploratrice,laparotomie exploratrice">Laparotomie Exploratrice</option>
             </select>
 
             <div class="stat-row" style="font-size: 1.1em; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
