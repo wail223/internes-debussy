@@ -79,7 +79,7 @@
         <div class="stat-card card-total">
             <h3>Total Patients Présents</h3>
             <div class="stat-value" id="statTotal">-</div>
-            <div class="stat-subtext">Capacité totale : <span id="capLabel">37</span> lits</div>
+            <div class="stat-subtext">Capacité totale : <span id="capLabel">31</span> lits</div>
         </div>
         <div class="stat-card card-opere">
             <h3>Malades Opérés</h3>
@@ -105,7 +105,7 @@
             <select id="organSelect" class="organ-select">
                 <option value="">-- Choisissez un organe / pathologie --</option>
                 <option value="colon,colique,colectomie">Côlon / Colique</option>
-                <option value="endometre,uterus,uterin,hysterectomie">Endomètre / Utérus</option>
+                <option value="endometre,uterus,uterin,hysterectomie,adk">Endomètre / Utérus / ADK</option>
                 <option value="estomac,gastrique,cardio,gastrectomie">Estomac / Gastrique</option>
                 <option value="thyroide,thyroidien,thyroidectomie">Thyroïde</option>
                 <option value="parathyroide,parathyroidectomie">Parathyroïde</option>
@@ -142,20 +142,28 @@
             <div class="progress-bar-bg">
                 <div class="progress-bar-fill" id="occupancyBar"></div>
             </div>
+
+            <h4 style="margin-top: 20px;">⚠️ Statuts Spécifiques (Actifs)</h4>
+            <div class="stat-row"><span>À surveiller (Rouge)</span> <b style="color:var(--danger);" id="countSurveiller">-</b></div>
+            <div class="stat-row"><span>Au bloc (Jaune)</span> <b style="color:var(--warning);" id="countBloc">-</b></div>
         </div>
 
         <div class="detail-section">
             <h4>📅 Interventions par Mois</h4>
-            <div style="max-height: 200px; overflow-y: auto;">
+            <div style="max-height: 180px; overflow-y: auto; margin-bottom: 20px;">
                 <table id="monthlyStatsTable">
                     <thead><tr><th>Mois</th><th>Opérations</th></tr></thead>
                     <tbody id="monthlyStatsBody"><tr><td colspan="2">Calcul en cours...</td></tr></tbody>
                 </table>
             </div>
 
-            <h4 style="margin-top: 20px;">⚠️ Statuts Spécifiques (Actifs)</h4>
-            <div class="stat-row"><span>À surveiller (Rouge)</span> <b style="color:var(--danger);" id="countSurveiller">-</b></div>
-            <div class="stat-row"><span>Au bloc (Jaune)</span> <b style="color:var(--warning);" id="countBloc">-</b></div>
+            <h4>📅 Interventions par Semaine</h4>
+            <div style="max-height: 180px; overflow-y: auto;">
+                <table id="weeklyStatsTable">
+                    <thead><tr><th>Semaine</th><th>Opérations</th></tr></thead>
+                    <tbody id="weeklyStatsBody"><tr><td colspan="2">Calcul en cours...</td></tr></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -204,7 +212,7 @@
         let programmesOperatoiresData = {};
         let currentSearchResults = [];
 
-        // Fonction pour normaliser le texte (retire accents, minuscules, espaces superflus)
+        // Fonction pour normaliser le texte
         function normalizeStr(str) {
             if (!str) return "";
             return str.toLowerCase()
@@ -227,17 +235,18 @@
             programmesOperatoiresData = snapshot.val() || {};
             computeAllStats();
             computeMonthlyStats();
+            computeWeeklyStats(); // Appel de la nouvelle fonction
         });
 
         // Event listener pour le toggle du 3ème étage
         document.getElementById('toggle3rdFloor').addEventListener('change', computeAllStats);
         document.getElementById('organSelect').addEventListener('change', calculateOrganStats);
 
-        // --- CALCUL DES STATISTIQUES PRINCIPALES (Opérés, Capacité) ---
+        // --- CALCUL DES STATISTIQUES PRINCIPALES ---
         function computeAllStats() {
-            // 1. Calcul de la Capacité (15 lits au 4ème car ch. 408 single, 16 lits au 3ème, 6 lits en Réa = 37 max)
+            // 1. Calcul de la Capacité (15 lits au 4ème, 16 lits au 3ème. La réanimation est EXCLUE de la capacité).
             const is3rdFloorActive = document.getElementById('toggle3rdFloor').checked;
-            const CAPACITY = 15 + (is3rdFloorActive ? 16 : 0) + 6; 
+            const CAPACITY = 15 + (is3rdFloorActive ? 16 : 0); 
             document.getElementById('capLabel').innerText = CAPACITY;
 
             let totalPresents = 0;
@@ -262,7 +271,7 @@
                     if (p.statut === 'surveiller') aSurveiller++;
                     if (p.statut === 'bloc') auBloc++;
 
-                    // Logique strict pour vérifier si OPÉRÉ (via le programme)
+                    // Logique pour vérifier si OPÉRÉ (via le programme)
                     if (checkIfOperated(p.nom)) {
                         operes++;
                     } else {
@@ -283,13 +292,13 @@
             document.getElementById('countSurveiller').innerText = aSurveiller;
             document.getElementById('countBloc').innerText = auBloc;
 
-            // Taux d'occupation : Formule (Total Présents / Capacité).
+            // Taux d'occupation
             const rate = Math.round((totalPresents / CAPACITY) * 100) || 0;
             document.getElementById('occupancyText').innerText = `Occupation Globale (${CAPACITY} lits)`;
-            document.getElementById('occupancyRate').innerText = `${rate}% (${totalPresents}/${CAPACITY})`;
+            document.getElementById('occupancyRate').innerText = `${rate}%`;
             
             const bar = document.getElementById('occupancyBar');
-            bar.style.width = `${Math.min(rate, 100)}%`; // Cap visuel à 100%
+            bar.style.width = `${Math.min(rate, 100)}%`; 
             if(rate > 95) bar.style.background = 'var(--danger)';
             else if (rate > 75) bar.style.background = 'var(--warning)';
             else bar.style.background = 'var(--primary)';
@@ -300,7 +309,6 @@
             let isOp = false;
             let normTarget = normalizeStr(patientName);
             
-            // On cherche dans tout le registre des blocs
             for (const dateStr in programmesOperatoiresData) {
                 const interventionsJour = programmesOperatoiresData[dateStr];
                 if (Array.isArray(interventionsJour)) {
@@ -308,6 +316,7 @@
                         let invName = normalizeStr(inv.patientText || inv.patient || inv.nom);
                         if (invName.includes(normTarget) && normTarget !== "") {
                             let statut = normalizeStr(inv.statut || "");
+                            // N'est pas compté comme annulé si reprogrammé/annulé
                             if (!statut.includes('annule') && !statut.includes('reprogramm')) {
                                 isOp = true;
                             }
@@ -354,6 +363,47 @@
             document.getElementById('monthlyStatsBody').innerHTML = html;
         }
 
+        // --- CALCUL DES INTERVENTIONS PAR SEMAINE ---
+        function computeWeeklyStats() {
+            let weeksMap = {};
+
+            Object.keys(programmesOperatoiresData).forEach(dateStr => {
+                let interventionsJour = programmesOperatoiresData[dateStr];
+                let dateObj = new Date(dateStr);
+                
+                if(!isNaN(dateObj)) {
+                    let weekNum = Math.ceil(dateObj.getDate() / 7); 
+                    let monthKey = dateObj.toLocaleString('fr-FR', { month: 'short' });
+                    let yearKey = dateObj.getFullYear();
+                    // On formate la clé (ex: "Semaine 2 Oct 2023")
+                    let weekKey = `Sem. ${weekNum} ${monthKey} ${yearKey}`;
+
+                    if(Array.isArray(interventionsJour)) {
+                        interventionsJour.forEach(inv => {
+                            let statut = normalizeStr(inv.statut || "");
+                            if (!statut.includes('annule') && !statut.includes('reprogramm') && (inv.patientText || inv.intervention || inv.nom)) {
+                                weeksMap[weekKey] = (weeksMap[weekKey] || 0) + 1;
+                            }
+                        });
+                    }
+                }
+            });
+
+            // Tri simplifié et affichage
+            let sortedWeeks = Object.keys(weeksMap).reverse(); 
+            let html = '';
+            
+            if(sortedWeeks.length === 0) {
+                html = '<tr><td colspan="2">Aucune donnée</td></tr>';
+            } else {
+                sortedWeeks.forEach(w => {
+                    html += `<tr><td><b>${w.toUpperCase()}</b></td><td>${weeksMap[w]} op.</td></tr>`;
+                });
+            }
+            document.getElementById('weeklyStatsBody').innerHTML = html;
+        }
+
+
         // --- RECHERCHE MULTI-SOURCES PATHOLOGIE/ORGANE ---
         window.calculateOrganStats = function() {
             const selectElement = document.getElementById('organSelect');
@@ -371,11 +421,15 @@
             const keywords = searchValues.split(',').map(kw => normalizeStr(kw));
             let uniquePatients = {};
 
-            // 1. Chercher dans Patients Actuels (inclut diag ET intervention)
+            // 1. Chercher dans Patients Actuels
             Object.values(currentPatients).forEach(p => {
                 if(p.nom) {
                     let textToSearch = normalizeStr(p.diag || "") + " " + normalizeStr(p.atcd || "") + " " + normalizeStr(p.intervention || "");
-                    if(keywords.some(kw => textToSearch.includes(kw))) {
+                    
+                    // Modifié : Tolérance croisée pour les fautes
+                    let isMatch = keywords.some(kw => textToSearch.includes(kw) || kw.includes(textToSearch));
+                    
+                    if(isMatch) {
                         let normName = normalizeStr(p.nom);
                         uniquePatients[normName] = {
                             nom: p.nom,
@@ -388,11 +442,14 @@
                 }
             });
 
-            // 2. Chercher dans Archives Patients (inclut diag ET intervention)
+            // 2. Chercher dans Archives Patients
             Object.values(archivedPatients).forEach(p => {
                 if(p.nom) {
                     let textToSearch = normalizeStr(p.diag || "") + " " + normalizeStr(p.atcd || "") + " " + normalizeStr(p.intervention || "");
-                    if(keywords.some(kw => textToSearch.includes(kw))) {
+                    
+                    let isMatch = keywords.some(kw => textToSearch.includes(kw) || kw.includes(textToSearch));
+
+                    if(isMatch) {
                         let normName = normalizeStr(p.nom);
                         if (!uniquePatients[normName]) {
                             uniquePatients[normName] = {
@@ -419,62 +476,4 @@
                         }
                         let normName = normalizeStr(invNameOrig);
 
-                        if(keywords.some(kw => textToSearch.includes(kw))) {
-                            if (uniquePatients[normName]) {
-                                if(uniquePatients[normName].intervention === "-") {
-                                    uniquePatients[normName].intervention = inv.intervention || "Opéré(e)";
-                                }
-                            } else {
-                                uniquePatients[normName] = {
-                                    nom: invNameOrig,
-                                    date: dateStr,
-                                    diag: inv.diag || "Voir intervention",
-                                    intervention: inv.intervention || "-",
-                                    source: "Registre Bloc"
-                                };
-                            }
-                        }
-                    });
-                }
-            });
-
-            currentSearchResults = Object.values(uniquePatients);
-
-            document.getElementById('organCountResult').innerText = currentSearchResults.length;
-            if(currentSearchResults.length > 0) {
-                btnShow.style.display = 'inline-block';
-            } else {
-                btnShow.style.display = 'none';
-            }
-        };
-
-        // --- GESTION DU MODAL DE LISTE ---
-        window.showResultsModal = function() {
-            const tbody = document.getElementById('resultsTableBody');
-            let html = '';
-
-            currentSearchResults.sort((a, b) => a.nom.localeCompare(b.nom));
-
-            currentSearchResults.forEach(res => {
-                html += `
-                    <tr>
-                        <td><b>${res.nom.toUpperCase()}</b></td>
-                        <td>${res.date}</td>
-                        <td>${res.diag}</td>
-                        <td>${res.intervention}</td>
-                        <td><span style="font-size:0.85em; background:#f1f5f9; padding:2px 6px; border-radius:4px; border:1px solid #cbd5e1;">${res.source}</span></td>
-                    </tr>
-                `;
-            });
-
-            tbody.innerHTML = html;
-            document.getElementById('resultsModal').classList.add('active');
-        };
-
-        window.closeResultsModal = function() {
-            document.getElementById('resultsModal').classList.remove('active');
-        };
-
-    </script>
-</body>
-</html>
+                        let isMatch =
