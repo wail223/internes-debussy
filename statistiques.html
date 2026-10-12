@@ -34,30 +34,12 @@
         .progress-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.5s ease; }
         .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9em; font-weight: 500; align-items:center;}
         
-        select.organ-select {
-            padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; 
-            font-size: 1em; width: 100%; max-width: 300px; background: #f8fafc;
-            margin-bottom: 10px; cursor: pointer;
-        }
-
-        .btn-show-list {
-            background: var(--primary); color: white; border: none; border-radius: 6px;
-            padding: 8px 15px; font-weight: bold; cursor: pointer; margin-top: 10px; display: none;
-        }
-        
         .toggle-switch { display: flex; align-items: center; gap: 10px; font-size: 0.9em; font-weight: bold; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;}
 
         /* Table styles */
         table { width: 100%; border-collapse: collapse; font-size: 0.85em; margin-top:10px; }
         th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
         th { background: #f8fafc; color: var(--primary); }
-
-        /* Modal Styles */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
-        .modal.active { display: flex; }
-        .modal-content { background: var(--card); width: 95%; max-width: 900px; max-height: 90vh; border-radius: 12px; padding: 20px; overflow-y: auto; box-sizing: border-box; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; position: sticky; top: 0; background: white; z-index: 10; }
-        .close-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2em; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -94,39 +76,6 @@
     </div>
 
     <div class="details-grid">
-        
-        <!-- SECTION : STATISTIQUES PAR ORGANE -->
-        <div class="detail-section" style="grid-column: 1 / -1;">
-            <h4>🫀 Recherche par Pathologie / Organe</h4>
-            <div style="color: var(--text-light); font-size: 0.85em; margin-bottom: 10px;">
-                Recherche intelligente (tolérance aux fautes/accents/abréviations) croisant 3 bases : <b>Patients actuels</b>, <b>Archives Patients</b>, et <b>Registre des Interventions</b>.
-            </div>
-            
-            <!-- LISTE MISE À JOUR AVEC VOS ABRÉVIATIONS ET TERMES -->
-            <select id="organSelect" class="organ-select">
-                <option value="">-- Choisissez un organe / pathologie --</option>
-                <option value="colon,colique,colectomie,resection anterieure">Côlon / Colique</option>
-                <option value="endometre,uterus,uterin,hysterectomie,adk,ht + ab,ht+ab,ht,gp+cd,chirurgie d'intervalle">Endomètre / Utérus / Ovaire (HT+AB, GP+CD)</option>
-                <option value="estomac,gastrique,cardio,gastrectomie">Estomac / Gastrique</option>
-                <option value="thyroide,thyroidien,thyroidectomie">Thyroïde</option>
-                <option value="parathyroide,parathyroidectomie,parathyoidectomir">Parathyroïde</option>
-                <option value="rectum,rectal,proctectomie,amputation">Rectum</option>
-                <option value="sein,mammaire,mastectomie,tumorectomie,t+gs,t.t,patey,curage">Sein / Mammaire (Mastectomie, T.T, T+GS)</option>
-                <option value="vesicule,biliaire,cholecystectomie,chell">Vésicule biliaire (CHELL)</option>
-                <option value="foie,hepatique,hepatectomie,bisegmentectomie,exerese">Foie / Hépatique (Exérèse)</option>
-                <option value="pancreas,pancreatique,dpc">Pancréas</option>
-                <option value="hernie,eventration,parietale">Hernie / Éventration</option>
-                <option value="exploratrice,laparotomie exploratrice">Laparotomie Exploratrice</option>
-            </select>
-
-            <div class="stat-row" style="font-size: 1.1em; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
-                <span>Total Correspondances :</span> 
-                <b style="color:var(--primary); font-size: 1.8em;" id="organCountResult">0</b>
-            </div>
-            
-            <button id="btnShowList" class="btn-show-list" onclick="showResultsModal()">📋 Afficher la liste nominative</button>
-        </div>
-
         <div class="detail-section">
             <h4>📈 Répartition & Capacité</h4>
             <div class="toggle-switch">
@@ -168,32 +117,6 @@
         </div>
     </div>
 
-    <!-- MODAL LISTE DES PATIENTS (RECHERCHE ORGANE) -->
-    <div id="resultsModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 style="margin:0; color:var(--primary);">📋 Résultats de recherche</h3>
-                <button class="close-btn" onclick="closeResultsModal()">✕</button>
-            </div>
-            <p style="font-size:0.9em; color:var(--text-light); margin-top:0;">Les doublons probables entre les bases sont fusionnés dans la mesure du possible.</p>
-            <div style="overflow-x:auto;">
-                <table id="resultsTable">
-                    <thead>
-                        <tr>
-                            <th>Nom du Patient</th>
-                            <th>Date / Année</th>
-                            <th>Pathologie / Diagnostic</th>
-                            <th>Intervention (Si opéré)</th>
-                            <th>Source</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resultsTableBody">
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -209,9 +132,7 @@
 
         // Variables Globales
         let currentPatients = {};
-        let archivedPatients = {};
         let programmesOperatoiresData = {};
-        let currentSearchResults = [];
 
         // Fonction pour normaliser le texte
         function normalizeStr(str) {
@@ -227,11 +148,6 @@
             computeAllStats();
         });
 
-        onValue(ref(db, 'archives_patients/'), (snapshot) => {
-            archivedPatients = snapshot.val() || {};
-            calculateOrganStats(); 
-        });
-
         onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
             programmesOperatoiresData = snapshot.val() || {};
             computeAllStats();
@@ -241,7 +157,6 @@
 
         // Event listener pour le toggle du 3ème étage
         document.getElementById('toggle3rdFloor').addEventListener('change', computeAllStats);
-        document.getElementById('organSelect').addEventListener('change', calculateOrganStats);
 
         // --- CALCUL DES STATISTIQUES PRINCIPALES ---
         function computeAllStats() {
@@ -403,140 +318,6 @@
             }
             document.getElementById('weeklyStatsBody').innerHTML = html;
         }
-
-        // --- RECHERCHE MULTI-SOURCES PATHOLOGIE/ORGANE ---
-        window.calculateOrganStats = function() {
-            const selectElement = document.getElementById('organSelect');
-            const btnShow = document.getElementById('btnShowList');
-            const searchValues = selectElement.value; 
-            
-            currentSearchResults = []; 
-
-            if (!searchValues) {
-                document.getElementById('organCountResult').innerText = "0";
-                btnShow.style.display = 'none';
-                return;
-            }
-
-            const keywords = searchValues.split(',').map(kw => normalizeStr(kw));
-            let uniquePatients = {};
-
-            // 1. Chercher dans Patients Actuels
-            Object.values(currentPatients).forEach(p => {
-                if(p && p.nom) {
-                    let textToSearch = normalizeStr(p.diag) + " " + normalizeStr(p.atcd) + " " + normalizeStr(p.intervention);
-                    
-                    let isMatch = keywords.some(kw => textToSearch.includes(kw) || kw.includes(textToSearch));
-                    
-                    if(isMatch) {
-                        let normName = normalizeStr(p.nom);
-                        uniquePatients[normName] = {
-                            nom: String(p.nom),
-                            date: p.dateEntree || "Présent",
-                            diag: p.diag || "Inconnu",
-                            intervention: p.intervention || "-",
-                            source: "Service (Actuel)"
-                        };
-                    }
-                }
-            });
-
-            // 2. Chercher dans Archives Patients
-            Object.values(archivedPatients).forEach(p => {
-                if(p && p.nom) {
-                    let textToSearch = normalizeStr(p.diag) + " " + normalizeStr(p.atcd) + " " + normalizeStr(p.intervention);
-                    
-                    let isMatch = keywords.some(kw => textToSearch.includes(kw) || kw.includes(textToSearch));
-
-                    if(isMatch) {
-                        let normName = normalizeStr(p.nom);
-                        if (!uniquePatients[normName]) {
-                            uniquePatients[normName] = {
-                                nom: String(p.nom),
-                                date: p.dateSortie || p.dateSortieArchive || "Archivé",
-                                diag: p.diag || "Inconnu",
-                                intervention: p.intervention || "-",
-                                source: "Archives Service"
-                            };
-                        }
-                    }
-                }
-            });
-
-            // 3. Chercher dans Programmes Opératoires
-            Object.keys(programmesOperatoiresData).forEach(dateStr => {
-                let interventionsJour = programmesOperatoiresData[dateStr];
-                if(Array.isArray(interventionsJour)) {
-                    interventionsJour.forEach(inv => {
-                        if (!inv) return;
-                        
-                        let textToSearch = normalizeStr(inv.diag) + " " + normalizeStr(inv.intervention);
-                        // Sécurisation en texte obligatoire
-                        let invNameOrig = String(inv.patientText || inv.patient || inv.nom || "Inconnu");
-                        
-                        if(invNameOrig.includes(':')) {
-                            invNameOrig = invNameOrig.split(':')[1].trim();
-                        }
-                        let normName = normalizeStr(invNameOrig);
-
-                        let isMatch = keywords.some(kw => textToSearch.includes(kw) || kw.includes(textToSearch));
-
-                        if(isMatch) {
-                            if (uniquePatients[normName]) {
-                                if(uniquePatients[normName].intervention === "-") {
-                                    uniquePatients[normName].intervention = inv.intervention || "Opéré(e)";
-                                }
-                            } else {
-                                uniquePatients[normName] = {
-                                    nom: invNameOrig,
-                                    date: dateStr,
-                                    diag: inv.diag || "Voir intervention",
-                                    intervention: inv.intervention || "-",
-                                    source: "Registre Bloc"
-                                };
-                            }
-                        }
-                    });
-                }
-            });
-
-            currentSearchResults = Object.values(uniquePatients);
-
-            document.getElementById('organCountResult').innerText = currentSearchResults.length;
-            if(currentSearchResults.length > 0) {
-                btnShow.style.display = 'inline-block';
-            } else {
-                btnShow.style.display = 'none';
-            }
-        };
-
-        // --- GESTION DU MODAL DE LISTE ---
-        window.showResultsModal = function() {
-            const tbody = document.getElementById('resultsTableBody');
-            let html = '';
-
-            currentSearchResults.sort((a, b) => a.nom.localeCompare(b.nom));
-
-            currentSearchResults.forEach(res => {
-                html += `
-                    <tr>
-                        <td><b>${res.nom.toUpperCase()}</b></td>
-                        <td>${res.date}</td>
-                        <td>${res.diag}</td>
-                        <td>${res.intervention}</td>
-                        <td><span style="font-size:0.85em; background:#f1f5f9; padding:2px 6px; border-radius:4px; border:1px solid #cbd5e1;">${res.source}</span></td>
-                    </tr>
-                `;
-            });
-
-            tbody.innerHTML = html;
-            document.getElementById('resultsModal').classList.add('active');
-        };
-
-        window.closeResultsModal = function() {
-            document.getElementById('resultsModal').classList.remove('active');
-        };
-
     </script>
 </body>
 </html>
