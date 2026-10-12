@@ -38,9 +38,16 @@
         .btn-main { background: var(--success); color: white; padding: 10px 15px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; text-align: center; height: fit-content; align-self: flex-end; }
         .btn-main:hover { opacity: 0.9; }
         
-        .chart-container { position: relative; height: 400px; width: 100%; margin-top: 20px; }
+        .chart-container { position: relative; height: 400px; width: 100%; margin-top: 20px; margin-bottom: 20px; }
         
         #patientSelector { font-size: 1.1em; padding: 12px; border: 2px solid var(--primary); background: #f0f9ff; color: #0369a1; font-weight: bold; }
+
+        /* Styles pour les tableaux d'historique */
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.85em; margin-top: 15px; background: white; }
+        .history-table th, .history-table td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+        .history-table th { background: #f8fafc; color: var(--primary); }
+        .action-btn { background: transparent; border: none; font-size: 1.2em; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+        .action-btn:hover { background: #e2e8f0; }
     </style>
 </head>
 <body>
@@ -107,11 +114,22 @@
                     <option value="Urinaire">Urinaire</option>
                 </select>
             </div>
-            <button class="btn-main" onclick="addIntradayData()">➕ Ajouter</button>
+            <button class="btn-main" onclick="addIntradayData()">➕ Enregistrer</button>
         </div>
 
         <div class="chart-container">
             <canvas id="intradayChart"></canvas>
+        </div>
+
+        <!-- Historique Intraday pour Modification/Suppression -->
+        <div style="overflow-x:auto;">
+            <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
+            <table class="history-table" id="intradayTable" style="display:none;">
+                <thead>
+                    <tr><th>Heure</th><th>Température</th><th>Drain</th><th>Aspect</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="intradayTableBody"></tbody>
+            </table>
         </div>
     </div>
 
@@ -132,17 +150,29 @@
                 <label>Quantité totale (cc)</label>
                 <input type="number" id="dailyDrainInput" step="10" placeholder="Ex: 450">
             </div>
-            <button class="btn-main" onclick="addDailyData()">➕ Ajouter</button>
+            <button class="btn-main" onclick="addDailyData()">➕ Enregistrer</button>
         </div>
 
         <div class="chart-container">
             <canvas id="dailyChart"></canvas>
         </div>
+
+        <!-- Historique Journalier pour Modification/Suppression -->
+        <div style="overflow-x:auto;">
+            <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
+            <table class="history-table" id="dailyTable" style="display:none;">
+                <thead>
+                    <tr><th>Jour</th><th>Drain total</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="dailyTableBody"></tbody>
+            </table>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        // Ajout de "remove" pour supprimer les données
+        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
@@ -160,6 +190,7 @@
         let intradayChartInstance = null;
         let dailyChartInstance = null;
         let currentPatientId = null;
+        let currentPatientData = { intraday: {}, daily: {} }; // Stocke les données pour modification
 
         // Générer les heures selon le mode
         window.updateTimeOptions = function() {
@@ -176,13 +207,10 @@
 
             for (let h = 0; h < 24; h++) {
                 let hourStr = h.toString().padStart(2, '0');
-                
                 let timesToAdd = mode === 'horaire' ? [`${hourStr}:00`] : [`${hourStr}:00`, `${hourStr}:30`];
                 
                 timesToAdd.forEach(time => {
                     timeSelect.innerHTML += `<option value="${time}">${time}</option>`;
-                    
-                    // Calcul pour trouver l'heure la plus proche
                     let [optH, optM] = time.split(':').map(Number);
                     let diff = Math.abs((currentHour * 60 + currentMinute) - (optH * 60 + optM));
                     if(diff < minDiff) {
@@ -191,12 +219,9 @@
                     }
                 });
             }
-            
-            // Sélectionner la plus proche par défaut
             if (closestTime) timeSelect.value = closestTime;
         };
 
-        // Initialiser les heures au chargement
         window.addEventListener('DOMContentLoaded', updateTimeOptions);
 
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
@@ -222,12 +247,13 @@
             document.getElementById('sectionDaily').style.display = 'block';
 
             onValue(ref(db, `suivi_courbes/${currentPatientId}`), (snapshot) => {
-                const data = snapshot.val() || { intraday: {}, daily: {} };
-                renderIntradayChart(data.intraday || {});
-                renderDailyChart(data.daily || {});
+                currentPatientData = snapshot.val() || { intraday: {}, daily: {} };
+                renderIntradayChart(currentPatientData.intraday || {});
+                renderDailyChart(currentPatientData.daily || {});
             });
         };
 
+        // --- SAUVEGARDE (Ajout / Modification) ---
         window.addIntradayData = function() {
             if(!currentPatientId) return;
             const time = document.getElementById('timeSelect').value;
@@ -264,46 +290,72 @@
             document.getElementById('dailyDrainInput').value = '';
         };
 
+        // --- MODIFICATION DANS LES FORMULAIRES ---
+        window.editIntraday = function(key) {
+            const data = currentPatientData.intraday[key];
+            if(!data) return;
+            
+            // Forcer le mode demi-horaire si c'est un :30
+            if(data.time.endsWith(':30')) {
+                document.getElementById('modeSelect').value = 'demi-horaire';
+                updateTimeOptions();
+            }
+            
+            document.getElementById('timeSelect').value = data.time;
+            document.getElementById('tempInput').value = data.temp !== null ? data.temp : '';
+            document.getElementById('drainInput').value = data.drain !== null ? data.drain : '';
+            document.getElementById('aspectSelect').value = data.aspect || '';
+            
+            // Remonter vers le formulaire
+            document.getElementById('sectionIntraday').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.editDaily = function(day) {
+            const data = currentPatientData.daily[day];
+            if(!data) return;
+            document.getElementById('daySelect').value = data.day;
+            document.getElementById('dailyDrainInput').value = data.drain;
+            
+            document.getElementById('sectionDaily').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        // --- SUPPRESSION DES DONNÉES ---
+        window.deleteIntraday = function(key) {
+            if(confirm(`Voulez-vous vraiment supprimer les données de ${key.slice(0,2)}:${key.slice(2)} ?`)) {
+                remove(ref(db, `suivi_courbes/${currentPatientId}/intraday/${key}`));
+            }
+        };
+
+        window.deleteDaily = function(day) {
+            if(confirm(`Voulez-vous vraiment supprimer le relevé du jour ${day} ?`)) {
+                remove(ref(db, `suivi_courbes/${currentPatientId}/daily/${day}`));
+            }
+        };
+
+
+        // --- RENDU GRAPHIQUES ET TABLEAUX ---
         function renderIntradayChart(dataObj) {
             const ctx = document.getElementById('intradayChart').getContext('2d');
             const sortedKeys = Object.keys(dataObj).sort();
+            
             const labels = sortedKeys.map(k => dataObj[k].time);
             const temps = sortedKeys.map(k => dataObj[k].temp);
             const drains = sortedKeys.map(k => dataObj[k].drain);
-            const aspects = sortedKeys.map(k => dataObj[k].aspect || ''); // Récupération des aspects
+            const aspects = sortedKeys.map(k => dataObj[k].aspect || '');
 
+            // MAJ du graphique
             if(intradayChartInstance) intradayChartInstance.destroy();
-
             intradayChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
-                        {
-                            label: 'Température (°C)',
-                            data: temps,
-                            borderColor: '#dc2626',
-                            backgroundColor: '#dc2626',
-                            yAxisID: 'yTemp',
-                            tension: 0.3,
-                            spanGaps: true
-                        },
-                        {
-                            label: 'Drain (cc)',
-                            data: drains,
-                            borderColor: '#0284c7',
-                            backgroundColor: '#0284c7',
-                            yAxisID: 'yDrain',
-                            type: 'line', // Modifié en ligne (pas de barres)
-                            tension: 0.3,
-                            spanGaps: true
-                        }
+                        { label: 'Température (°C)', data: temps, borderColor: '#dc2626', backgroundColor: '#dc2626', yAxisID: 'yTemp', tension: 0.3, spanGaps: true },
+                        { label: 'Drain (cc)', data: drains, borderColor: '#0284c7', backgroundColor: '#0284c7', yAxisID: 'yDrain', type: 'line', tension: 0.3, spanGaps: true }
                     ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
                     plugins: {
                         tooltip: {
                             callbacks: {
@@ -311,11 +363,7 @@
                                     let label = context.dataset.label || '';
                                     if (label) label += ' : ';
                                     if (context.parsed.y !== null) label += context.parsed.y;
-                                    
-                                    // Afficher l'aspect du drain dans le tooltip si c'est la ligne du drain (index 1)
-                                    if (context.datasetIndex === 1 && aspects[context.dataIndex]) {
-                                        label += ' (' + aspects[context.dataIndex] + ')';
-                                    }
+                                    if (context.datasetIndex === 1 && aspects[context.dataIndex]) label += ' (' + aspects[context.dataIndex] + ')';
                                     return label;
                                 }
                             }
@@ -327,6 +375,28 @@
                     }
                 }
             });
+
+            // MAJ du tableau d'historique
+            const tableBody = document.getElementById('intradayTableBody');
+            const table = document.getElementById('intradayTable');
+            if(sortedKeys.length === 0) {
+                table.style.display = 'none';
+            } else {
+                table.style.display = 'table';
+                tableBody.innerHTML = sortedKeys.map(k => {
+                    const d = dataObj[k];
+                    return `<tr>
+                        <td><b>${d.time}</b></td>
+                        <td>${d.temp !== null ? d.temp + ' °C' : '-'}</td>
+                        <td>${d.drain !== null ? d.drain + ' cc' : '-'}</td>
+                        <td>${d.aspect || '-'}</td>
+                        <td style="text-align:center;">
+                            <button class="action-btn" onclick="editIntraday('${k}')" title="Modifier">✏️</button>
+                            <button class="action-btn" onclick="deleteIntraday('${k}')" title="Supprimer">🗑️</button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
         }
 
         function renderDailyChart(dataObj) {
@@ -335,35 +405,40 @@
             const labels = [], drains = [];
             
             daysOrder.forEach(day => {
-                if(dataObj[day]) {
-                    labels.push(day);
-                    drains.push(dataObj[day].drain);
-                }
+                if(dataObj[day]) { labels.push(day); drains.push(dataObj[day].drain); }
             });
 
+            // MAJ Graphique
             if(dailyChartInstance) dailyChartInstance.destroy();
-
             dailyChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Évolution du Drain (cc / jour)',
-                        data: drains,
-                        borderColor: '#ca8a04',
-                        backgroundColor: 'rgba(202, 138, 4, 0.2)',
-                        fill: true,
-                        tension: 0.3,
-                        pointRadius: 6,
-                        pointBackgroundColor: '#ca8a04'
-                    }]
+                    datasets: [{ label: 'Évolution du Drain (cc / jour)', data: drains, borderColor: '#ca8a04', backgroundColor: 'rgba(202, 138, 4, 0.2)', fill: true, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#ca8a04' }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Quantité totale (cc)' } } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'Quantité totale (cc)' } } } }
             });
+
+            // MAJ Tableau d'historique
+            const tableBody = document.getElementById('dailyTableBody');
+            const table = document.getElementById('dailyTable');
+            const sortedKeys = Object.keys(dataObj).sort(); // J0, J1...
+            if(sortedKeys.length === 0) {
+                table.style.display = 'none';
+            } else {
+                table.style.display = 'table';
+                tableBody.innerHTML = sortedKeys.map(k => {
+                    const d = dataObj[k];
+                    return `<tr>
+                        <td><b>${d.day}</b></td>
+                        <td>${d.drain} cc</td>
+                        <td style="text-align:center; width:100px;">
+                            <button class="action-btn" onclick="editDaily('${k}')" title="Modifier">✏️</button>
+                            <button class="action-btn" onclick="deleteDaily('${k}')" title="Supprimer">🗑️</button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
         }
     </script>
 </body>
