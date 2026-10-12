@@ -32,8 +32,8 @@
         .form-group label { font-size: 0.85em; font-weight: 600; color: var(--text); }
         .form-group input, .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; background: #f8fafc; }
         
+        .grid-5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
         .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
         
         .btn-main { background: var(--success); color: white; padding: 10px 15px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; text-align: center; height: fit-content; align-self: flex-end; }
         .btn-main:hover { opacity: 0.9; }
@@ -49,16 +49,15 @@
         <div class="top-bar">
             <h2 style="margin:0; color: var(--primary);">🏥 CPMC Debussy - Courbes</h2>
         </div>
-        <!-- Barre de navigation inspirée de patients (4).html -->
         <div class="nav-links">
-        <a href="index.html" class="nav-btn">🏠 Accueil</a>
-        <a href="patients.html" class="nav-btn">🛏️ Lits / Hospitalisation</a>
-        <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
-        <a href="courbes.html" class="nav-btn active">📈 Courbes de Suivi</a>
-        <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
-        <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
-        <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
-    </div>
+            <a href="index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="patients.html" class="nav-btn">🛏️ Lits / Hospitalisation</a>
+            <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
+            <a href="courbes.html" class="nav-btn active">📈 Courbes de Suivi</a>
+            <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
+            <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
+            <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
+        </div>
     </div>
 
     <!-- SÉLECTION DU PATIENT -->
@@ -71,24 +70,42 @@
         </div>
     </div>
 
-    <!-- 1. COURBE HORAIRE (TEMPÉRATURE & DRAIN) -->
+    <!-- 1. COURBE HORAIRE/DEMI-HORAIRE -->
     <div class="section-card" id="sectionIntraday" style="display:none;">
-        <div class="section-title">⏱️ Suivi Horaire / Demi-horaire (Température & Drain)</div>
+        <div class="section-title">⏱️ Suivi Intrajournalier (Température & Drain)</div>
         
-        <div class="grid-4" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; align-items: end;">
+        <div class="grid-5" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; align-items: end;">
             <div class="form-group">
-                <label>Fréquence / Heure</label>
-                <select id="timeSelect">
-                    <!-- Généré en JS (toutes les 30 min) -->
+                <label>Mode</label>
+                <select id="modeSelect" onchange="updateTimeOptions()">
+                    <option value="horaire">Horaire</option>
+                    <option value="demi-horaire">Demi-horaire</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>Température (°C)</label>
+                <label>Heure</label>
+                <select id="timeSelect"></select>
+            </div>
+            <div class="form-group">
+                <label>T°C</label>
                 <input type="number" id="tempInput" step="0.1" placeholder="Ex: 37.5">
             </div>
             <div class="form-group">
                 <label>Drain (cc)</label>
                 <input type="number" id="drainInput" step="10" placeholder="Ex: 150">
+            </div>
+            <div class="form-group">
+                <label>Aspect</label>
+                <select id="aspectSelect">
+                    <option value="">--</option>
+                    <option value="Hémorragique">Hémorragique</option>
+                    <option value="Séreux">Séreux</option>
+                    <option value="Clair">Clair</option>
+                    <option value="Purulent">Purulent</option>
+                    <option value="Chyleux">Chyleux</option>
+                    <option value="Biliaire">Biliaire</option>
+                    <option value="Urinaire">Urinaire</option>
+                </select>
             </div>
             <button class="btn-main" onclick="addIntradayData()">➕ Ajouter</button>
         </div>
@@ -98,7 +115,7 @@
         </div>
     </div>
 
-    <!-- 2. COURBE JOURNALIÈRE (J0, J1, J2...) -->
+    <!-- 2. COURBE JOURNALIÈRE -->
     <div class="section-card" id="sectionDaily" style="display:none;">
         <div class="section-title">📅 Suivi Journalier du Drain (Post-Op)</div>
         
@@ -106,14 +123,9 @@
             <div class="form-group">
                 <label>Jour Post-Op</label>
                 <select id="daySelect">
-                    <option value="J0">J0</option>
-                    <option value="J1">J1</option>
-                    <option value="J2">J2</option>
-                    <option value="J3">J3</option>
-                    <option value="J4">J4</option>
-                    <option value="J5">J5</option>
-                    <option value="J6">J6</option>
-                    <option value="J7">J7</option>
+                    <option value="J0">J0</option><option value="J1">J1</option><option value="J2">J2</option>
+                    <option value="J3">J3</option><option value="J4">J4</option><option value="J5">J5</option>
+                    <option value="J6">J6</option><option value="J7">J7</option>
                 </select>
             </div>
             <div class="form-group">
@@ -129,9 +141,8 @@
     </div>
 
     <script type="module">
-        // Configuration Firebase identique au fichier patients (4).html
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
@@ -150,35 +161,56 @@
         let dailyChartInstance = null;
         let currentPatientId = null;
 
-        // Générer les options de temps (toutes les 30 min)
-        const timeSelect = document.getElementById('timeSelect');
-        for (let h = 0; h < 24; h++) {
-            let hour = h.toString().padStart(2, '0');
-            timeSelect.innerHTML += `<option value="${hour}:00">${hour}:00</option>`;
-            timeSelect.innerHTML += `<option value="${hour}:30">${hour}:30</option>`;
-        }
+        // Générer les heures selon le mode
+        window.updateTimeOptions = function() {
+            const mode = document.getElementById('modeSelect').value;
+            const timeSelect = document.getElementById('timeSelect');
+            timeSelect.innerHTML = '';
+            
+            const now = new Date();
+            let currentHour = now.getHours();
+            let currentMinute = now.getMinutes();
+            
+            let closestTime = "";
+            let minDiff = Infinity;
 
-        // Charger les patients actifs depuis Firebase
+            for (let h = 0; h < 24; h++) {
+                let hourStr = h.toString().padStart(2, '0');
+                
+                let timesToAdd = mode === 'horaire' ? [`${hourStr}:00`] : [`${hourStr}:00`, `${hourStr}:30`];
+                
+                timesToAdd.forEach(time => {
+                    timeSelect.innerHTML += `<option value="${time}">${time}</option>`;
+                    
+                    // Calcul pour trouver l'heure la plus proche
+                    let [optH, optM] = time.split(':').map(Number);
+                    let diff = Math.abs((currentHour * 60 + currentMinute) - (optH * 60 + optM));
+                    if(diff < minDiff) {
+                        minDiff = diff;
+                        closestTime = time;
+                    }
+                });
+            }
+            
+            // Sélectionner la plus proche par défaut
+            if (closestTime) timeSelect.value = closestTime;
+        };
+
+        // Initialiser les heures au chargement
+        window.addEventListener('DOMContentLoaded', updateTimeOptions);
+
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
             const patientsDb = snapshot.val() || {};
             const selector = document.getElementById('patientSelector');
             const currentValue = selector.value;
-            
             selector.innerHTML = '<option value="">-- Choisir un patient --</option>';
-            
             Object.keys(patientsDb).forEach(bedId => {
                 const p = patientsDb[bedId];
-                if(p.nom) {
-                    selector.innerHTML += `<option value="${bedId}">Lit ${bedId} - ${p.nom}</option>`;
-                }
+                if(p.nom) selector.innerHTML += `<option value="${bedId}">Lit ${bedId} - ${p.nom}</option>`;
             });
-            
-            if(currentValue && patientsDb[currentValue]) {
-                selector.value = currentValue;
-            }
+            if(currentValue && patientsDb[currentValue]) selector.value = currentValue;
         });
 
-        // Charger les données du patient sélectionné
         window.loadPatientData = function() {
             currentPatientId = document.getElementById('patientSelector').value;
             if(!currentPatientId) {
@@ -186,11 +218,9 @@
                 document.getElementById('sectionDaily').style.display = 'none';
                 return;
             }
-
             document.getElementById('sectionIntraday').style.display = 'block';
             document.getElementById('sectionDaily').style.display = 'block';
 
-            // Écouter les données de suivi spécifiques à ce patient
             onValue(ref(db, `suivi_courbes/${currentPatientId}`), (snapshot) => {
                 const data = snapshot.val() || { intraday: {}, daily: {} };
                 renderIntradayChart(data.intraday || {});
@@ -198,26 +228,27 @@
             });
         };
 
-        // AJOUTER UNE DONNÉE HORAIRE
         window.addIntradayData = function() {
             if(!currentPatientId) return;
             const time = document.getElementById('timeSelect').value;
             const temp = parseFloat(document.getElementById('tempInput').value);
             const drain = parseFloat(document.getElementById('drainInput').value);
+            const aspect = document.getElementById('aspectSelect').value;
 
             if(isNaN(temp) && isNaN(drain)) return alert("Veuillez saisir au moins une valeur (Température ou Drain).");
 
             set(ref(db, `suivi_courbes/${currentPatientId}/intraday/${time.replace(':','')}`), {
                 time: time,
                 temp: isNaN(temp) ? null : temp,
-                drain: isNaN(drain) ? null : drain
+                drain: isNaN(drain) ? null : drain,
+                aspect: aspect || null
             });
 
             document.getElementById('tempInput').value = '';
             document.getElementById('drainInput').value = '';
+            document.getElementById('aspectSelect').value = '';
         };
 
-        // AJOUTER UNE DONNÉE JOURNALIÈRE
         window.addDailyData = function() {
             if(!currentPatientId) return;
             const day = document.getElementById('daySelect').value;
@@ -233,15 +264,13 @@
             document.getElementById('dailyDrainInput').value = '';
         };
 
-        // DESSINER LA COURBE HORAIRE (2 axes Y)
         function renderIntradayChart(dataObj) {
             const ctx = document.getElementById('intradayChart').getContext('2d');
-            
-            // Trier les données par heure
             const sortedKeys = Object.keys(dataObj).sort();
             const labels = sortedKeys.map(k => dataObj[k].time);
             const temps = sortedKeys.map(k => dataObj[k].temp);
             const drains = sortedKeys.map(k => dataObj[k].drain);
+            const aspects = sortedKeys.map(k => dataObj[k].aspect || ''); // Récupération des aspects
 
             if(intradayChartInstance) intradayChartInstance.destroy();
 
@@ -253,7 +282,7 @@
                         {
                             label: 'Température (°C)',
                             data: temps,
-                            borderColor: '#dc2626', // Rouge
+                            borderColor: '#dc2626',
                             backgroundColor: '#dc2626',
                             yAxisID: 'yTemp',
                             tension: 0.3,
@@ -262,12 +291,12 @@
                         {
                             label: 'Drain (cc)',
                             data: drains,
-                            borderColor: '#0284c7', // Bleu
+                            borderColor: '#0284c7',
                             backgroundColor: '#0284c7',
                             yAxisID: 'yDrain',
-                            type: 'bar', // Affichage en barres pour le drain, modifiable en 'line' si préféré
-                            borderWidth: 2,
-                            borderRadius: 4
+                            type: 'line', // Modifié en ligne (pas de barres)
+                            tension: 0.3,
+                            spanGaps: true
                         }
                     ]
                 },
@@ -275,40 +304,36 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
-                    scales: {
-                        yTemp: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: { display: true, text: 'Température (°C)' },
-                            min: 35,
-                            max: 42
-                        },
-                        yDrain: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            title: { display: true, text: 'Quantité Drain (cc)' },
-                            min: 0,
-                            max: 1000,
-                            ticks: {
-                                stepSize: 50 // Paliers de 50cc selon votre demande
-                            },
-                            grid: { drawOnChartArea: false } // Ne pas superposer les grilles
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ' : ';
+                                    if (context.parsed.y !== null) label += context.parsed.y;
+                                    
+                                    // Afficher l'aspect du drain dans le tooltip si c'est la ligne du drain (index 1)
+                                    if (context.datasetIndex === 1 && aspects[context.dataIndex]) {
+                                        label += ' (' + aspects[context.dataIndex] + ')';
+                                    }
+                                    return label;
+                                }
+                            }
                         }
+                    },
+                    scales: {
+                        yTemp: { type: 'linear', position: 'left', title: { display: true, text: 'Température (°C)' }, min: 35, max: 42 },
+                        yDrain: { type: 'linear', position: 'right', title: { display: true, text: 'Quantité Drain (cc)' }, min: 0, max: 1000, ticks: { stepSize: 50 }, grid: { drawOnChartArea: false } }
                     }
                 }
             });
         }
 
-        // DESSINER LA COURBE JOURNALIÈRE
         function renderDailyChart(dataObj) {
             const ctx = document.getElementById('dailyChart').getContext('2d');
-            
             const daysOrder = ['J0','J1','J2','J3','J4','J5','J6','J7'];
-            const labels = [];
-            const drains = [];
-
+            const labels = [], drains = [];
+            
             daysOrder.forEach(day => {
                 if(dataObj[day]) {
                     labels.push(day);
@@ -325,7 +350,7 @@
                     datasets: [{
                         label: 'Évolution du Drain (cc / jour)',
                         data: drains,
-                        borderColor: '#ca8a04', // Jaune/Or
+                        borderColor: '#ca8a04',
                         backgroundColor: 'rgba(202, 138, 4, 0.2)',
                         fill: true,
                         tension: 0.3,
@@ -336,12 +361,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: 'Quantité totale (cc)' }
-                        }
-                    }
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Quantité totale (cc)' } } }
                 }
             });
         }
