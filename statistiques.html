@@ -79,7 +79,7 @@
         <div class="stat-card card-total">
             <h3>Total Patients Présents</h3>
             <div class="stat-value" id="statTotal">-</div>
-            <div class="stat-subtext">Capacité totale : <span id="capLabel">31</span> lits</div>
+            <div class="stat-subtext">Capacité totale : <span id="capLabel">15</span> lits</div>
         </div>
         <div class="stat-card card-opere">
             <h3>Malades Opérés</h3>
@@ -129,7 +129,7 @@
         <div class="detail-section">
             <h4>📈 Répartition & Capacité</h4>
             <div class="toggle-switch">
-                <input type="checkbox" id="toggle3rdFloor" style="width:18px; height:18px; cursor:pointer;" checked>
+                <input type="checkbox" id="toggle3rdFloor" style="width:18px; height:18px; cursor:pointer;">
                 <label for="toggle3rdFloor" style="cursor:pointer;">Le 3ème Étage est fonctionnel (+16 lits)</label>
             </div>
 
@@ -235,7 +235,7 @@
             programmesOperatoiresData = snapshot.val() || {};
             computeAllStats();
             computeMonthlyStats();
-            computeWeeklyStats(); // Appel de la nouvelle fonction
+            computeWeeklyStats();
         });
 
         // Event listener pour le toggle du 3ème étage
@@ -313,10 +313,10 @@
                 const interventionsJour = programmesOperatoiresData[dateStr];
                 if (Array.isArray(interventionsJour)) {
                     interventionsJour.forEach(inv => {
+                        if (!inv) return;
                         let invName = normalizeStr(inv.patientText || inv.patient || inv.nom);
                         if (invName.includes(normTarget) && normTarget !== "") {
                             let statut = normalizeStr(inv.statut || "");
-                            // N'est pas compté comme annulé si reprogrammé/annulé
                             if (!statut.includes('annule') && !statut.includes('reprogramm')) {
                                 isOp = true;
                             }
@@ -338,6 +338,7 @@
                     
                     if(Array.isArray(interventionsJour)) {
                         interventionsJour.forEach(inv => {
+                            if (!inv) return;
                             let statut = normalizeStr(inv.statut || "");
                             if (!statut.includes('annule') && !statut.includes('reprogramm') && (inv.patientText || inv.intervention)) {
                                 monthsMap[monthKey] = (monthsMap[monthKey] || 0) + 1;
@@ -375,11 +376,11 @@
                     let weekNum = Math.ceil(dateObj.getDate() / 7); 
                     let monthKey = dateObj.toLocaleString('fr-FR', { month: 'short' });
                     let yearKey = dateObj.getFullYear();
-                    // On formate la clé (ex: "Semaine 2 Oct 2023")
                     let weekKey = `Sem. ${weekNum} ${monthKey} ${yearKey}`;
 
                     if(Array.isArray(interventionsJour)) {
                         interventionsJour.forEach(inv => {
+                            if (!inv) return;
                             let statut = normalizeStr(inv.statut || "");
                             if (!statut.includes('annule') && !statut.includes('reprogramm') && (inv.patientText || inv.intervention || inv.nom)) {
                                 weeksMap[weekKey] = (weeksMap[weekKey] || 0) + 1;
@@ -389,7 +390,6 @@
                 }
             });
 
-            // Tri simplifié et affichage
             let sortedWeeks = Object.keys(weeksMap).reverse(); 
             let html = '';
             
@@ -402,7 +402,6 @@
             }
             document.getElementById('weeklyStatsBody').innerHTML = html;
         }
-
 
         // --- RECHERCHE MULTI-SOURCES PATHOLOGIE/ORGANE ---
         window.calculateOrganStats = function() {
@@ -423,10 +422,9 @@
 
             // 1. Chercher dans Patients Actuels
             Object.values(currentPatients).forEach(p => {
-                if(p.nom) {
+                if(p && p.nom) {
                     let textToSearch = normalizeStr(p.diag || "") + " " + normalizeStr(p.atcd || "") + " " + normalizeStr(p.intervention || "");
                     
-                    // Modifié : Tolérance croisée pour les fautes
                     let isMatch = keywords.some(kw => textToSearch.includes(kw) || kw.includes(textToSearch));
                     
                     if(isMatch) {
@@ -444,7 +442,7 @@
 
             // 2. Chercher dans Archives Patients
             Object.values(archivedPatients).forEach(p => {
-                if(p.nom) {
+                if(p && p.nom) {
                     let textToSearch = normalizeStr(p.diag || "") + " " + normalizeStr(p.atcd || "") + " " + normalizeStr(p.intervention || "");
                     
                     let isMatch = keywords.some(kw => textToSearch.includes(kw) || kw.includes(textToSearch));
@@ -469,6 +467,8 @@
                 let interventionsJour = programmesOperatoiresData[dateStr];
                 if(Array.isArray(interventionsJour)) {
                     interventionsJour.forEach(inv => {
+                        if (!inv) return;
+                        
                         let textToSearch = normalizeStr(inv.diag || "") + " " + normalizeStr(inv.intervention || "");
                         let invNameOrig = inv.patientText || inv.nom || "Inconnu";
                         if(invNameOrig.includes(':')) {
