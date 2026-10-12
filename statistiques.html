@@ -214,8 +214,8 @@
 
         // Fonction pour normaliser le texte
         function normalizeStr(str) {
-            if (!str) return "";
-            return str.toLowerCase()
+            if (!str && str !== 0) return "";
+            return String(str).toLowerCase()
                       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
                       .trim();
         }
@@ -423,14 +423,14 @@
             // 1. Chercher dans Patients Actuels
             Object.values(currentPatients).forEach(p => {
                 if(p && p.nom) {
-                    let textToSearch = normalizeStr(p.diag || "") + " " + normalizeStr(p.atcd || "") + " " + normalizeStr(p.intervention || "");
+                    let textToSearch = normalizeStr(p.diag) + " " + normalizeStr(p.atcd) + " " + normalizeStr(p.intervention);
                     
                     let isMatch = keywords.some(kw => textToSearch.includes(kw) || kw.includes(textToSearch));
                     
                     if(isMatch) {
                         let normName = normalizeStr(p.nom);
                         uniquePatients[normName] = {
-                            nom: p.nom,
+                            nom: String(p.nom),
                             date: p.dateEntree || "Présent",
                             diag: p.diag || "Inconnu",
                             intervention: p.intervention || "-",
@@ -443,7 +443,7 @@
             // 2. Chercher dans Archives Patients
             Object.values(archivedPatients).forEach(p => {
                 if(p && p.nom) {
-                    let textToSearch = normalizeStr(p.diag || "") + " " + normalizeStr(p.atcd || "") + " " + normalizeStr(p.intervention || "");
+                    let textToSearch = normalizeStr(p.diag) + " " + normalizeStr(p.atcd) + " " + normalizeStr(p.intervention);
                     
                     let isMatch = keywords.some(kw => textToSearch.includes(kw) || kw.includes(textToSearch));
 
@@ -451,7 +451,7 @@
                         let normName = normalizeStr(p.nom);
                         if (!uniquePatients[normName]) {
                             uniquePatients[normName] = {
-                                nom: p.nom,
+                                nom: String(p.nom),
                                 date: p.dateSortie || p.dateSortieArchive || "Archivé",
                                 diag: p.diag || "Inconnu",
                                 intervention: p.intervention || "-",
@@ -469,8 +469,10 @@
                     interventionsJour.forEach(inv => {
                         if (!inv) return;
                         
-                        let textToSearch = normalizeStr(inv.diag || "") + " " + normalizeStr(inv.intervention || "");
-                        let invNameOrig = inv.patientText || inv.nom || "Inconnu";
+                        let textToSearch = normalizeStr(inv.diag) + " " + normalizeStr(inv.intervention);
+                        // Sécurisation en texte obligatoire
+                        let invNameOrig = String(inv.patientText || inv.patient || inv.nom || "Inconnu");
+                        
                         if(invNameOrig.includes(':')) {
                             invNameOrig = invNameOrig.split(':')[1].trim();
                         }
