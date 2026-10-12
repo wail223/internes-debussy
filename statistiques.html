@@ -23,23 +23,41 @@
         .stat-value { font-size: 2.5em; font-weight: bold; margin: 10px 0; color: var(--primary); }
         .stat-subtext { font-size: 0.85em; color: var(--text-light); }
         
-        /* Couleurs spécifiques pour les cartes */
         .card-total .stat-value { color: var(--primary); }
         .card-opere .stat-value { color: var(--success); }
         .card-nonopere .stat-value { color: var(--warning); }
         
-        .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 20px;}
         .detail-section { background: white; padding: 15px; border-radius: 12px; border: 1px solid #cbd5e1; }
-        .detail-section h4 { margin-top: 0; color: var(--text); border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+        .detail-section h4 { margin-top: 0; color: var(--text); border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; display:flex; justify-content:space-between; align-items:center;}
         .progress-bar-bg { background: #e2e8f0; border-radius: 8px; height: 12px; width: 100%; margin-bottom: 5px; overflow: hidden; }
         .progress-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.5s ease; }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9em; font-weight: 500;}
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9em; font-weight: 500; align-items:center;}
         
         select.organ-select {
             padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; 
             font-size: 1em; width: 100%; max-width: 300px; background: #f8fafc;
-            margin-bottom: 15px; cursor: pointer;
+            margin-bottom: 10px; cursor: pointer;
         }
+
+        .btn-show-list {
+            background: var(--primary); color: white; border: none; border-radius: 6px;
+            padding: 8px 15px; font-weight: bold; cursor: pointer; margin-top: 10px; display: none;
+        }
+        
+        .toggle-switch { display: flex; align-items: center; gap: 10px; font-size: 0.9em; font-weight: bold; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;}
+
+        /* Table styles */
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; margin-top:10px; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+        th { background: #f8fafc; color: var(--primary); }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--card); width: 95%; max-width: 900px; max-height: 90vh; border-radius: 12px; padding: 20px; overflow-y: auto; box-sizing: border-box; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; position: sticky; top: 0; background: white; z-index: 10; }
+        .close-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2em; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -61,71 +79,109 @@
         <div class="stat-card card-total">
             <h3>Total Patients Présents</h3>
             <div class="stat-value" id="statTotal">-</div>
-            <div class="stat-subtext">Tout confondus</div>
+            <div class="stat-subtext">Capacité hors Réa : <span id="capLabel">16</span> lits</div>
         </div>
         <div class="stat-card card-opere">
             <h3>Malades Opérés</h3>
             <div class="stat-value" id="statOperes">-</div>
-            <div class="stat-subtext">Post-opératoire & Au bloc</div>
+            <div class="stat-subtext">Croisé avec le registre des blocs</div>
         </div>
         <div class="stat-card card-nonopere">
             <h3>Malades Non Opérés</h3>
             <div class="stat-value" id="statNonOperes">-</div>
-            <div class="stat-subtext">En attente / À surveiller</div>
+            <div class="stat-subtext">En attente d'intervention</div>
         </div>
     </div>
 
     <div class="details-grid">
         
-        <!-- NOUVELLE SECTION : STATISTIQUES PAR ORGANE -->
+        <!-- SECTION : STATISTIQUES PAR ORGANE -->
         <div class="detail-section" style="grid-column: 1 / -1;">
             <h4>🫀 Recherche par Pathologie / Organe</h4>
             <div style="color: var(--text-light); font-size: 0.85em; margin-bottom: 10px;">
-                Calcule le nombre total d'admissions pour une pathologie donnée en analysant les diagnostics des patients <b>présents</b> et <b>archivés</b>.
+                Recherche intelligente (tolérance aux fautes/accents) croisant 3 bases : <b>Patients actuels</b>, <b>Archives Patients</b>, et <b>Registre des Interventions</b>.
             </div>
             
             <select id="organSelect" class="organ-select">
                 <option value="">-- Choisissez un organe / pathologie --</option>
-                <option value="colon,colique">Côlon (Cancer colique, etc.)</option>
-                <option value="endometre,utérus,uterin">Endomètre / Utérus</option>
-                <option value="estomac,gastrique,cardio">Estomac / Gastrique</option>
-                <option value="thyroide,thyroïdien">Thyroïde</option>
-                <option value="parathyroide">Parathyroïde</option>
-                <option value="rectum,rectal">Rectum</option>
-                <option value="sein,mammaire">Sein</option>
-                <option value="vesicule,biliaire">Vésicule biliaire / Voies biliaires</option>
-                <option value="foie,hépatique,hepatique">Foie / Hépatique</option>
-                <option value="pancreas,pancréas">Pancréas</option>
-                <option value="ovaire,ovarien">Ovaire</option>
+                <option value="colon,colique,colectomie">Côlon / Colique</option>
+                <option value="endometre,uterus,uterin,hysterectomie">Endomètre / Utérus</option>
+                <option value="estomac,gastrique,cardio,gastrectomie">Estomac / Gastrique</option>
+                <option value="thyroide,thyroidien,thyroidectomie">Thyroïde</option>
+                <option value="parathyroide,parathyroidectomie">Parathyroïde</option>
+                <option value="rectum,rectal,proctectomie">Rectum</option>
+                <option value="sein,mammaire,mastectomie,tumorectomie">Sein / Mammaire</option>
+                <option value="vesicule,biliaire,cholecystectomie">Vésicule biliaire</option>
+                <option value="foie,hepatique,hepatectomie">Foie / Hépatique</option>
+                <option value="pancreas,pancreatique,dpc">Pancréas</option>
+                <option value="ovaire,ovarien,annexectomie">Ovaire</option>
+                <option value="hernie,eventration,parietale">Hernie / Éventration</option>
             </select>
 
-            <div class="stat-row" style="font-size: 1.1em; align-items: center; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
-                <span>Total Patients (Actifs + Archivés) :</span> 
+            <div class="stat-row" style="font-size: 1.1em; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
+                <span>Total Correspondances :</span> 
                 <b style="color:var(--primary); font-size: 1.8em;" id="organCountResult">0</b>
             </div>
+            
+            <button id="btnShowList" class="btn-show-list" onclick="showResultsModal()">📋 Afficher la liste nominative</button>
         </div>
 
         <div class="detail-section">
-            <h4>📈 Répartition par Secteur (Actifs)</h4>
+            <h4>📈 Répartition & Capacité</h4>
+            <div class="toggle-switch">
+                <input type="checkbox" id="toggle3rdFloor" style="width:18px; height:18px; cursor:pointer;">
+                <label for="toggle3rdFloor" style="cursor:pointer;">Le 3ème Étage est fonctionnel (+16 lits)</label>
+            </div>
+
             <div class="stat-row"><span>4ème Étage (Chirurgie)</span> <span id="count4">-</span></div>
             <div class="stat-row"><span>3ème Étage (Chirurgie)</span> <span id="count3">-</span></div>
-            <div class="stat-row"><span>Réanimation</span> <span id="countRea">-</span></div>
+            <div class="stat-row"><span>Réanimation (Inclus dans patients)</span> <span id="countRea">-</span></div>
             
             <h4 style="margin-top: 20px;">🛏️ Taux d'Occupation</h4>
-            <div class="stat-row"><span>Occupation Globale (Capacité : 38 lits)</span> <span id="occupancyRate">0%</span></div>
+            <div class="stat-row"><span id="occupancyText">Occupation Globale</span> <span id="occupancyRate">0%</span></div>
             <div class="progress-bar-bg">
                 <div class="progress-bar-fill" id="occupancyBar"></div>
             </div>
         </div>
 
         <div class="detail-section">
-            <h4>⚠️ Statuts Spécifiques (Actifs)</h4>
-            <div class="stat-row"><span>Patients à surveiller (Rouge)</span> <b style="color:var(--danger);" id="countSurveiller">-</b></div>
-            <div class="stat-row"><span>Patients actuellement au bloc (Jaune)</span> <b style="color:var(--warning);" id="countBloc">-</b></div>
-            
-            <h4 style="margin-top: 20px;">🩸 Préparation Opératoire</h4>
-            <div class="stat-row"><span>Commandes de sang effectuées</span> <span id="countSang">-</span></div>
-            <div class="stat-row"><span>Commandes de médicaments faites</span> <span id="countMed">-</span></div>
+            <h4>📅 Interventions par Mois</h4>
+            <div style="max-height: 200px; overflow-y: auto;">
+                <table id="monthlyStatsTable">
+                    <thead><tr><th>Mois</th><th>Opérations</th></tr></thead>
+                    <tbody id="monthlyStatsBody"><tr><td colspan="2">Calcul en cours...</td></tr></tbody>
+                </table>
+            </div>
+
+            <h4 style="margin-top: 20px;">⚠️ Statuts Spécifiques (Actifs)</h4>
+            <div class="stat-row"><span>À surveiller (Rouge)</span> <b style="color:var(--danger);" id="countSurveiller">-</b></div>
+            <div class="stat-row"><span>Au bloc (Jaune)</span> <b style="color:var(--warning);" id="countBloc">-</b></div>
+        </div>
+    </div>
+
+    <!-- MODAL LISTE DES PATIENTS (RECHERCHE ORGANE) -->
+    <div id="resultsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin:0; color:var(--primary);">📋 Résultats de recherche</h3>
+                <button class="close-btn" onclick="closeResultsModal()">✕</button>
+            </div>
+            <p style="font-size:0.9em; color:var(--text-light); margin-top:0;">Les doublons probables entre les bases sont fusionnés dans la mesure du possible.</p>
+            <div style="overflow-x:auto;">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Nom du Patient</th>
+                            <th>Date / Année</th>
+                            <th>Pathologie / Diagnostic</th>
+                            <th>Intervention (Si opéré)</th>
+                            <th>Source</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -142,53 +198,81 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Capacité totale calculée (16 lits au 4ème, 16 lits au 3ème, 6 lits en Réa)
-        const TOTAL_BEDS = 38;
-
-        // Stockage local des données pour la recherche par organe
+        // Variables Globales
         let currentPatients = {};
         let archivedPatients = {};
+        let programmesOperatoiresData = {};
+        let currentSearchResults = [];
 
-        // 1. ÉCOUTE DES PATIENTS ACTUELS
+        // Fonction pour normaliser le texte (retire accents, minuscules, espaces superflus)
+        function normalizeStr(str) {
+            if (!str) return "";
+            return str.toLowerCase()
+                      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                      .trim();
+        }
+
+        // --- ÉCOUTE DES DONNÉES FIREBASE ---
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
             currentPatients = snapshot.val() || {};
-            updateMainStats();
-            calculateOrganStats(); // Mettre à jour la stat organe si elle est sélectionnée
+            computeAllStats();
         });
 
-        // 2. ÉCOUTE DES PATIENTS ARCHIVÉS
         onValue(ref(db, 'archives_patients/'), (snapshot) => {
             archivedPatients = snapshot.val() || {};
-            calculateOrganStats(); // Mettre à jour la stat organe quand l'archive charge
+            calculateOrganStats(); 
         });
 
-        // Fonction pour mettre à jour les statistiques de base (Lits, Blocs, Secteurs)
-        function updateMainStats() {
-            let total = 0, operes = 0, nonOperes = 0;
-            let etage4 = 0, etage3 = 0, rea = 0;
-            let aSurveiller = 0, auBloc = 0, cmdSang = 0, cmdMed = 0;
+        onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
+            programmesOperatoiresData = snapshot.val() || {};
+            computeAllStats();
+            computeMonthlyStats();
+        });
 
+        // Event listener pour le toggle du 3ème étage
+        document.getElementById('toggle3rdFloor').addEventListener('change', computeAllStats);
+        document.getElementById('organSelect').addEventListener('change', calculateOrganStats);
+
+        // --- CALCUL DES STATISTIQUES PRINCIPALES (Opérés, Capacité) ---
+        function computeAllStats() {
+            // 1. Calcul de la Capacité
+            const is3rdFloorActive = document.getElementById('toggle3rdFloor').checked;
+            const CAPACITY = 16 + (is3rdFloorActive ? 16 : 0); // 16 au 4eme, 16 au 3eme (Réa non comptée en diviseur)
+            document.getElementById('capLabel').innerText = CAPACITY;
+
+            let totalPresents = 0;
+            let operes = 0;
+            let nonOperes = 0;
+            
+            let etage4 = 0, etage3 = 0, rea = 0;
+            let aSurveiller = 0, auBloc = 0;
+
+            // 2. Parcourir les patients actuels
             Object.keys(currentPatients).forEach(bedId => {
                 const p = currentPatients[bedId];
                 if (p && p.nom) {
-                    total++;
+                    totalPresents++;
                     
-                    if (p.statut === 'postop' || p.statut === 'bloc') operes++;
-                    else nonOperes++;
-
-                    if (p.statut === 'surveiller') aSurveiller++;
-                    if (p.statut === 'bloc') auBloc++;
-
+                    // Répartition
                     if (bedId.startsWith('4')) etage4++;
                     else if (bedId.startsWith('3')) etage3++;
                     else if (bedId.startsWith('REA')) rea++;
 
-                    if (p.cmdSang) cmdSang++;
-                    if (p.cmdMed) cmdMed++;
+                    // Statuts spéciaux
+                    if (p.statut === 'surveiller') aSurveiller++;
+                    if (p.statut === 'bloc') auBloc++;
+
+                    // Logique strict pour vérifier si OPÉRÉ (via le programme)
+                    if (checkIfOperated(p.nom)) {
+                        operes++;
+                    } else {
+                        nonOperes++;
+                    }
                 }
             });
 
-            document.getElementById('statTotal').innerText = total;
+            // Affichage
+            document.getElementById('statTotal').innerText = totalPresents;
             document.getElementById('statOperes').innerText = operes;
             document.getElementById('statNonOperes').innerText = nonOperes;
             
@@ -198,54 +282,213 @@
             
             document.getElementById('countSurveiller').innerText = aSurveiller;
             document.getElementById('countBloc').innerText = auBloc;
-            
-            document.getElementById('countSang').innerText = cmdSang;
-            document.getElementById('countMed').innerText = cmdMed;
 
-            const rate = Math.round((total / TOTAL_BEDS) * 100) || 0;
-            document.getElementById('occupancyRate').innerText = `${rate}% (${total}/${TOTAL_BEDS})`;
+            // Taux d'occupation : Formule (Total Présents / Capacité). Il peut dépasser 100% si des lits de réa sont occupés.
+            const rate = Math.round((totalPresents / CAPACITY) * 100) || 0;
+            document.getElementById('occupancyText').innerText = `Occupation Globale (${CAPACITY} lits normaux)`;
+            document.getElementById('occupancyRate').innerText = `${rate}% (${totalPresents}/${CAPACITY})`;
             
             const bar = document.getElementById('occupancyBar');
-            bar.style.width = `${rate}%`;
-            if(rate > 90) bar.style.background = 'var(--danger)';
+            bar.style.width = `${Math.min(rate, 100)}%`; // Cap visuel à 100%
+            if(rate > 95) bar.style.background = 'var(--danger)';
             else if (rate > 75) bar.style.background = 'var(--warning)';
             else bar.style.background = 'var(--primary)';
         }
 
-        // Fonction pour calculer les stats par organe (Actifs + Archives)
-        function calculateOrganStats() {
-            const selectElement = document.getElementById('organSelect');
-            const searchValues = selectElement.value; // ex: "estomac,gastrique"
+        // --- LOGIQUE POUR VÉRIFIER SI UN PATIENT A ÉTÉ OPÉRÉ ---
+        function checkIfOperated(patientName) {
+            let isOp = false;
+            let normTarget = normalizeStr(patientName);
             
+            // On cherche dans tout le registre des blocs
+            for (const dateStr in programmesOperatoiresData) {
+                const interventionsJour = programmesOperatoiresData[dateStr];
+                if (Array.isArray(interventionsJour)) {
+                    interventionsJour.forEach(inv => {
+                        let invName = normalizeStr(inv.patientText || inv.patient || inv.nom);
+                        if (invName.includes(normTarget) && normTarget !== "") {
+                            // On vérifie le statut
+                            let statut = normalizeStr(inv.statut || "");
+                            // Si c'est annulé ou reprogrammé, on ne le compte pas comme opéré POUR CETTE LIGNE
+                            // (Si le patient a une autre ligne valide plus tard, isOp deviendra true)
+                            if (!statut.includes('annule') && !statut.includes('reprogramm')) {
+                                isOp = true;
+                            }
+                        }
+                    });
+                }
+            }
+            return isOp;
+        }
+
+        // --- CALCUL DES INTERVENTIONS PAR MOIS ---
+        function computeMonthlyStats() {
+            let monthsMap = {};
+
+            Object.keys(programmesOperatoiresData).forEach(dateStr => {
+                // dateStr est format "YYYY-MM-DD"
+                if(dateStr && dateStr.length >= 7) {
+                    let monthKey = dateStr.substring(0, 7); // Ex: 2026-10
+                    let interventionsJour = programmesOperatoiresData[dateStr];
+                    
+                    if(Array.isArray(interventionsJour)) {
+                        interventionsJour.forEach(inv => {
+                            let statut = normalizeStr(inv.statut || "");
+                            if (!statut.includes('annule') && !statut.includes('reprogramm') && (inv.patientText || inv.intervention)) {
+                                monthsMap[monthKey] = (monthsMap[monthKey] || 0) + 1;
+                            }
+                        });
+                    }
+                }
+            });
+
+            // Tri descendant par mois
+            let sortedMonths = Object.keys(monthsMap).sort().reverse();
+            let html = '';
+            
+            if(sortedMonths.length === 0) {
+                html = '<tr><td colspan="2">Aucune donnée</td></tr>';
+            } else {
+                sortedMonths.forEach(m => {
+                    // Formater "2026-10" en "Oct 2026"
+                    const parts = m.split('-');
+                    const dateObj = new Date(parts[0], parts[1]-1, 1);
+                    const formattedMonth = dateObj.toLocaleString('fr-FR', { month: 'short', year: 'numeric' });
+                    
+                    html += `<tr><td><b>${formattedMonth.toUpperCase()}</b></td><td>${monthsMap[m]} interventions</td></tr>`;
+                });
+            }
+            document.getElementById('monthlyStatsBody').innerHTML = html;
+        }
+
+        // --- RECHERCHE MULTI-SOURCES PATHOLOGIE/ORGANE ---
+        window.calculateOrganStats = function() {
+            const selectElement = document.getElementById('organSelect');
+            const btnShow = document.getElementById('btnShowList');
+            const searchValues = selectElement.value; 
+            
+            currentSearchResults = []; // Reset
+
             if (!searchValues) {
                 document.getElementById('organCountResult').innerText = "0";
+                btnShow.style.display = 'none';
                 return;
             }
 
-            const keywords = searchValues.split(',').map(kw => kw.trim().toLowerCase());
-            let matchCount = 0;
+            const keywords = searchValues.split(',').map(kw => normalizeStr(kw));
 
-            const checkDiagnostic = (p) => {
-                if (p && p.nom && p.diag) {
-                    const diagLower = p.diag.toLowerCase();
-                    // On vérifie si l'un des mots clés de l'organe est présent dans le diag du patient
-                    const isMatch = keywords.some(kw => diagLower.includes(kw));
-                    if (isMatch) matchCount++;
+            // Dictionnaire pour éviter les doublons (Clé = Nom normalisé)
+            let uniquePatients = {};
+
+            // 1. Chercher dans Patients Actuels
+            Object.values(currentPatients).forEach(p => {
+                if(p.nom) {
+                    let textToSearch = normalizeStr(p.diag || "") + " " + normalizeStr(p.atcd || "");
+                    if(keywords.some(kw => textToSearch.includes(kw))) {
+                        let normName = normalizeStr(p.nom);
+                        uniquePatients[normName] = {
+                            nom: p.nom,
+                            date: p.dateEntree || "Présent",
+                            diag: p.diag || "Inconnu",
+                            intervention: "-",
+                            source: "Service (Actuel)"
+                        };
+                    }
                 }
-            };
+            });
 
-            // Parcourir les patients actifs
-            Object.values(currentPatients).forEach(checkDiagnostic);
-            
-            // Parcourir les patients archivés
-            Object.values(archivedPatients).forEach(checkDiagnostic);
+            // 2. Chercher dans Archives Patients
+            Object.values(archivedPatients).forEach(p => {
+                if(p.nom) {
+                    let textToSearch = normalizeStr(p.diag || "") + " " + normalizeStr(p.atcd || "");
+                    if(keywords.some(kw => textToSearch.includes(kw))) {
+                        let normName = normalizeStr(p.nom);
+                        if (!uniquePatients[normName]) {
+                            uniquePatients[normName] = {
+                                nom: p.nom,
+                                date: p.dateSortie || p.dateSortieArchive || "Archivé",
+                                diag: p.diag || "Inconnu",
+                                intervention: "-",
+                                source: "Archives Service"
+                            };
+                        }
+                    }
+                }
+            });
 
-            // Affichage du résultat
-            document.getElementById('organCountResult').innerText = matchCount;
-        }
+            // 3. Chercher dans Programmes Opératoires
+            Object.keys(programmesOperatoiresData).forEach(dateStr => {
+                let interventionsJour = programmesOperatoiresData[dateStr];
+                if(Array.isArray(interventionsJour)) {
+                    interventionsJour.forEach(inv => {
+                        let textToSearch = normalizeStr(inv.diag || "") + " " + normalizeStr(inv.intervention || "");
+                        let invNameOrig = inv.patientText || inv.nom || "Inconnu";
+                        // Extraire le nom s'il contient le numéro de lit "402F: NOM"
+                        if(invNameOrig.includes(':')) {
+                            invNameOrig = invNameOrig.split(':')[1].trim();
+                        }
+                        let normName = normalizeStr(invNameOrig);
 
-        // Écouteur sur le menu déroulant
-        document.getElementById('organSelect').addEventListener('change', calculateOrganStats);
+                        if(keywords.some(kw => textToSearch.includes(kw))) {
+                            // Si déjà trouvé dans le service, on met juste à jour l'intervention
+                            if (uniquePatients[normName]) {
+                                if(uniquePatients[normName].intervention === "-") {
+                                    uniquePatients[normName].intervention = inv.intervention || "Opéré(e)";
+                                }
+                            } else {
+                                // Nouveau trouvé uniquement au bloc
+                                uniquePatients[normName] = {
+                                    nom: invNameOrig,
+                                    date: dateStr,
+                                    diag: inv.diag || "Voir intervention",
+                                    intervention: inv.intervention || "-",
+                                    source: "Registre Bloc"
+                                };
+                            }
+                        }
+                    });
+                }
+            });
+
+            // Convertir le dictionnaire en tableau
+            currentSearchResults = Object.values(uniquePatients);
+
+            // Mise à jour de l'UI
+            document.getElementById('organCountResult').innerText = currentSearchResults.length;
+            if(currentSearchResults.length > 0) {
+                btnShow.style.display = 'inline-block';
+            } else {
+                btnShow.style.display = 'none';
+            }
+        };
+
+        // --- GESTION DU MODAL DE LISTE ---
+        window.showResultsModal = function() {
+            const tbody = document.getElementById('resultsTableBody');
+            let html = '';
+
+            // Trier par date/source approximative
+            currentSearchResults.sort((a, b) => a.nom.localeCompare(b.nom));
+
+            currentSearchResults.forEach(res => {
+                html += `
+                    <tr>
+                        <td><b>${res.nom.toUpperCase()}</b></td>
+                        <td>${res.date}</td>
+                        <td>${res.diag}</td>
+                        <td>${res.intervention}</td>
+                        <td><span style="font-size:0.85em; background:#f1f5f9; padding:2px 6px; border-radius:4px; border:1px solid #cbd5e1;">${res.source}</span></td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            document.getElementById('resultsModal').classList.add('active');
+        };
+
+        window.closeResultsModal = function() {
+            document.getElementById('resultsModal').classList.remove('active');
+        };
 
     </script>
 </body>
