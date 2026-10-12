@@ -476,4 +476,64 @@
                         }
                         let normName = normalizeStr(invNameOrig);
 
-                        let isMatch =
+                        let isMatch = keywords.some(kw => textToSearch.includes(kw) || kw.includes(textToSearch));
+
+                        if(isMatch) {
+                            if (uniquePatients[normName]) {
+                                if(uniquePatients[normName].intervention === "-") {
+                                    uniquePatients[normName].intervention = inv.intervention || "Opéré(e)";
+                                }
+                            } else {
+                                uniquePatients[normName] = {
+                                    nom: invNameOrig,
+                                    date: dateStr,
+                                    diag: inv.diag || "Voir intervention",
+                                    intervention: inv.intervention || "-",
+                                    source: "Registre Bloc"
+                                };
+                            }
+                        }
+                    });
+                }
+            });
+
+            currentSearchResults = Object.values(uniquePatients);
+
+            document.getElementById('organCountResult').innerText = currentSearchResults.length;
+            if(currentSearchResults.length > 0) {
+                btnShow.style.display = 'inline-block';
+            } else {
+                btnShow.style.display = 'none';
+            }
+        };
+
+        // --- GESTION DU MODAL DE LISTE ---
+        window.showResultsModal = function() {
+            const tbody = document.getElementById('resultsTableBody');
+            let html = '';
+
+            currentSearchResults.sort((a, b) => a.nom.localeCompare(b.nom));
+
+            currentSearchResults.forEach(res => {
+                html += `
+                    <tr>
+                        <td><b>${res.nom.toUpperCase()}</b></td>
+                        <td>${res.date}</td>
+                        <td>${res.diag}</td>
+                        <td>${res.intervention}</td>
+                        <td><span style="font-size:0.85em; background:#f1f5f9; padding:2px 6px; border-radius:4px; border:1px solid #cbd5e1;">${res.source}</span></td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            document.getElementById('resultsModal').classList.add('active');
+        };
+
+        window.closeResultsModal = function() {
+            document.getElementById('resultsModal').classList.remove('active');
+        };
+
+    </script>
+</body>
+</html>
