@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistiques - CPMC Debussy</title>
+    <style>
+        :root {
+            --primary: #0284c7; --primary-light: #e0f2fe; --success: #16a34a; 
+            --warning: #ca8a04; --danger: #dc2626; --bg: #f1f5f9; 
+            --card: #ffffff; --text: #1e293b; --text-light: #64748b;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; background:var(--bg); padding:15px; margin:0; color:var(--text); }
+        .nav-links { display: flex; gap: 8px; margin-bottom: 20px; overflow-x:auto; padding-bottom: 5px; }
+        .nav-btn { background: #e2e8f0; color: #1e293b; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space:nowrap; }
+        .nav-btn.active { background: var(--primary); color: white; }
+        
+        .header-title { color: var(--primary); margin-top: 0; margin-bottom: 20px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
+        .stat-card h3 { margin: 0; font-size: 1em; color: var(--text-light); text-transform: uppercase; }
+        .stat-value { font-size: 2.5em; font-weight: bold; margin: 10px 0; color: var(--primary); }
+        .stat-subtext { font-size: 0.85em; color: var(--text-light); }
+        
+        /* Couleurs spécifiques pour les cartes */
+        .card-total .stat-value { color: var(--primary); }
+        .card-opere .stat-value { color: var(--success); }
+        .card-nonopere .stat-value { color: var(--warning); }
+        
+        .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .detail-section { background: white; padding: 15px; border-radius: 12px; border: 1px solid #cbd5e1; }
+        .detail-section h4 { margin-top: 0; color: var(--text); border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+        .progress-bar-bg { background: #e2e8f0; border-radius: 8px; height: 12px; width: 100%; margin-bottom: 5px; overflow: hidden; }
+        .progress-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.5s ease; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9em; font-weight: 500;}
+        
+        select.organ-select {
+            padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; 
+            font-size: 1em; width: 100%; max-width: 300px; background: #f8fafc;
+            margin-bottom: 15px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nav-links">
+        <a href="index.html" class="nav-btn">🏠 Accueil</a>
+        <a href="patients.html" class="nav-btn">🛏️ Lits / Hospitalisation</a>
+        <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
+        <a href="courbes.html" class="nav-btn">📈 Courbes de Suivi</a>
+        <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
+        <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
+        <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
+        <a href="statistiques.html" class="nav-btn active">📊 Statistiques</a>
+    </div>
+
+    <h2 class="header-title">📊 Statistiques du Service</h2>
+
+    <div class="stats-grid">
+        <div class="stat-card card-total">
+            <h3>Total Patients Présents</h3>
+            <div class="stat-value" id="statTotal">-</div>
+            <div class="stat-subtext">Tout confondus</div>
+        </div>
+        <div class="stat-card card-opere">
+            <h3>Malades Opérés</h3>
+            <div class="stat-value" id="statOperes">-</div>
+            <div class="stat-subtext">Post-opératoire & Au bloc</div>
+        </div>
+        <div class="stat-card card-nonopere">
+            <h3>Malades Non Opérés</h3>
+            <div class="stat-value" id="statNonOperes">-</div>
+            <div class="stat-subtext">En attente / À surveiller</div>
+        </div>
+    </div>
+
+    <div class="details-grid">
+        
+        <!-- NOUVELLE SECTION : STATISTIQUES PAR ORGANE -->
+        <div class="detail-section" style="grid-column: 1 / -1;">
+            <h4>🫀 Recherche par Pathologie / Organe</h4>
+            <div style="color: var(--text-light); font-size: 0.85em; margin-bottom: 10px;">
+                Calcule le nombre total d'admissions pour une pathologie donnée en analysant les diagnostics des patients <b>présents</b> et <b>archivés</b>.
+            </div>
+            
+            <select id="organSelect" class="organ-select">
+                <option value="">-- Choisissez un organe / pathologie --</option>
+                <option value="colon,colique">Côlon (Cancer colique, etc.)</option>
+                <option value="endometre,utérus,uterin">Endomètre / Utérus</option>
+                <option value="estomac,gastrique,cardio">Estomac / Gastrique</option>
+                <option value="thyroide,thyroïdien">Thyroïde</option>
+                <option value="parathyroide">Parathyroïde</option>
+                <option value="rectum,rectal">Rectum</option>
+                <option value="sein,mammaire">Sein</option>
+                <option value="vesicule,biliaire">Vésicule biliaire / Voies biliaires</option>
+                <option value="foie,hépatique,hepatique">Foie / Hépatique</option>
+                <option value="pancreas,pancréas">Pancréas</option>
+                <option value="ovaire,ovarien">Ovaire</option>
+            </select>
+
+            <div class="stat-row" style="font-size: 1.1em; align-items: center; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
+                <span>Total Patients (Actifs + Archivés) :</span> 
+                <b style="color:var(--primary); font-size: 1.8em;" id="organCountResult">0</b>
+            </div>
+        </div>
+
+        <div class="detail-section">
+            <h4>📈 Répartition par Secteur (Actifs)</h4>
+            <div class="stat-row"><span>4ème Étage (Chirurgie)</span> <span id="count4">-</span></div>
+            <div class="stat-row"><span>3ème Étage (Chirurgie)</span> <span id="count3">-</span></div>
+            <div class="stat-row"><span>Réanimation</span> <span id="countRea">-</span></div>
+            
+            <h4 style="margin-top: 20px;">🛏️ Taux d'Occupation</h4>
+            <div class="stat-row"><span>Occupation Globale (Capacité : 38 lits)</span> <span id="occupancyRate">0%</span></div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="occupancyBar"></div>
+            </div>
+        </div>
+
+        <div class="detail-section">
+            <h4>⚠️ Statuts Spécifiques (Actifs)</h4>
+            <div class="stat-row"><span>Patients à surveiller (Rouge)</span> <b style="color:var(--danger);" id="countSurveiller">-</b></div>
+            <div class="stat-row"><span>Patients actuellement au bloc (Jaune)</span> <b style="color:var(--warning);" id="countBloc">-</b></div>
+            
+            <h4 style="margin-top: 20px;">🩸 Préparation Opératoire</h4>
+            <div class="stat-row"><span>Commandes de sang effectuées</span> <span id="countSang">-</span></div>
+            <div class="stat-row"><span>Commandes de médicaments faites</span> <span id="countMed">-</span></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
+            authDomain: "internes-debussy.firebaseapp.com",
+            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "internes-debussy"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Capacité totale calculée (16 lits au 4ème, 16 lits au 3ème, 6 lits en Réa)
+        const TOTAL_BEDS = 38;
+
+        // Stockage local des données pour la recherche par organe
+        let currentPatients = {};
+        let archivedPatients = {};
+
+        // 1. ÉCOUTE DES PATIENTS ACTUELS
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+            currentPatients = snapshot.val() || {};
+            updateMainStats();
+            calculateOrganStats(); // Mettre à jour la stat organe si elle est sélectionnée
+        });
+
+        // 2. ÉCOUTE DES PATIENTS ARCHIVÉS
+        onValue(ref(db, 'archives_patients/'), (snapshot) => {
+            archivedPatients = snapshot.val() || {};
+            calculateOrganStats(); // Mettre à jour la stat organe quand l'archive charge
+        });
+
+        // Fonction pour mettre à jour les statistiques de base (Lits, Blocs, Secteurs)
+        function updateMainStats() {
+            let total = 0, operes = 0, nonOperes = 0;
+            let etage4 = 0, etage3 = 0, rea = 0;
+            let aSurveiller = 0, auBloc = 0, cmdSang = 0, cmdMed = 0;
+
+            Object.keys(currentPatients).forEach(bedId => {
+                const p = currentPatients[bedId];
+                if (p && p.nom) {
+                    total++;
+                    
+                    if (p.statut === 'postop' || p.statut === 'bloc') operes++;
+                    else nonOperes++;
+
+                    if (p.statut === 'surveiller') aSurveiller++;
+                    if (p.statut === 'bloc') auBloc++;
+
+                    if (bedId.startsWith('4')) etage4++;
+                    else if (bedId.startsWith('3')) etage3++;
+                    else if (bedId.startsWith('REA')) rea++;
+
+                    if (p.cmdSang) cmdSang++;
+                    if (p.cmdMed) cmdMed++;
+                }
+            });
+
+            document.getElementById('statTotal').innerText = total;
+            document.getElementById('statOperes').innerText = operes;
+            document.getElementById('statNonOperes').innerText = nonOperes;
+            
+            document.getElementById('count4').innerText = etage4;
+            document.getElementById('count3').innerText = etage3;
+            document.getElementById('countRea').innerText = rea;
+            
+            document.getElementById('countSurveiller').innerText = aSurveiller;
+            document.getElementById('countBloc').innerText = auBloc;
+            
+            document.getElementById('countSang').innerText = cmdSang;
+            document.getElementById('countMed').innerText = cmdMed;
+
+            const rate = Math.round((total / TOTAL_BEDS) * 100) || 0;
+            document.getElementById('occupancyRate').innerText = `${rate}% (${total}/${TOTAL_BEDS})`;
+            
+            const bar = document.getElementById('occupancyBar');
+            bar.style.width = `${rate}%`;
+            if(rate > 90) bar.style.background = 'var(--danger)';
+            else if (rate > 75) bar.style.background = 'var(--warning)';
+            else bar.style.background = 'var(--primary)';
+        }
+
+        // Fonction pour calculer les stats par organe (Actifs + Archives)
+        function calculateOrganStats() {
+            const selectElement = document.getElementById('organSelect');
+            const searchValues = selectElement.value; // ex: "estomac,gastrique"
+            
+            if (!searchValues) {
+                document.getElementById('organCountResult').innerText = "0";
+                return;
+            }
+
+            const keywords = searchValues.split(',').map(kw => kw.trim().toLowerCase());
+            let matchCount = 0;
+
+            const checkDiagnostic = (p) => {
+                if (p && p.nom && p.diag) {
+                    const diagLower = p.diag.toLowerCase();
+                    // On vérifie si l'un des mots clés de l'organe est présent dans le diag du patient
+                    const isMatch = keywords.some(kw => diagLower.includes(kw));
+                    if (isMatch) matchCount++;
+                }
+            };
+
+            // Parcourir les patients actifs
+            Object.values(currentPatients).forEach(checkDiagnostic);
+            
+            // Parcourir les patients archivés
+            Object.values(archivedPatients).forEach(checkDiagnostic);
+
+            // Affichage du résultat
+            document.getElementById('organCountResult').innerText = matchCount;
+        }
+
+        // Écouteur sur le menu déroulant
+        document.getElementById('organSelect').addEventListener('change', calculateOrganStats);
+
+    </script>
+</body>
+</html>
