@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Générateur de Gardes - CPMC</title>
+    <title>Planning Gardes & Roulement - CPMC</title>
     <style>
         :root {
             --bg-color: #f3f4f6;
@@ -12,257 +12,342 @@
             --border: #e5e7eb;
             --text-main: #1f2937;
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-        h1 { font-size: 24px; text-align: center; margin-top: 0; }
+        body { font-family: -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; }
+        .container { max-width: 1350px; margin: 0 auto; background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { font-size: 24px; text-align: center; margin-top: 0; color: #111827;}
         
-        /* Contrôles (Boutons, etc.) */
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 25px;
-            background: #f9fafb;
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-        .control-group { flex: 1; min-width: 150px; }
+        .controls, .bloc-manager { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background: #f9fafb; padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
+        .bloc-manager { background: #eff6ff; border-color: #bfdbfe; }
+        .control-group { flex: 1; min-width: 160px; }
         label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #4b5563; }
-        input, select, button {
-            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db;
-            font-size: 16px; box-sizing: border-box;
-        }
-        button {
-            background-color: var(--primary); color: white; font-weight: bold; border: none;
-            cursor: pointer; transition: 0.2s; margin-top: 24px;
-        }
+        input, select, button { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 14px; box-sizing: border-box; }
+        button { background-color: var(--primary); color: white; font-weight: bold; border: none; cursor: pointer; margin-top: 24px; }
         button:hover { background-color: #1d4ed8; }
-        .btn-print { background-color: #10b981; }
-        .btn-print:hover { background-color: #059669; }
         
-        /* Table Styles (Écran) */
         .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
-        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 700px; }
-        th, td { padding: 12px 15px; border-bottom: 1px solid var(--border); }
-        th { background-color: #f8fafc; font-weight: 600; color: #475569; position: sticky; top: 0; }
+        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 1100px; font-size: 13px; }
+        th, td { padding: 10px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: top; }
+        th { background-color: #f8fafc; font-weight: 600; text-align: center; position: sticky; top: 0; }
         
         .weekend-row { background-color: #fef9c3; }
+        .mardi-row { background-color: #f3f4f6; }
         
+        .inf-aicha { background-color: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 8px; border-radius: 6px; }
+        .inf-hakima { background-color: #fce7f3; color: #be185d; font-weight: bold; padding: 4px 8px; border-radius: 6px; }
+        .badge-garde { background-color: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; display: inline-block; }
+        
+        .plan-box { display: flex; flex-direction: column; gap: 6px; }
+        .bloc-line { background-color: #fee2e2; color: #991b1b; padding: 5px; border-radius: 4px; font-weight: bold; }
+        .repos-line { background-color: #dcfce7; color: #166534; padding: 5px; border-radius: 4px; font-weight: bold; }
+        .service-line { background-color: #dbeafe; color: #1e40af; padding: 5px; border-radius: 4px; }
+        .post-garde-text { text-decoration: underline; font-weight: bold; }
+        .manual-bloc-badge { font-size: 0.8em; background: #f87171; color: white; padding: 2px 4px; border-radius: 4px; margin-left: 5px; }
+
         /* Highlight Styles */
-        .hl-garde { background-color: #fee2e2 !important; border-left: 5px solid #ef4444; }
-        .hl-present { background-color: #dbeafe !important; border-left: 5px solid #3b82f6; }
-        .hl-repos { background-color: #dcfce7 !important; border-left: 5px solid #10b981; }
-        .badge-garde { background-color: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; display: inline-block;}
-        .post-garde-text { color: #047857; font-weight: bold; }
-        .highlight-text { font-weight: bold; font-size: 1.05em; text-decoration: underline; }
-
-        /* En-tête d'impression caché sur l'écran */
-        .print-header { display: none; text-align: center; margin-bottom: 30px; font-family: "Times New Roman", Times, serif; }
-        .print-header h2 { font-size: 18px; text-transform: uppercase; margin: 5px 0; }
-        .print-header h3 { font-size: 16px; margin: 5px 0; font-weight: normal; }
-        .print-header h4 { font-size: 14px; margin: 5px 0; font-weight: normal; font-style: italic; }
-        .print-title { font-size: 22px; font-weight: bold; text-decoration: underline; margin-top: 20px; }
-
-        /* ========================================= */
-        /* CSS SPÉCIAL IMPRESSION (A4)               */
-        /* ========================================= */
+        .hl-garde { background-color: #fee2e2 !important; border-left: 5px solid #ef4444 !important; }
+        .hl-present { background-color: #dbeafe !important; border-left: 5px solid #3b82f6 !important; }
+        .hl-repos { background-color: #dcfce7 !important; border-left: 5px solid #10b981 !important; }
+        .highlight-text { font-weight: bold; font-size: 1.05em; text-decoration: underline; color: #000; }
+        
         @media print {
-            /* Forcer l'impression des couleurs de fond sur Chrome/Safari */
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            
-            body { background-color: white; padding: 0; }
-            .container { box-shadow: none; padding: 0; max-width: 100%; border: none; }
-            
-            /* Cacher l'interface utilisateur */
-            .controls, h1 { display: none !important; }
-            
-            /* Afficher l'en-tête officiel */
-            .print-header { display: block; }
-            
-            /* Adapter le tableau pour le papier */
-            table { width: 100%; border: 2px solid #000; }
-            th, td { border: 1px solid #000 !important; color: #000; font-size: 12pt; padding: 8px; }
-            th { background-color: #e5e7eb !important; font-size: 13pt; text-transform: uppercase; }
-            
-            /* Retirer le soulignement et surlignage personnel lors de l'impression */
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; border: none; max-width: 100%; padding: 0; }
+            .controls, .bloc-manager, h1 { display: none; }
+            table { border: 2px solid #000; }
+            th, td { border: 1px solid #000 !important; color: #000; }
             .hl-garde, .hl-present, .hl-repos { border-left: none !important; background-color: transparent !important; }
-            .weekend-row { background-color: #f3f4f6 !important; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- TITRE ÉCRAN -->
-    <h1>🏥 Planning des Gardes</h1>
+    <h1>🏥 Planning Intelligent : Gardes, Bloc & Roulement</h1>
     
-    <!-- EN-TÊTE PAPIER (Invisible à l'écran) -->
-    <div class="print-header">
-        <h2>République Algérienne Démocratique et Populaire</h2>
-        <h2>Ministère de la Santé</h2>
-        <h3>Etablissement Publique Hospitalier Spécialisé</h3>
-        <h3>Centre Pierre et Marie Curie (CPMC) - Alger</h3>
-        <h4>Service de Chirurgie « C » (ex Clinique Debussy)</h4>
-        
-        <div class="print-title">PLANNING DES GARDES ET ROTATIONS - INTERNES</div>
+    <!-- GESTION MANUELLE DU BLOC -->
+    <div class="bloc-manager">
+        <div class="control-group" style="flex: 100%; margin-bottom: -15px;">
+            <label style="color: #1e40af; font-size: 16px;">✂️ Forcer le programme du Bloc (Sauvegardé automatiquement)</label>
+        </div>
+        <div class="control-group">
+            <label>Date du Bloc :</label>
+            <input type="date" id="blocOverrideDate">
+        </div>
+        <div class="control-group">
+            <label>Interne 1 :</label>
+            <select id="blocInt1">
+                <option value="">-- Aucun --</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Interne 2 (Optionnel) :</label>
+            <select id="blocInt2">
+                <option value="">-- Aucun --</option>
+            </select>
+        </div>
+        <div class="control-group" style="display: flex; gap: 10px;">
+            <button onclick="sauvegarderBloc()" style="background-color: #2563eb;">💾 Enregistrer</button>
+            <button onclick="effacerBloc()" style="background-color: #ef4444;">🗑️ Effacer date</button>
+        </div>
     </div>
-    
-    <!-- CONTRÔLES (Cachés à l'impression) -->
+
     <div class="controls">
         <div class="control-group">
-            <label for="startDate">Date de début :</label>
+            <label>Date de début :</label>
             <input type="date" id="startDate">
         </div>
         <div class="control-group">
-            <label for="weeksCount">Durée :</label>
+            <label>Durée :</label>
             <select id="weeksCount">
                 <option value="1">1 Semaine</option>
                 <option value="2">2 Semaines</option>
                 <option value="4" selected>1 Mois</option>
             </select>
         </div>
-        <div class="control-group" style="background-color: #e5e7eb; padding: 10px; border-radius: 8px; margin-top: -10px;">
+        <div class="control-group" style="background-color: #e5e7eb; padding: 10px; border-radius: 8px;">
             <label for="interneFiltre">👤 Mettre en évidence :</label>
             <select id="interneFiltre">
                 <option value="-1">-- Personne --</option>
-                <option value="0">Waël</option>
-                <option value="1">Noussaiba</option>
-                <option value="2">Yassamine</option>
-                <option value="3">Lylia</option>
-                <option value="4">Ikram</option>
-                <option value="5">Baya</option>
             </select>
         </div>
         <div class="control-group" style="display: flex; gap: 10px;">
             <button onclick="genererPlanning()">Générer</button>
-            <button class="btn-print" onclick="window.print()">🖨️ Imprimer</button>
+            <button style="background-color: #10b981;" onclick="window.print()">🖨️ Imprimer</button>
         </div>
     </div>
 
-    <!-- TABLEAU -->
     <div class="table-wrapper">
         <table>
             <thead>
                 <tr>
-                    <th>📅 Date</th>
-                    <th>🚨 Garde</th>
-                    <th>🩺 Présents</th>
-                    <th>☕ Libérés (Repos)</th>
+                    <th style="width: 10%;">📅 Date</th>
+                    <th style="width: 10%;">👩‍⚕️ Infirmière</th>
+                    <th style="width: 10%;">🚨 Garde</th>
+                    <th style="width: 23%;">🅰️ PLAN A (2 Prog.)</th>
+                    <th style="width: 23%;">🅱️ PLAN B (1 Prog.)</th>
+                    <th style="width: 23%;">©️ PLAN C (Aucun Bloc)</th>
                 </tr>
             </thead>
-            <tbody id="tableBody">
-                <!-- Les lignes s'afficheront ici -->
-            </tbody>
+            <tbody id="tableBody"></tbody>
         </table>
     </div>
 </div>
 
 <script>
     const internes = ['Waël', 'Noussaiba', 'Yassamine', 'Lylia', 'Ikram', 'Baya'];
-    const baseDateUTC = Date.UTC(2026, 8, 29); // Mardi 29 Septembre 2026
+    const baseDateUTC = Date.UTC(2026, 8, 29); // Règle la garde
+    const aichaAnchorDate = Date.UTC(2026, 9, 16); 
+    const finPenaliteNoussaiba = Date.UTC(2026, 9, 23); 
 
+    // Initialisation des listes déroulantes
     document.addEventListener("DOMContentLoaded", () => {
         let today = new Date();
         document.getElementById('startDate').value = today.toISOString().split('T')[0];
+        document.getElementById('blocOverrideDate').value = today.toISOString().split('T')[0];
+
+        const populateSelect = (id) => {
+            let sel = document.getElementById(id);
+            internes.forEach((name, i) => sel.innerHTML += `<option value="${name}">${name}</option>`);
+        };
+        populateSelect('blocInt1');
+        populateSelect('blocInt2');
+        
+        let filtreSel = document.getElementById('interneFiltre');
+        internes.forEach((name, i) => filtreSel.innerHTML += `<option value="${i}">${name}</option>`);
+
         document.getElementById('interneFiltre').addEventListener('change', genererPlanning);
+        document.getElementById('weeksCount').addEventListener('change', genererPlanning);
         genererPlanning();
     });
+
+    // Gestion du Storage pour le Bloc
+    function getBlocOverrides() {
+        return JSON.parse(localStorage.getItem('blocCPMC_Overrides') || '{}');
+    }
+    
+    function sauvegarderBloc() {
+        const date = document.getElementById('blocOverrideDate').value;
+        const int1 = document.getElementById('blocInt1').value;
+        const int2 = document.getElementById('blocInt2').value;
+        if (!date || (!int1 && !int2)) return alert("Sélectionnez une date et au moins un interne.");
+        
+        let overrides = getBlocOverrides();
+        let prog = [];
+        if (int1) prog.push(int1);
+        if (int2 && int2 !== int1) prog.push(int2);
+        
+        overrides[date] = prog;
+        localStorage.setItem('blocCPMC_Overrides', JSON.stringify(overrides));
+        genererPlanning();
+    }
+
+    function effacerBloc() {
+        const date = document.getElementById('blocOverrideDate').value;
+        let overrides = getBlocOverrides();
+        if (overrides[date]) {
+            delete overrides[date];
+            localStorage.setItem('blocCPMC_Overrides', JSON.stringify(overrides));
+            genererPlanning();
+        }
+    }
 
     function genererPlanning() {
         const startDateInput = document.getElementById('startDate').value;
         if (!startDateInput) return;
         
-        const weeks = parseInt(document.getElementById('weeksCount').value);
-        const daysToGenerate = weeks * 7;
-        const targetInterne = parseInt(document.getElementById('interneFiltre').value);
-        
+        const daysToGenerate = parseInt(document.getElementById('weeksCount').value) * 7;
+        const targetIdx = parseInt(document.getElementById('interneFiltre').value);
+        const targetName = targetIdx !== -1 ? internes[targetIdx] : null;
+
         const startParts = startDateInput.split('-');
         let currentUTC = Date.UTC(startParts[0], startParts[1] - 1, startParts[2]);
         
         let tbody = document.getElementById('tableBody');
         tbody.innerHTML = ''; 
-        
         const joursSemaine = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+        
+        let overrides = getBlocOverrides();
+        
+        // Compteurs dynamiques d'équité pour le bloc
+        let blocCounts = { 'Waël': 0, 'Noussaiba': 0, 'Yassamine': 0, 'Lylia': 0, 'Ikram': 0, 'Baya': 0 };
+
+        const hl = (name, extraClass = "") => {
+            let classes = extraClass;
+            if (targetName && name === targetName) classes += " highlight-text";
+            if (classes.trim()) return `<span class="${classes.trim()}">${name}</span>`;
+            return name;
+        };
 
         for (let i = 0; i < daysToGenerate; i++) {
             let loopDate = new Date(currentUTC + i * 86400000);
+            let dateKey = loopDate.toISOString().split('T')[0];
             let diffDays = Math.floor((loopDate.getTime() - baseDateUTC) / 86400000);
             
             let gardeIdx = ((diffDays % 6) + 6) % 6;
-            let postGardeIdx = (gardeIdx - 1 + 6) % 6;
+            let pgIdx = (gardeIdx - 1 + 6) % 6;
             
             let dayOfWeek = loopDate.getUTCDay();
             let isWeekend = (dayOfWeek === 5 || dayOfWeek === 6);
+            let isTuesday = (dayOfWeek === 2);
+            let isAicha = (((Math.floor(Math.floor((loopDate.getTime() - aichaAnchorDate)/86400000) / 2)) % 2) + 2) % 2 === 0;
             
-            let presents = [];
-            if (!isWeekend) {
-                // MODIFICATION ICI : On prend le +1 et +2 pour que les présents soient toujours 
-                // ceux qui vont faire les gardes des jours suivants (donc ils travaillent en pré-garde).
-                presents.push((gardeIdx + 1) % 6);
-                presents.push((gardeIdx + 2) % 6);
-            }
+            let nbReposExtra = 0;
+            if (!isWeekend) nbReposExtra = isTuesday ? 1 : (isAicha ? 1 : 2); 
             
-            let repos = [];
-            for (let j = 0; j < 6; j++) {
-                if (j !== gardeIdx && !presents.includes(j)) {
-                    repos.push(j);
+            let blocA = [], blocB = [], blocC = [];
+            let isManual = false;
+
+            // Logique de sélection du BLOC (Manuelle ou Intelligente)
+            if (!isWeekend && !isTuesday) {
+                if (overrides[dateKey]) {
+                    blocA = overrides[dateKey];
+                    blocB = [blocA[0]]; // Plan B prend le 1er du Plan A
+                    isManual = true;
+                    blocA.forEach(n => blocCounts[n]++); // Incrémente les compteurs pour équilibrer la suite
+                } else {
+                    // Sélection automatique équitable : on prend ceux qui ont le moins fait de bloc
+                    // On essaie d'éviter la Garde et le Post-Garde si possible
+                    let dispoBloc = [...internes];
+                    dispoBloc.sort((a, b) => {
+                        let scoreA = blocCounts[a] * 10; // Poids principal : nombre de passages
+                        let scoreB = blocCounts[b] * 10;
+                        // Malus si Garde ou Post-Garde pour éviter de les mettre au bloc
+                        if (a === internes[gardeIdx] || a === internes[pgIdx]) scoreA += 5;
+                        if (b === internes[gardeIdx] || b === internes[pgIdx]) scoreB += 5;
+                        return scoreA - scoreB;
+                    });
+
+                    blocA = [dispoBloc[0], dispoBloc[1]];
+                    blocB = [dispoBloc[0]];
+                    blocA.forEach(n => blocCounts[n]++); // Incrémentation dynamique
                 }
             }
 
-            let rowClass = "";
-            if (isWeekend) rowClass = "weekend-row";
+            // Gestion des Repos
+            let pool = [];
+            for(let j=0; j<6; j++) {
+                if (j !== gardeIdx && j !== pgIdx && !blocA.includes(internes[j])) pool.push(j);
+            }
+            pool.sort((a, b) => {
+                let getPrio = (idx) => {
+                    if (idx === (gardeIdx - 2 + 6) % 6) return 4; 
+                    if (idx === (gardeIdx - 3 + 6) % 6) return 3;
+                    if (idx === (gardeIdx + 2) % 6) return 2;     
+                    if (idx === (gardeIdx + 1) % 6) return 1;     
+                    return 0;
+                };
+                let prioA = getPrio(a); let prioB = getPrio(b);
+                if (loopDate.getTime() < finPenaliteNoussaiba) { if (a === 1) prioA = -1; if (b === 1) prioB = -1; }
+                return prioB - prioA; 
+            });
+            let reposExtra = pool.slice(0, nbReposExtra);
 
-            if (targetInterne !== -1) {
-                if (targetInterne === gardeIdx) rowClass += " hl-garde";
-                else if (presents.includes(targetInterne)) rowClass += " hl-present";
-                else if (repos.includes(targetInterne)) rowClass += " hl-repos";
+            // Couleurs de Ligne (Highlight type)
+            let rowClass = isWeekend ? "weekend-row" : (isTuesday ? "mardi-row" : "");
+            if (targetIdx !== -1) {
+                if (targetIdx === gardeIdx) rowClass += " hl-garde";
+                else if (isWeekend || targetIdx === pgIdx || reposExtra.includes(targetIdx)) rowClass += " hl-repos";
+                else rowClass += " hl-present";
             }
 
             let tr = document.createElement('tr');
             tr.className = rowClass.trim();
 
-            let dateStr = `${joursSemaine[dayOfWeek]} ${loopDate.getUTCDate().toString().padStart(2, '0')}/${(loopDate.getUTCMonth()+1).toString().padStart(2, '0')}`;
-            
-            const formatName = (idx, baseClass = "") => {
-                let name = internes[idx];
-                if (idx === targetInterne) return `<span class="${baseClass} highlight-text">${name}</span>`;
-                return `<span class="${baseClass}">${name}</span>`;
+            const genererPlanHtml = (blocProgram) => {
+                if (isWeekend) {
+                    let rest = [];
+                    for(let j=0; j<6; j++) if(j !== gardeIdx) rest.push(hl(internes[j]));
+                    return `<div class="plan-box"><div class="repos-line">🏠 Maison: ${rest.join(', ')}</div><div class="service-line">🏥 Garde: ${hl(internes[gardeIdx], "post-garde-text")}</div></div>`;
+                }
+                
+                let p = [];
+                for(let j=0; j<6; j++) {
+                    if (j !== gardeIdx && j !== pgIdx && !blocProgram.includes(internes[j])) p.push(j);
+                }
+                p.sort((a, b) => {
+                    let getPrio = (idx) => {
+                        if (idx === (gardeIdx - 2 + 6) % 6) return 4; 
+                        if (idx === (gardeIdx - 3 + 6) % 6) return 3;
+                        if (idx === (gardeIdx + 2) % 6) return 2;     
+                        if (idx === (gardeIdx + 1) % 6) return 1;     
+                        return 0;
+                    };
+                    return getPrio(b) - getPrio(a); 
+                });
+
+                let rExt = p.slice(0, nbReposExtra);
+                let serv = p.slice(nbReposExtra);
+
+                let liberesStr = `${hl(internes[pgIdx], "post-garde-text")} (PG)`;
+                if (rExt.length > 0) liberesStr += ", " + rExt.map(idx => hl(internes[idx])).join(', ');
+
+                let serviceStr = `${hl(internes[gardeIdx], "post-garde-text")} (G)`;
+                if (serv.length > 0) serviceStr += ", " + serv.map(idx => hl(internes[idx])).join(', ');
+
+                let blocFormatted = blocProgram.map(name => hl(name)).join(', ');
+                let manuelBadge = (isManual && blocProgram.length > 0) ? `<span class="manual-bloc-badge">Manuel</span>` : '';
+
+                return `
+                    <div class="plan-box">
+                        ${blocProgram.length > 0 ? `<div class="bloc-line">🔪 Bloc: ${blocFormatted}${manuelBadge}</div>` : ''}
+                        <div class="repos-line">☕ Libérés: ${liberesStr}</div>
+                        <div class="service-line">🏥 Service: ${serviceStr}</div>
+                    </div>
+                `;
             };
 
-            let gardeStr = `<span class="badge-garde">${internes[gardeIdx]}</span>`;
-            if (targetInterne === gardeIdx) gardeStr = `<span class="badge-garde highlight-text">${internes[gardeIdx]}</span>`;
-
-            let presentsStr = isWeekend ? "<em>- Aucun -</em>" : `${formatName(presents[0])}, ${formatName(presents[1])}`;
-            
-            let reposStr = repos.map(idx => {
-                let isPostGarde = (idx === postGardeIdx);
-                let cssClass = isPostGarde ? "post-garde-text" : "";
-                let nameHtml = formatName(idx, cssClass);
-                // On garde la mention "(Post-garde)" pour le jour exact de sortie, le reste est juste "Repos"
-                return isPostGarde ? `${nameHtml} (Post-garde)` : nameHtml;
-            }).join(', ');
+            let dateStr = `<strong>${joursSemaine[dayOfWeek]}</strong><br>${loopDate.getUTCDate().toString().padStart(2, '0')}/${(loopDate.getUTCMonth()+1).toString().padStart(2, '0')}`;
+            let infirmiereStr = isAicha ? '<span class="inf-aicha">Aïcha</span>' : '<span class="inf-hakima">Hakima</span>';
+            let gardeBadgeHtml = `<span class="badge-garde ${targetName && internes[gardeIdx] === targetName ? 'highlight-text' : ''}">${internes[gardeIdx]}</span>`;
 
             tr.innerHTML = `
-                <td><strong>${dateStr}</strong></td>
-                <td>${gardeStr}</td>
-                <td>${presentsStr}</td>
-                <td>${reposStr}</td>
+                <td style="text-align:center;">${dateStr}</td>
+                <td style="text-align:center;">${infirmiereStr}</td>
+                <td style="text-align:center;">${gardeBadgeHtml}</td>
+                <td>${genererPlanHtml(blocA)}</td>
+                <td>${genererPlanHtml(blocB)}</td>
+                <td>${genererPlanHtml(blocC)}</td>
             `;
-            
             tbody.appendChild(tr);
         }
     }
