@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planning Gardes & Roulement - CPMC</title>
+    <!-- Bibliothèque pour lire les fichiers Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-color: #f3f4f6;
@@ -17,7 +19,7 @@
         h1 { font-size: 24px; text-align: center; margin-top: 0; color: #111827;}
         
         .controls, .bloc-manager { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background: #f9fafb; padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
-        .bloc-manager { background: #eff6ff; border-color: #bfdbfe; }
+        .bloc-manager { background: #eff6ff; border-color: #bfdbfe; align-items: center; }
         .control-group { flex: 1; min-width: 160px; }
         label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #4b5563; }
         input, select, button { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 14px; box-sizing: border-box; }
@@ -41,7 +43,7 @@
         .repos-line { background-color: #dcfce7; color: #166534; padding: 5px; border-radius: 4px; font-weight: bold; }
         .service-line { background-color: #dbeafe; color: #1e40af; padding: 5px; border-radius: 4px; }
         .post-garde-text { text-decoration: underline; font-weight: bold; }
-        .manual-bloc-badge { font-size: 0.8em; background: #f87171; color: white; padding: 2px 4px; border-radius: 4px; margin-left: 5px; }
+        .excel-bloc-badge { font-size: 0.8em; background: #10b981; color: white; padding: 2px 4px; border-radius: 4px; margin-left: 5px; }
 
         /* Highlight Styles */
         .hl-garde { background-color: #fee2e2 !important; border-left: 5px solid #ef4444 !important; }
@@ -64,30 +66,14 @@
 <div class="container">
     <h1>🏥 Planning Intelligent : Gardes, Bloc & Roulement</h1>
     
-    <!-- GESTION MANUELLE DU BLOC -->
+    <!-- IMPORTATION EXCEL -->
     <div class="bloc-manager">
-        <div class="control-group" style="flex: 100%; margin-bottom: -15px;">
-            <label style="color: #1e40af; font-size: 16px;">✂️ Forcer le programme du Bloc (Sauvegardé automatiquement)</label>
+        <div class="control-group" style="flex: 2;">
+            <label style="color: #1e40af;">📊 Importer le programme du Bloc (Fichier Excel .xlsx)</label>
+            <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" style="background: white; margin-top: 5px;">
         </div>
-        <div class="control-group">
-            <label>Date du Bloc :</label>
-            <input type="date" id="blocOverrideDate">
-        </div>
-        <div class="control-group">
-            <label>Interne 1 :</label>
-            <select id="blocInt1">
-                <option value="">-- Aucun --</option>
-            </select>
-        </div>
-        <div class="control-group">
-            <label>Interne 2 (Optionnel) :</label>
-            <select id="blocInt2">
-                <option value="">-- Aucun --</option>
-            </select>
-        </div>
-        <div class="control-group" style="display: flex; gap: 10px;">
-            <button onclick="sauvegarderBloc()" style="background-color: #2563eb;">💾 Enregistrer</button>
-            <button onclick="effacerBloc()" style="background-color: #ef4444;">🗑️ Effacer date</button>
+        <div class="control-group" style="flex: 1; align-self: flex-end;">
+            <div id="excelStatus" style="font-size: 13px; color: #10b981; font-weight: bold; padding: 10px; display: none;">✅ Fichier chargé !</div>
         </div>
     </div>
 
@@ -135,61 +121,74 @@
 
 <script>
     const internes = ['Waël', 'Noussaiba', 'Yassamine', 'Lylia', 'Ikram', 'Baya'];
-    const baseDateUTC = Date.UTC(2026, 8, 29); // Règle la garde
+    const baseDateUTC = Date.UTC(2026, 8, 29);
     const aichaAnchorDate = Date.UTC(2026, 9, 16); 
     const finPenaliteNoussaiba = Date.UTC(2026, 9, 23); 
 
-    // Initialisation des listes déroulantes
+    let blocOverrides = {}; // Stocke les données lues depuis Excel
+
     document.addEventListener("DOMContentLoaded", () => {
         let today = new Date();
         document.getElementById('startDate').value = today.toISOString().split('T')[0];
-        document.getElementById('blocOverrideDate').value = today.toISOString().split('T')[0];
-
-        const populateSelect = (id) => {
-            let sel = document.getElementById(id);
-            internes.forEach((name, i) => sel.innerHTML += `<option value="${name}">${name}</option>`);
-        };
-        populateSelect('blocInt1');
-        populateSelect('blocInt2');
         
         let filtreSel = document.getElementById('interneFiltre');
         internes.forEach((name, i) => filtreSel.innerHTML += `<option value="${i}">${name}</option>`);
 
         document.getElementById('interneFiltre').addEventListener('change', genererPlanning);
         document.getElementById('weeksCount').addEventListener('change', genererPlanning);
+        
         genererPlanning();
     });
 
-    // Gestion du Storage pour le Bloc
-    function getBlocOverrides() {
-        return JSON.parse(localStorage.getItem('blocCPMC_Overrides') || '{}');
-    }
-    
-    function sauvegarderBloc() {
-        const date = document.getElementById('blocOverrideDate').value;
-        const int1 = document.getElementById('blocInt1').value;
-        const int2 = document.getElementById('blocInt2').value;
-        if (!date || (!int1 && !int2)) return alert("Sélectionnez une date et au moins un interne.");
-        
-        let overrides = getBlocOverrides();
-        let prog = [];
-        if (int1) prog.push(int1);
-        if (int2 && int2 !== int1) prog.push(int2);
-        
-        overrides[date] = prog;
-        localStorage.setItem('blocCPMC_Overrides', JSON.stringify(overrides));
-        genererPlanning();
-    }
+    // LECTURE DU FICHIER EXCEL
+    document.getElementById('excelUpload').addEventListener('change', function(e) {
+        let file = e.target.files[0];
+        if (!file) return;
 
-    function effacerBloc() {
-        const date = document.getElementById('blocOverrideDate').value;
-        let overrides = getBlocOverrides();
-        if (overrides[date]) {
-            delete overrides[date];
-            localStorage.setItem('blocCPMC_Overrides', JSON.stringify(overrides));
-            genererPlanning();
-        }
-    }
+        let reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                let data = new Uint8Array(evt.target.result);
+                let workbook = XLSX.read(data, {type: 'array'});
+                let firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                // {raw: false} formate les dates comme elles apparaissent (ex: 25/10/2026)
+                let json = XLSX.utils.sheet_to_json(firstSheet, {raw: false});
+
+                blocOverrides = {}; // Réinitialise
+                
+                json.forEach(row => {
+                    let dateVal = row['Date'] || row['date'] || row['DATE'];
+                    let int1 = row['Interne 1'] || row['interne 1'] || row['Int1'];
+                    let int2 = row['Interne 2'] || row['interne 2'] || row['Int2'];
+
+                    if (dateVal && int1) {
+                        // Nettoie et formate la date pour correspondre au format AAAA-MM-JJ
+                        let isoDate = dateVal;
+                        if (dateVal.includes('/')) {
+                            let parts = dateVal.split('/');
+                            if (parts.length === 3) {
+                                let y = parts[2].length === 2 ? "20" + parts[2] : parts[2];
+                                isoDate = `${y}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            }
+                        }
+
+                        let prog = [int1.trim()];
+                        if (int2 && int2.trim() !== int1.trim()) prog.push(int2.trim());
+                        blocOverrides[isoDate] = prog;
+                    }
+                });
+
+                document.getElementById('excelStatus').style.display = 'block';
+                setTimeout(() => document.getElementById('excelStatus').style.display = 'none', 3000);
+                
+                genererPlanning(); // Met à jour le tableau immédiatement
+            } catch (error) {
+                alert("Erreur lors de la lecture du fichier Excel. Vérifiez les colonnes (Date, Interne 1, Interne 2).");
+                console.error(error);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
 
     function genererPlanning() {
         const startDateInput = document.getElementById('startDate').value;
@@ -206,9 +205,6 @@
         tbody.innerHTML = ''; 
         const joursSemaine = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         
-        let overrides = getBlocOverrides();
-        
-        // Compteurs dynamiques d'équité pour le bloc
         let blocCounts = { 'Waël': 0, 'Noussaiba': 0, 'Yassamine': 0, 'Lylia': 0, 'Ikram': 0, 'Baya': 0 };
 
         const hl = (name, extraClass = "") => {
@@ -235,23 +231,21 @@
             if (!isWeekend) nbReposExtra = isTuesday ? 1 : (isAicha ? 1 : 2); 
             
             let blocA = [], blocB = [], blocC = [];
-            let isManual = false;
+            let isFromExcel = false;
 
-            // Logique de sélection du BLOC (Manuelle ou Intelligente)
             if (!isWeekend && !isTuesday) {
-                if (overrides[dateKey]) {
-                    blocA = overrides[dateKey];
-                    blocB = [blocA[0]]; // Plan B prend le 1er du Plan A
-                    isManual = true;
-                    blocA.forEach(n => blocCounts[n]++); // Incrémente les compteurs pour équilibrer la suite
+                if (blocOverrides[dateKey]) {
+                    // Les données proviennent de l'Excel
+                    blocA = blocOverrides[dateKey];
+                    blocB = [blocA[0]]; 
+                    isFromExcel = true;
+                    blocA.forEach(n => { if(blocCounts[n] !== undefined) blocCounts[n]++; }); 
                 } else {
-                    // Sélection automatique équitable : on prend ceux qui ont le moins fait de bloc
-                    // On essaie d'éviter la Garde et le Post-Garde si possible
+                    // Auto-remplissage équitable si pas défini dans l'Excel
                     let dispoBloc = [...internes];
                     dispoBloc.sort((a, b) => {
-                        let scoreA = blocCounts[a] * 10; // Poids principal : nombre de passages
+                        let scoreA = blocCounts[a] * 10; 
                         let scoreB = blocCounts[b] * 10;
-                        // Malus si Garde ou Post-Garde pour éviter de les mettre au bloc
                         if (a === internes[gardeIdx] || a === internes[pgIdx]) scoreA += 5;
                         if (b === internes[gardeIdx] || b === internes[pgIdx]) scoreB += 5;
                         return scoreA - scoreB;
@@ -259,11 +253,10 @@
 
                     blocA = [dispoBloc[0], dispoBloc[1]];
                     blocB = [dispoBloc[0]];
-                    blocA.forEach(n => blocCounts[n]++); // Incrémentation dynamique
+                    blocA.forEach(n => blocCounts[n]++); 
                 }
             }
 
-            // Gestion des Repos
             let pool = [];
             for(let j=0; j<6; j++) {
                 if (j !== gardeIdx && j !== pgIdx && !blocA.includes(internes[j])) pool.push(j);
@@ -282,7 +275,6 @@
             });
             let reposExtra = pool.slice(0, nbReposExtra);
 
-            // Couleurs de Ligne (Highlight type)
             let rowClass = isWeekend ? "weekend-row" : (isTuesday ? "mardi-row" : "");
             if (targetIdx !== -1) {
                 if (targetIdx === gardeIdx) rowClass += " hl-garde";
@@ -325,11 +317,11 @@
                 if (serv.length > 0) serviceStr += ", " + serv.map(idx => hl(internes[idx])).join(', ');
 
                 let blocFormatted = blocProgram.map(name => hl(name)).join(', ');
-                let manuelBadge = (isManual && blocProgram.length > 0) ? `<span class="manual-bloc-badge">Manuel</span>` : '';
+                let badgeHtml = (isFromExcel && blocProgram.length > 0) ? `<span class="excel-bloc-badge">Excel</span>` : '';
 
                 return `
                     <div class="plan-box">
-                        ${blocProgram.length > 0 ? `<div class="bloc-line">🔪 Bloc: ${blocFormatted}${manuelBadge}</div>` : ''}
+                        ${blocProgram.length > 0 ? `<div class="bloc-line">🔪 Bloc: ${blocFormatted}${badgeHtml}</div>` : ''}
                         <div class="repos-line">☕ Libérés: ${liberesStr}</div>
                         <div class="service-line">🏥 Service: ${serviceStr}</div>
                     </div>
