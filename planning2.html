@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planning Gardes & Roulement - CPMC</title>
-    <!-- Bibliothèque pour lire les fichiers Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -50,33 +49,24 @@
         .hl-repos { background-color: #dcfce7 !important; border-left: 5px solid #10b981 !important; }
         .highlight-text { font-weight: bold; font-size: 1.05em; text-decoration: underline; color: #000; }
 
-        /* En-tête d'impression caché à l'écran */
         .print-header { display: none; text-align: center; margin-bottom: 30px; font-family: "Times New Roman", Times, serif; }
         .print-header h2 { font-size: 18px; text-transform: uppercase; margin: 5px 0; }
         .print-header h3 { font-size: 16px; margin: 5px 0; font-weight: normal; }
         .print-header h4 { font-size: 14px; margin: 5px 0; font-weight: normal; font-style: italic; }
         .print-title { font-size: 22px; font-weight: bold; text-decoration: underline; margin-top: 20px; }
         
-        /* ========================================= */
-        /* CSS SPÉCIAL IMPRESSION (A4)               */
-        /* ========================================= */
         @media print {
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            
             @page { size: portrait; margin: 1cm; }
             body { background: white; padding: 0; }
             .container { box-shadow: none; border: none; max-width: 100%; padding: 0; }
-            
             .controls, .bloc-manager, h1 { display: none !important; }
             .print-header { display: block; }
-            
             table { border: 2px solid #000; width: 100%; min-width: auto; }
             th, td { border: 1px solid #000 !important; color: #000; font-size: 11pt; padding: 8px; }
             th { background-color: #e5e7eb !important; font-size: 12pt; text-transform: uppercase; }
-            
             .hl-garde, .hl-present, .hl-repos { border-left: none !important; background-color: transparent !important; }
             .weekend-row, .mardi-row { background-color: #f3f4f6 !important; }
-
             .badge-garde { border: 1px solid #000; background-color: #fff !important; color: #000 !important; }
             .excel-bloc-badge { display: none; }
             .bloc-line { background-color: #fff !important; border: 1px solid #000; color: #000; }
@@ -90,18 +80,15 @@
 <div class="container">
     <h1>🏥 Planning Intelligent : Gardes, Bloc & Roulement</h1>
     
-    <!-- EN-TÊTE PAPIER (Invisible à l'écran) -->
     <div class="print-header">
         <h2>République Algérienne Démocratique et Populaire</h2>
         <h2>Ministère de la Santé</h2>
         <h3>Etablissement Publique Hospitalier Spécialisé</h3>
         <h3>Centre Pierre et Marie Curie (CPMC) - Alger</h3>
         <h4>Service de Chirurgie « C » (ex Clinique Debussy)</h4>
-        
         <div class="print-title">PLANNING DES GARDES ET DU ROULEMENT BLOC - INTERNES</div>
     </div>
     
-    <!-- IMPORTATION EXCEL -->
     <div class="bloc-manager">
         <div class="control-group" style="flex: 2;">
             <label style="color: #1e40af;">📊 Importer le programme du Bloc (Fichier Excel .xlsx)</label>
@@ -112,7 +99,6 @@
         </div>
     </div>
 
-    <!-- CONTRÔLES -->
     <div class="controls">
         <div class="control-group">
             <label>Date de début :</label>
@@ -124,6 +110,7 @@
                 <option value="1">1 Semaine</option>
                 <option value="2">2 Semaines</option>
                 <option value="4" selected>1 Mois</option>
+                <option value="8">2 Mois</option>
             </select>
         </div>
         <div class="control-group" style="background-color: #e5e7eb; padding: 10px; border-radius: 8px;">
@@ -158,6 +145,22 @@
     const baseDateUTC = Date.UTC(2026, 8, 29);
     const aichaAnchorDate = Date.UTC(2026, 9, 16); 
     const finPenaliteNoussaiba = Date.UTC(2026, 9, 23); 
+
+    // Dictionnaire des dates de TD avec les prénoms correspondants
+    const tdSchedule = {
+        "2026-10-11": "Ikram",
+        "2026-10-18": "Baya",
+        "2026-10-25": "Waël",
+        "2026-11-01": "Noussaiba",
+        "2026-11-08": "Yassamine",
+        "2026-11-15": "Lylia",
+        "2026-11-22": "Ikram",
+        "2026-11-25": "Baya",
+        "2026-11-29": "Waël",
+        "2026-12-06": "Noussaiba",
+        "2026-12-13": "Yassamine",
+        "2026-12-20": "Lylia"
+    };
 
     let blocOverrides = {}; 
 
@@ -202,7 +205,6 @@
                                 isoDate = `${y}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
                             }
                         }
-
                         let prog = [int1.trim()];
                         if (int2 && int2.trim() !== int1.trim()) prog.push(int2.trim());
                         blocOverrides[isoDate] = prog;
@@ -249,6 +251,9 @@
             let dateKey = loopDate.toISOString().split('T')[0];
             let diffDays = Math.floor((loopDate.getTime() - baseDateUTC) / 86400000);
             
+            // Vérifier si un interne a un TD ce jour-là
+            let tdIntern = tdSchedule[dateKey];
+            
             let gardeIdx = ((diffDays % 6) + 6) % 6;
             let pgIdx = (gardeIdx - 1 + 6) % 6;
             
@@ -277,7 +282,6 @@
                         if (b === internes[gardeIdx] || b === internes[pgIdx]) scoreB += 5;
                         return scoreA - scoreB;
                     });
-
                     blocProgram = [dispoBloc[0], dispoBloc[1]];
                     blocProgram.forEach(n => blocCounts[n]++); 
                 }
@@ -285,8 +289,12 @@
 
             let pool = [];
             for(let j=0; j<6; j++) {
-                if (j !== gardeIdx && j !== pgIdx && !blocProgram.includes(internes[j])) pool.push(j);
+                // On exclut le PG, la Garde, le Bloc, ET celui qui a TD aujourd'hui de la liste des potentiels libérés
+                if (j !== gardeIdx && j !== pgIdx && !blocProgram.includes(internes[j]) && internes[j] !== tdIntern) {
+                    pool.push(j);
+                }
             }
+            
             pool.sort((a, b) => {
                 let getPrio = (idx) => {
                     if (idx === (gardeIdx - 2 + 6) % 6) return 4; 
@@ -304,7 +312,7 @@
             let rowClass = isWeekend ? "weekend-row" : (isTuesday ? "mardi-row" : "");
             if (targetIdx !== -1) {
                 if (targetIdx === gardeIdx) rowClass += " hl-garde";
-                else if (isWeekend || targetIdx === pgIdx || reposExtra.includes(targetIdx)) rowClass += " hl-repos";
+                else if (isWeekend || (targetIdx === pgIdx && internes[targetIdx] !== tdIntern) || reposExtra.includes(targetIdx)) rowClass += " hl-repos";
                 else rowClass += " hl-present";
             }
 
@@ -318,29 +326,37 @@
                     return `<div class="plan-box"><div class="repos-line">🏠 Maison: ${rest.join(', ')}</div><div class="service-line">🏥 Garde: ${hl(internes[gardeIdx], "post-garde-text")}</div></div>`;
                 }
                 
-                let p = [];
-                for(let j=0; j<6; j++) {
-                    if (j !== gardeIdx && j !== pgIdx && !blocProgram.includes(internes[j])) p.push(j);
+                let liberesStrArr = [];
+                let serviceStrArr = [];
+                
+                // Gestion spécifique du Post-Garde
+                if (internes[pgIdx] === tdIntern) {
+                    // Si le post-garde a TD, il ne peut pas être libéré !
+                    serviceStrArr.push(`${hl(internes[pgIdx], "post-garde-text")} (PG - 🎓 TD)`);
+                } else {
+                    liberesStrArr.push(`${hl(internes[pgIdx], "post-garde-text")} (PG)`);
                 }
-                p.sort((a, b) => {
-                    let getPrio = (idx) => {
-                        if (idx === (gardeIdx - 2 + 6) % 6) return 4; 
-                        if (idx === (gardeIdx - 3 + 6) % 6) return 3;
-                        if (idx === (gardeIdx + 2) % 6) return 2;     
-                        if (idx === (gardeIdx + 1) % 6) return 1;     
-                        return 0;
-                    };
-                    return getPrio(b) - getPrio(a); 
-                });
+                
+                // Ajout des repos supplémentaires
+                reposExtra.forEach(idx => liberesStrArr.push(hl(internes[idx])));
+                
+                // Ajout de la garde dans le service
+                serviceStrArr.push(`${hl(internes[gardeIdx], "post-garde-text")} (G)`);
+                
+                // Tri des autres personnes présentes dans le service
+                for(let j=0; j<6; j++) {
+                    let nom = internes[j];
+                    if (j !== gardeIdx && j !== pgIdx && !blocProgram.includes(nom) && !reposExtra.includes(j)) {
+                        if (nom === tdIntern) {
+                            serviceStrArr.push(`${hl(nom)} (🎓 TD)`);
+                        } else {
+                            serviceStrArr.push(hl(nom));
+                        }
+                    }
+                }
 
-                let rExt = p.slice(0, nbReposExtra);
-                let serv = p.slice(nbReposExtra);
-
-                let liberesStr = `${hl(internes[pgIdx], "post-garde-text")} (PG)`;
-                if (rExt.length > 0) liberesStr += ", " + rExt.map(idx => hl(internes[idx])).join(', ');
-
-                let serviceStr = `${hl(internes[gardeIdx], "post-garde-text")} (G)`;
-                if (serv.length > 0) serviceStr += ", " + serv.map(idx => hl(internes[idx])).join(', ');
+                let liberesStr = liberesStrArr.join(', ');
+                let serviceStr = serviceStrArr.join(', ');
 
                 let blocFormatted = blocProgram.map(name => hl(name)).join(', ');
                 let badgeHtml = (isFromExcel && blocProgram.length > 0) ? `<span class="excel-bloc-badge">Excel</span>` : '';
@@ -348,7 +364,7 @@
                 return `
                     <div class="plan-box">
                         ${blocProgram.length > 0 ? `<div class="bloc-line">🔪 Bloc: ${blocFormatted}${badgeHtml}</div>` : ''}
-                        <div class="repos-line">☕ Libérés: ${liberesStr}</div>
+                        ${liberesStrArr.length > 0 ? `<div class="repos-line">☕ Libérés: ${liberesStr}</div>` : ''}
                         <div class="service-line">🏥 Service: ${serviceStr}</div>
                     </div>
                 `;
