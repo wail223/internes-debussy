@@ -15,7 +15,7 @@
             --text-main: #1f2937;
         }
         body { font-family: -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; }
-        .container { max-width: 1350px; margin: 0 auto; background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .container { max-width: 1100px; margin: 0 auto; background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h1 { font-size: 24px; text-align: center; margin-top: 0; color: #111827;}
         
         .controls, .bloc-manager { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; background: #f9fafb; padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
@@ -27,8 +27,8 @@
         button:hover { background-color: #1d4ed8; }
         
         .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
-        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 1100px; font-size: 13px; }
-        th, td { padding: 10px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: top; }
+        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 800px; font-size: 14px; }
+        th, td { padding: 12px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: top; }
         th { background-color: #f8fafc; font-weight: 600; text-align: center; position: sticky; top: 0; }
         
         .weekend-row { background-color: #fef9c3; }
@@ -39,25 +39,49 @@
         .badge-garde { background-color: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; display: inline-block; }
         
         .plan-box { display: flex; flex-direction: column; gap: 6px; }
-        .bloc-line { background-color: #fee2e2; color: #991b1b; padding: 5px; border-radius: 4px; font-weight: bold; }
-        .repos-line { background-color: #dcfce7; color: #166534; padding: 5px; border-radius: 4px; font-weight: bold; }
-        .service-line { background-color: #dbeafe; color: #1e40af; padding: 5px; border-radius: 4px; }
+        .bloc-line { background-color: #fee2e2; color: #991b1b; padding: 6px 10px; border-radius: 6px; font-weight: bold; }
+        .repos-line { background-color: #dcfce7; color: #166534; padding: 6px 10px; border-radius: 6px; font-weight: bold; }
+        .service-line { background-color: #dbeafe; color: #1e40af; padding: 6px 10px; border-radius: 6px; }
         .post-garde-text { text-decoration: underline; font-weight: bold; }
-        .excel-bloc-badge { font-size: 0.8em; background: #10b981; color: white; padding: 2px 4px; border-radius: 4px; margin-left: 5px; }
+        .excel-bloc-badge { font-size: 0.8em; background: #10b981; color: white; padding: 2px 5px; border-radius: 4px; margin-left: 5px; }
 
-        /* Highlight Styles */
         .hl-garde { background-color: #fee2e2 !important; border-left: 5px solid #ef4444 !important; }
         .hl-present { background-color: #dbeafe !important; border-left: 5px solid #3b82f6 !important; }
         .hl-repos { background-color: #dcfce7 !important; border-left: 5px solid #10b981 !important; }
         .highlight-text { font-weight: bold; font-size: 1.05em; text-decoration: underline; color: #000; }
+
+        /* En-tête d'impression caché à l'écran */
+        .print-header { display: none; text-align: center; margin-bottom: 30px; font-family: "Times New Roman", Times, serif; }
+        .print-header h2 { font-size: 18px; text-transform: uppercase; margin: 5px 0; }
+        .print-header h3 { font-size: 16px; margin: 5px 0; font-weight: normal; }
+        .print-header h4 { font-size: 14px; margin: 5px 0; font-weight: normal; font-style: italic; }
+        .print-title { font-size: 22px; font-weight: bold; text-decoration: underline; margin-top: 20px; }
         
+        /* ========================================= */
+        /* CSS SPÉCIAL IMPRESSION (A4)               */
+        /* ========================================= */
         @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            
+            @page { size: portrait; margin: 1cm; }
             body { background: white; padding: 0; }
             .container { box-shadow: none; border: none; max-width: 100%; padding: 0; }
-            .controls, .bloc-manager, h1 { display: none; }
-            table { border: 2px solid #000; }
-            th, td { border: 1px solid #000 !important; color: #000; }
+            
+            .controls, .bloc-manager, h1 { display: none !important; }
+            .print-header { display: block; }
+            
+            table { border: 2px solid #000; width: 100%; min-width: auto; }
+            th, td { border: 1px solid #000 !important; color: #000; font-size: 11pt; padding: 8px; }
+            th { background-color: #e5e7eb !important; font-size: 12pt; text-transform: uppercase; }
+            
             .hl-garde, .hl-present, .hl-repos { border-left: none !important; background-color: transparent !important; }
+            .weekend-row, .mardi-row { background-color: #f3f4f6 !important; }
+
+            .badge-garde { border: 1px solid #000; background-color: #fff !important; color: #000 !important; }
+            .excel-bloc-badge { display: none; }
+            .bloc-line { background-color: #fff !important; border: 1px solid #000; color: #000; }
+            .repos-line { background-color: transparent !important; color: #000; }
+            .service-line { background-color: transparent !important; color: #000; }
         }
     </style>
 </head>
@@ -65,6 +89,17 @@
 
 <div class="container">
     <h1>🏥 Planning Intelligent : Gardes, Bloc & Roulement</h1>
+    
+    <!-- EN-TÊTE PAPIER (Invisible à l'écran) -->
+    <div class="print-header">
+        <h2>République Algérienne Démocratique et Populaire</h2>
+        <h2>Ministère de la Santé</h2>
+        <h3>Etablissement Publique Hospitalier Spécialisé</h3>
+        <h3>Centre Pierre et Marie Curie (CPMC) - Alger</h3>
+        <h4>Service de Chirurgie « C » (ex Clinique Debussy)</h4>
+        
+        <div class="print-title">PLANNING DES GARDES ET DU ROULEMENT BLOC - INTERNES</div>
+    </div>
     
     <!-- IMPORTATION EXCEL -->
     <div class="bloc-manager">
@@ -77,6 +112,7 @@
         </div>
     </div>
 
+    <!-- CONTRÔLES -->
     <div class="controls">
         <div class="control-group">
             <label>Date de début :</label>
@@ -106,12 +142,10 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 10%;">📅 Date</th>
-                    <th style="width: 10%;">👩‍⚕️ Infirmière</th>
-                    <th style="width: 10%;">🚨 Garde</th>
-                    <th style="width: 23%;">🅰️ PLAN A (2 Prog.)</th>
-                    <th style="width: 23%;">🅱️ PLAN B (1 Prog.)</th>
-                    <th style="width: 23%;">©️ PLAN C (Aucun Bloc)</th>
+                    <th style="width: 15%;">📅 Date</th>
+                    <th style="width: 15%;">👩‍⚕️ Infirmière</th>
+                    <th style="width: 15%;">🚨 Garde</th>
+                    <th style="width: 55%;">📋 Programme du Jour (Bloc, Service & Repos)</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -125,7 +159,7 @@
     const aichaAnchorDate = Date.UTC(2026, 9, 16); 
     const finPenaliteNoussaiba = Date.UTC(2026, 9, 23); 
 
-    let blocOverrides = {}; // Stocke les données lues depuis Excel
+    let blocOverrides = {}; 
 
     document.addEventListener("DOMContentLoaded", () => {
         let today = new Date();
@@ -140,7 +174,6 @@
         genererPlanning();
     });
 
-    // LECTURE DU FICHIER EXCEL
     document.getElementById('excelUpload').addEventListener('change', function(e) {
         let file = e.target.files[0];
         if (!file) return;
@@ -151,10 +184,9 @@
                 let data = new Uint8Array(evt.target.result);
                 let workbook = XLSX.read(data, {type: 'array'});
                 let firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                // {raw: false} formate les dates comme elles apparaissent (ex: 25/10/2026)
                 let json = XLSX.utils.sheet_to_json(firstSheet, {raw: false});
 
-                blocOverrides = {}; // Réinitialise
+                blocOverrides = {}; 
                 
                 json.forEach(row => {
                     let dateVal = row['Date'] || row['date'] || row['DATE'];
@@ -162,7 +194,6 @@
                     let int2 = row['Interne 2'] || row['interne 2'] || row['Int2'];
 
                     if (dateVal && int1) {
-                        // Nettoie et formate la date pour correspondre au format AAAA-MM-JJ
                         let isoDate = dateVal;
                         if (dateVal.includes('/')) {
                             let parts = dateVal.split('/');
@@ -181,10 +212,9 @@
                 document.getElementById('excelStatus').style.display = 'block';
                 setTimeout(() => document.getElementById('excelStatus').style.display = 'none', 3000);
                 
-                genererPlanning(); // Met à jour le tableau immédiatement
+                genererPlanning(); 
             } catch (error) {
                 alert("Erreur lors de la lecture du fichier Excel. Vérifiez les colonnes (Date, Interne 1, Interne 2).");
-                console.error(error);
             }
         };
         reader.readAsArrayBuffer(file);
@@ -230,18 +260,15 @@
             let nbReposExtra = 0;
             if (!isWeekend) nbReposExtra = isTuesday ? 1 : (isAicha ? 1 : 2); 
             
-            let blocA = [], blocB = [], blocC = [];
+            let blocProgram = [];
             let isFromExcel = false;
 
             if (!isWeekend && !isTuesday) {
                 if (blocOverrides[dateKey]) {
-                    // Les données proviennent de l'Excel
-                    blocA = blocOverrides[dateKey];
-                    blocB = [blocA[0]]; 
+                    blocProgram = blocOverrides[dateKey];
                     isFromExcel = true;
-                    blocA.forEach(n => { if(blocCounts[n] !== undefined) blocCounts[n]++; }); 
+                    blocProgram.forEach(n => { if(blocCounts[n] !== undefined) blocCounts[n]++; }); 
                 } else {
-                    // Auto-remplissage équitable si pas défini dans l'Excel
                     let dispoBloc = [...internes];
                     dispoBloc.sort((a, b) => {
                         let scoreA = blocCounts[a] * 10; 
@@ -251,15 +278,14 @@
                         return scoreA - scoreB;
                     });
 
-                    blocA = [dispoBloc[0], dispoBloc[1]];
-                    blocB = [dispoBloc[0]];
-                    blocA.forEach(n => blocCounts[n]++); 
+                    blocProgram = [dispoBloc[0], dispoBloc[1]];
+                    blocProgram.forEach(n => blocCounts[n]++); 
                 }
             }
 
             let pool = [];
             for(let j=0; j<6; j++) {
-                if (j !== gardeIdx && j !== pgIdx && !blocA.includes(internes[j])) pool.push(j);
+                if (j !== gardeIdx && j !== pgIdx && !blocProgram.includes(internes[j])) pool.push(j);
             }
             pool.sort((a, b) => {
                 let getPrio = (idx) => {
@@ -285,7 +311,7 @@
             let tr = document.createElement('tr');
             tr.className = rowClass.trim();
 
-            const genererPlanHtml = (blocProgram) => {
+            const genererPlanHtml = () => {
                 if (isWeekend) {
                     let rest = [];
                     for(let j=0; j<6; j++) if(j !== gardeIdx) rest.push(hl(internes[j]));
@@ -336,9 +362,7 @@
                 <td style="text-align:center;">${dateStr}</td>
                 <td style="text-align:center;">${infirmiereStr}</td>
                 <td style="text-align:center;">${gardeBadgeHtml}</td>
-                <td>${genererPlanHtml(blocA)}</td>
-                <td>${genererPlanHtml(blocB)}</td>
-                <td>${genererPlanHtml(blocC)}</td>
+                <td>${genererPlanHtml()}</td>
             `;
             tbody.appendChild(tr);
         }
