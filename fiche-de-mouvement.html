@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fiche de Mouvement des Malades - 4ème Étage</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Remplacement de html2pdf par jsPDF et AutoTable pour une qualité vectorielle parfaite -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
     <style>
         body {
             font-family: 'Times New Roman', Times, serif;
@@ -142,7 +146,7 @@
     </div>
     
     <div class="edit-tip">
-        💡 <b>Astuce :</b> Cliquez directement sur les cases du tableau ou sur la date pour modifier le texte avant d'imprimer.
+        💡 <b>Astuce :</b> Cliquez directement sur les cases du tableau ou sur la date pour modifier le texte avant d'imprimer ou de générer le PDF.
     </div>
 
     <div class="page-a4" id="documentContent">
@@ -167,7 +171,7 @@
             <p>Service 4<sup>ème</sup> étage</p>
         </div>
 
-        <table>
+        <table id="patientsTable">
             <thead>
                 <tr>
                     <th>N° Lit</th>
@@ -202,14 +206,12 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Date d'aujourd'hui format JJ/MM/AAAA pour l'affichage
         const today = new Date();
         const dd = String(today.getDate()).padStart(2, '0');
         const mm = String(today.getMonth() + 1).padStart(2, '0'); 
         const yyyy = today.getFullYear();
         document.getElementById('currentDate').innerText = `${dd}/${mm}/${yyyy}`;
 
-        // Date d'aujourd'hui format YYYY-MM-DD pour la comparaison Firebase
         const todayStr = `${yyyy}-${mm}-${dd}`;
 
         const lits4eme = [
@@ -227,7 +229,6 @@
             return dateString;
         }
 
-        // Nouvelle logique de recherche dans programmes_operatoires
         function getInterventionPourPatient(nomPatient) {
             if (!nomPatient) return "";
             const nomCherche = nomPatient.toLowerCase().trim();
@@ -235,21 +236,15 @@
             let derniereIntervention = null;
             let datePlusRecente = "0000-00-00";
 
-            // Parcourir toutes les dates dans programmes_operatoires
             for (const dateKey in programmesOperatoiresData) {
-                // On ignore les dates futures
                 if (dateKey <= todayStr) {
                     const listeInterventionsJour = programmesOperatoiresData[dateKey];
                     
-                    // Parcourir les opérations de cette date (0, 1, 2...)
                     for (const index in listeInterventionsJour) {
                         const operation = listeInterventionsJour[index];
-                        
-                        // Le nom se trouve dans patientText (ex: "401F: HAOUATI KHADIDJA")
                         const nomDansArchive = (operation.patientText || operation.patient || operation.nom || "").toLowerCase();
                         
                         if (nomDansArchive.includes(nomCherche) && nomCherche !== "") {
-                            // On garde toujours l'opération la plus récente trouvée pour ce patient
                             if (dateKey >= datePlusRecente) {
                                 datePlusRecente = dateKey;
                                 derniereIntervention = operation;
@@ -259,15 +254,11 @@
                 }
             }
 
-            // Si on a trouvé une intervention pour ce patient
             if (derniereIntervention) {
                 const statut = (derniereIntervention.status || derniereIntervention.statut || "").toLowerCase();
-                
-                // Si l'état de l'intervention la plus récente est reprogrammée, on laisse vide
                 if (statut.includes("reprogrammée") || statut.includes("reprogrammee") || statut.includes("reprogrammee")) {
                     return "";
                 }
-                
                 return derniereIntervention.intervention || "";
             }
 
@@ -304,7 +295,6 @@
             renderTable();
         });
 
-        // NOUVEAU CHEMIN : On écoute 'programmes_operatoires/' au lieu de 'archives_interventions/'
         onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
             programmesOperatoiresData = snapshot.val() || {};
             renderTable();
@@ -312,30 +302,67 @@
     </script>
 
     <script>
+        // --- NOUVELLE FONCTION GENERATE PDF (Qualité 100% Vectorielle) ---
         function generatePDF() {
-            const element = document.getElementById('documentContent');
+            // Initialisation de jsPDF en mode Paysage (landscape), millimètres, format A4
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape', 'mm', 'a4');
+
+            // --- En-tête ---
+            doc.setFont("times", "bold");
+            doc.setFontSize(11);
             
-            // Désactivation temporaire du centrage pour éviter que html2canvas ne coupe la gauche
-            element.style.margin = "0";
-            element.style.maxWidth = "none";
+            // Textes centrés en haut
+            doc.text("Etablissement Publique Hospitalier Spécialisé Centre Pierre et Marie Curie", 148.5, 15, { align: "center" });
+            doc.text("CPMC « C » ex clinique Debussy", 148.5, 20, { align: "center" });
+            doc.text("08 Avenue Mustapha Sayed el ouali", 148.5, 25, { align: "center" });
 
-            const opt = {
-                margin:       10, // Marge propre de 10mm sur tout le tour
-                filename:     'Fiche_Mouvement_4eme.pdf',
-                image:        { type: 'jpeg', quality: 1 },
-                html2canvas:  { 
-                    scale: 2, 
-                    scrollX: 0, 
-                    scrollY: 0 
+            // Chef de service
+            doc.text("Pr. C. CHEKMAN", 15, 35);
+            doc.setFont("times", "normal");
+            doc.text("Chef de Service", 15, 40);
+
+            // Date (récupère la date affichée, même si modifiée manuellement)
+            const dateText = document.getElementById('currentDate').innerText;
+            doc.setFont("times", "bold");
+            doc.text(`Alger, le ${dateText}`, 282, 35, { align: "right" });
+
+            // Titre du document
+            doc.setFontSize(13);
+            doc.text("Fiche de Mouvement des Malades", 148.5, 50, { align: "center" });
+            doc.text("Service 4ème étage", 148.5, 56, { align: "center" });
+
+            // --- Génération du Tableau depuis le HTML ---
+            doc.autoTable({
+                html: '#patientsTable',
+                startY: 65, // Position de départ sous le titre
+                theme: 'grid',
+                styles: {
+                    font: 'times',
+                    fontSize: 11,
+                    textColor: [0, 0, 0],
+                    lineColor: [0, 0, 0],
+                    lineWidth: 0.2 // Épaisseur des bordures
                 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-            };
-
-            // Génération du PDF puis restauration de l'affichage centré normal
-            html2pdf().set(opt).from(element).save().then(() => {
-                element.style.margin = "0 auto";
-                element.style.maxWidth = "1100px";
+                headStyles: {
+                    fillColor: [255, 255, 255], // Fond blanc pour l'en-tête
+                    textColor: [0, 0, 0],       // Texte noir
+                    fontStyle: 'bold',
+                    halign: 'center'
+                },
+                bodyStyles: {
+                    valign: 'middle'
+                },
+                columnStyles: {
+                    0: { halign: 'center' }, // N Lit
+                    2: { halign: 'center' }, // Age
+                    4: { halign: 'center' }, // Grp
+                    6: { halign: 'center' }  // Date d'entrée
+                }
             });
+
+            // Sauvegarde du fichier
+            doc.save('Fiche_Mouvement_4eme.pdf');
         }
     </script>
 </body>
