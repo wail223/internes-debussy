@@ -70,7 +70,7 @@
 
         .doc-sub-header {
             display: flex;
-            justify-content: space-between; /* Remis pour espacer le nom (gauche) et la date (droite) */
+            justify-content: space-between;
             margin-bottom: 20px;
             font-size: 14px;
             font-weight: bold;
@@ -171,7 +171,6 @@
         </div>
 
         <div class="doc-sub-header">
-            <!-- Mention en haut à gauche (Restaurée) -->
             <div>
                 Pr. C. CHEKMAN<br>
                 <span style="font-weight: normal;">Chef de Service</span>
@@ -203,7 +202,6 @@
             </tbody>
         </table>
 
-        <!-- Mention en bas à droite (Conservée) -->
         <div class="doc-footer">
             Pr. C. CHEKMAN<br>
             <span style="font-weight: normal;">Chef de Service</span>
@@ -227,13 +225,14 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        const today = new Date();
-        const dd = String(today.getDate()).padStart(2, '0');
-        const mm = String(today.getMonth() + 1).padStart(2, '0'); 
-        const yyyy = today.getFullYear();
-        document.getElementById('currentDate').innerText = `${dd}/${mm}/${yyyy}`;
-
-        const todayStr = `${yyyy}-${mm}-${dd}`;
+        // --- Variables de date rendues globales (accessibles pour le nom du fichier PDF) ---
+        window.dateJour = new Date();
+        window.dd = String(window.dateJour.getDate()).padStart(2, '0');
+        window.mm = String(window.dateJour.getMonth() + 1).padStart(2, '0'); 
+        window.yyyy = window.dateJour.getFullYear();
+        
+        document.getElementById('currentDate').innerText = `${window.dd}/${window.mm}/${window.yyyy}`;
+        const todayStr = `${window.yyyy}-${window.mm}-${window.dd}`;
 
         const lits4eme = [
             "401P", "401F", "402P", "402F", "403P", "403F", "404P", "404F",
@@ -335,17 +334,14 @@
             doc.text("CPMC « C » ex clinique Debussy", 148.5, 20, { align: "center" });
             doc.text("08 Avenue Mustapha Sayed el ouali", 148.5, 25, { align: "center" });
 
-            // Chef de service EN HAUT (Restauré)
             doc.text("Pr. C. CHEKMAN", 15, 35);
             doc.setFont("times", "normal");
             doc.text("Chef de Service", 15, 40);
 
-            // Date (récupérée de l'affichage)
             const dateText = document.getElementById('currentDate').innerText;
             doc.setFont("times", "bold");
             doc.text(`Alger, le ${dateText}`, 275, 35, { align: "right" });
 
-            // Titre
             doc.setFontSize(13);
             doc.text("Fiche de Mouvement des Malades", 148.5, 50, { align: "center" });
             doc.text("Service 4ème étage", 148.5, 56, { align: "center" });
@@ -353,7 +349,7 @@
             // --- Tableau ---
             doc.autoTable({
                 html: '#patientsTable',
-                startY: 65, // Ajusté pour faire de la place aux éléments du dessus
+                startY: 65, 
                 theme: 'grid',
                 styles: {
                     font: 'times',
@@ -379,10 +375,8 @@
                 }
             });
 
-            // --- Signature en bas à droite (Conservée) ---
+            // --- Signature en bas à droite ---
             let finalY = doc.lastAutoTable.finalY || 60;
-            
-            // On ajoute 20mm d'espacement sous le tableau
             let signatureY = finalY + 20;
 
             if (signatureY > 190) {
@@ -395,8 +389,10 @@
             doc.setFont("times", "normal");
             doc.text("Chef de Service", 250, signatureY + 6, { align: "center" });
 
-            // Sauvegarde
-            doc.save('Fiche_Mouvement_4eme.pdf');
+            // --- Sauvegarde avec la date dans le nom du fichier ---
+            // On utilise les variables globales window.dd, window.mm, window.yyyy créées plus haut
+            const nomFichier = `Fiche_Mouvement_4eme_${window.dd}-${window.mm}-${window.yyyy}.pdf`;
+            doc.save(nomFichier);
         }
     </script>
 </body>
