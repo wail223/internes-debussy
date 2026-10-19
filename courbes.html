@@ -32,8 +32,8 @@
         .form-group label { font-size: 0.85em; font-weight: 600; color: var(--text); }
         .form-group input, .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; background: #f8fafc; }
         
-        .grid-5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+        .grid-6 { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
         
         .btn-main { background: var(--success); color: white; padding: 10px 15px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; text-align: center; height: fit-content; align-self: flex-end; }
         .btn-main:hover { opacity: 0.9; }
@@ -48,6 +48,8 @@
         .history-table th { background: #f8fafc; color: var(--primary); }
         .action-btn { background: transparent; border: none; font-size: 1.2em; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
         .action-btn:hover { background: #e2e8f0; }
+
+        .info-badge { background: #e0f2fe; color: #0369a1; padding: 8px 12px; border-radius: 8px; font-size: 0.85em; font-weight: 600; margin-bottom: 12px; display: inline-block; }
     </style>
 </head>
 <body>
@@ -75,13 +77,18 @@
                 <option value="">-- Choisir un patient --</option>
             </select>
         </div>
+        <div id="patientInfoBadge" class="info-badge" style="display:none; margin-top:10px; margin-bottom:0;"></div>
     </div>
 
     <!-- 1. COURBE HORAIRE/DEMI-HORAIRE -->
     <div class="section-card" id="sectionIntraday" style="display:none;">
         <div class="section-title">⏱️ Suivi Intrajournalier (Température & Drain)</div>
         
-        <div class="grid-5" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; align-items: end;">
+        <div class="grid-6" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; align-items: end;">
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="intradayDate">
+            </div>
             <div class="form-group">
                 <label>Mode</label>
                 <select id="modeSelect" onchange="updateTimeOptions()">
@@ -104,9 +111,10 @@
             <div class="form-group">
                 <label>Aspect</label>
                 <select id="aspectSelect">
-                    <option value="">--</option>
+                    <option value="">-- Aspect --</option>
                     <option value="Hémorragique">Hémorragique</option>
                     <option value="Séreux">Séreux</option>
+                    <option value="Séro-hématique">Séro-hématique</option>
                     <option value="Clair">Clair</option>
                     <option value="Purulent">Purulent</option>
                     <option value="Chyleux">Chyleux</option>
@@ -126,7 +134,7 @@
             <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
             <table class="history-table" id="intradayTable" style="display:none;">
                 <thead>
-                    <tr><th>Heure</th><th>Température</th><th>Drain</th><th>Aspect</th><th>Actions</th></tr>
+                    <tr><th>Date</th><th>Heure</th><th>Température</th><th>Drain</th><th>Aspect</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="intradayTableBody"></tbody>
             </table>
@@ -137,18 +145,28 @@
     <div class="section-card" id="sectionDaily" style="display:none;">
         <div class="section-title">📅 Suivi Journalier du Drain (Post-Op)</div>
         
-        <div class="grid-3" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; align-items: end;">
+        <div class="grid-4" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; align-items: end;">
             <div class="form-group">
                 <label>Jour Post-Op</label>
-                <select id="daySelect">
-                    <option value="J0">J0</option><option value="J1">J1</option><option value="J2">J2</option>
-                    <option value="J3">J3</option><option value="J4">J4</option><option value="J5">J5</option>
-                    <option value="J6">J6</option><option value="J7">J7</option>
-                </select>
+                <select id="daySelect"></select>
             </div>
             <div class="form-group">
                 <label>Quantité totale (cc)</label>
                 <input type="number" id="dailyDrainInput" step="10" placeholder="Ex: 450">
+            </div>
+            <div class="form-group">
+                <label>Aspect principal</label>
+                <select id="dailyAspectSelect">
+                    <option value="">-- Aspect --</option>
+                    <option value="Hémorragique">Hémorragique</option>
+                    <option value="Séreux">Séreux</option>
+                    <option value="Séro-hématique">Séro-hématique</option>
+                    <option value="Clair">Clair</option>
+                    <option value="Purulent">Purulent</option>
+                    <option value="Chyleux">Chyleux</option>
+                    <option value="Biliaire">Biliaire</option>
+                    <option value="Urinaire">Urinaire</option>
+                </select>
             </div>
             <button class="btn-main" onclick="addDailyData()">➕ Enregistrer</button>
         </div>
@@ -162,7 +180,7 @@
             <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
             <table class="history-table" id="dailyTable" style="display:none;">
                 <thead>
-                    <tr><th>Jour</th><th>Drain total</th><th>Actions</th></tr>
+                    <tr><th>Jour</th><th>Date</th><th>Drain total</th><th>Aspect</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="dailyTableBody"></tbody>
             </table>
@@ -171,7 +189,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        // Ajout de "remove" pour supprimer les données
         import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -189,8 +206,59 @@
 
         let intradayChartInstance = null;
         let dailyChartInstance = null;
-        let currentPatientId = null;
-        let currentPatientData = { intraday: {}, daily: {} }; // Stocke les données pour modification
+        let currentPatientKey = null;
+        let patientsDataMap = {};
+        let programmesOperatoiresData = {};
+        let currentPatientData = { intraday: {}, daily: {} };
+
+        // Définir la date par défaut (Aujourd'hui)
+        const todayISO = new Date().toISOString().split('T')[0];
+        document.getElementById('intradayDate').value = todayISO;
+
+        // Générateur de clé unique patient (Délié du lit)
+        function getPatientKey(p) {
+            if (p.numDossier && p.numDossier.trim()) {
+                return 'dos_' + p.numDossier.trim().replace(/[^a-zA-Z0-9]/g, '_');
+            }
+            const nomClean = (p.nom || 'PATIENT').trim().toUpperCase().replace(/[^a-zA-Z0-9]/g, '_');
+            const dobClean = (p.dob || p.dateEntree || '0000').replace(/[^a-zA-Z0-9]/g, '');
+            return 'pat_' + nomClean + '_' + dobClean;
+        }
+
+        // Format de date JJ/MM/AAAA
+        function formatDate(dateStr) {
+            if (!dateStr) return "-";
+            const parts = dateStr.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            return dateStr;
+        }
+
+        // Recherche auto de la date d'intervention (dossier ou archives programmes)
+        function detectInterventionDate(patient) {
+            if (!patient) return "";
+            let dateStr = patient.dateIntervention || "";
+            if (!dateStr && patient.nom && programmesOperatoiresData) {
+                const nomCherche = patient.nom.toLowerCase().trim();
+                let datePlusRecente = "";
+                for (const dateKey in programmesOperatoiresData) {
+                    const listeOps = programmesOperatoiresData[dateKey];
+                    for (const index in listeOps) {
+                        const op = listeOps[index];
+                        const nomOp = (op.patientText || op.patient || op.nom || "").toLowerCase();
+                        if (nomOp.includes(nomCherche) && nomCherche !== "") {
+                            const statut = (op.status || op.statut || "").toLowerCase();
+                            if (!statut.includes("reprogramm") && !statut.includes("annul")) {
+                                if (dateKey > datePlusRecente) {
+                                    datePlusRecente = dateKey;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (datePlusRecente) dateStr = datePlusRecente;
+            }
+            return dateStr;
+        }
 
         // Générer les heures selon le mode
         window.updateTimeOptions = function() {
@@ -201,7 +269,6 @@
             const now = new Date();
             let currentHour = now.getHours();
             let currentMinute = now.getMinutes();
-            
             let closestTime = "";
             let minDiff = Infinity;
 
@@ -224,46 +291,118 @@
 
         window.addEventListener('DOMContentLoaded', updateTimeOptions);
 
-        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
-            const patientsDb = snapshot.val() || {};
-            const selector = document.getElementById('patientSelector');
-            const currentValue = selector.value;
-            selector.innerHTML = '<option value="">-- Choisir un patient --</option>';
-            Object.keys(patientsDb).forEach(bedId => {
-                const p = patientsDb[bedId];
-                if(p.nom) selector.innerHTML += `<option value="${bedId}">Lit ${bedId} - ${p.nom}</option>`;
-            });
-            if(currentValue && patientsDb[currentValue]) selector.value = currentValue;
+        // Écoute de la base de données : Dossiers Patients et Programmes Opératoires
+        onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
+            programmesOperatoiresData = snapshot.val() || {};
+            refreshPatientSelector();
         });
 
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+            patientsDataMap = snapshot.val() || {};
+            refreshPatientSelector();
+        });
+
+        function refreshPatientSelector() {
+            const selector = document.getElementById('patientSelector');
+            const currentVal = selector.value;
+            selector.innerHTML = '<option value="">-- Choisir un patient --</option>';
+
+            Object.keys(patientsDataMap).forEach(bedId => {
+                const p = patientsDataMap[bedId];
+                if(p && p.nom) {
+                    const pKey = getPatientKey(p);
+                    selector.innerHTML += `<option value="${pKey}" data-bed="${bedId}">Lit ${bedId} - ${p.nom}</option>`;
+                }
+            });
+            if(currentVal) selector.value = currentVal;
+        }
+
+        // Mettre à jour les choix de J0, J1... avec les dates réelles calculées
+        function updateDaySelectOptions(dateInterventionStr) {
+            const daySelect = document.getElementById('daySelect');
+            daySelect.innerHTML = '';
+
+            let baseDate = null;
+            if (dateInterventionStr && dateInterventionStr.split('-').length === 3) {
+                const [y, m, d] = dateInterventionStr.split('-').map(Number);
+                baseDate = new Date(y, m - 1, d);
+            }
+
+            for (let i = 0; i <= 15; i++) {
+                let dayLabel = `J${i}`;
+                let dateDisplay = "";
+                if (baseDate) {
+                    const d = new Date(baseDate);
+                    d.setDate(d.getDate() + i);
+                    const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                    dateDisplay = ` (${formatted})`;
+                }
+                daySelect.innerHTML += `<option value="J${i}">J${i}${dateDisplay}</option>`;
+            }
+        }
+
         window.loadPatientData = function() {
-            currentPatientId = document.getElementById('patientSelector').value;
-            if(!currentPatientId) {
+            currentPatientKey = document.getElementById('patientSelector').value;
+            const badge = document.getElementById('patientInfoBadge');
+
+            if(!currentPatientKey) {
                 document.getElementById('sectionIntraday').style.display = 'none';
                 document.getElementById('sectionDaily').style.display = 'none';
+                badge.style.display = 'none';
                 return;
             }
+
+            // Trouver le dossier patient correspondant
+            let patientObj = null;
+            let currentBedId = "";
+            Object.keys(patientsDataMap).forEach(bedId => {
+                const p = patientsDataMap[bedId];
+                if (p && getPatientKey(p) === currentPatientKey) {
+                    patientObj = p;
+                    currentBedId = bedId;
+                }
+            });
+
+            if (patientObj) {
+                const interDate = detectInterventionDate(patientObj);
+                patientObj.detectedInterventionDate = interDate;
+                badge.innerHTML = `👤 <b>${patientObj.nom}</b> | Lit : <b>${currentBedId}</b> | Date Intervention : <b>${interDate ? formatDate(interDate) : 'Non renseignée'}</b>`;
+                badge.style.display = 'inline-block';
+
+                updateDaySelectOptions(interDate);
+            } else {
+                badge.style.display = 'none';
+                updateDaySelectOptions("");
+            }
+
             document.getElementById('sectionIntraday').style.display = 'block';
             document.getElementById('sectionDaily').style.display = 'block';
 
-            onValue(ref(db, `suivi_courbes/${currentPatientId}`), (snapshot) => {
+            // Écoute directe des courbes liées au PATIENT (et non au lit)
+            onValue(ref(db, `suivi_courbes/${currentPatientKey}`), (snapshot) => {
                 currentPatientData = snapshot.val() || { intraday: {}, daily: {} };
                 renderIntradayChart(currentPatientData.intraday || {});
                 renderDailyChart(currentPatientData.daily || {});
             });
         };
 
-        // --- SAUVEGARDE (Ajout / Modification) ---
+        // --- SAUVEGARDE INTRADAY ---
         window.addIntradayData = function() {
-            if(!currentPatientId) return;
+            if(!currentPatientKey) return alert("Veuillez sélectionner un patient.");
+            
+            const date = document.getElementById('intradayDate').value;
             const time = document.getElementById('timeSelect').value;
             const temp = parseFloat(document.getElementById('tempInput').value);
             const drain = parseFloat(document.getElementById('drainInput').value);
             const aspect = document.getElementById('aspectSelect').value;
 
+            if(!date) return alert("Veuillez choisir une date.");
             if(isNaN(temp) && isNaN(drain)) return alert("Veuillez saisir au moins une valeur (Température ou Drain).");
 
-            set(ref(db, `suivi_courbes/${currentPatientId}/intraday/${time.replace(':','')}`), {
+            const key = `${date}_${time.replace(':', '')}`;
+
+            set(ref(db, `suivi_courbes/${currentPatientKey}/intraday/${key}`), {
+                date: date,
                 time: time,
                 temp: isNaN(temp) ? null : temp,
                 drain: isNaN(drain) ? null : drain,
@@ -275,75 +414,89 @@
             document.getElementById('aspectSelect').value = '';
         };
 
+        // --- SAUVEGARDE DAILY ---
         window.addDailyData = function() {
-            if(!currentPatientId) return;
+            if(!currentPatientKey) return alert("Veuillez sélectionner un patient.");
+            
             const day = document.getElementById('daySelect').value;
             const drain = parseFloat(document.getElementById('dailyDrainInput').value);
+            const aspect = document.getElementById('dailyAspectSelect').value;
 
             if(isNaN(drain)) return alert("Veuillez saisir la quantité du drain.");
 
-            set(ref(db, `suivi_courbes/${currentPatientId}/daily/${day}`), {
+            // Récupérer la date formatée associée au jour J0, J1...
+            const selectElem = document.getElementById('daySelect');
+            const selectedText = selectElem.options[selectElem.selectedIndex].text;
+            let dateAssociated = "";
+            if (selectedText.includes('(') && selectedText.includes(')')) {
+                dateAssociated = selectedText.split('(')[1].replace(')', '');
+            }
+
+            set(ref(db, `suivi_courbes/${currentPatientKey}/daily/${day}`), {
                 day: day,
-                drain: drain
+                dateDisplay: dateAssociated,
+                drain: drain,
+                aspect: aspect || null
             });
 
             document.getElementById('dailyDrainInput').value = '';
+            document.getElementById('dailyAspectSelect').value = '';
         };
 
-        // --- MODIFICATION DANS LES FORMULAIRES ---
+        // --- EDIT & DELETE INTRADAY ---
         window.editIntraday = function(key) {
             const data = currentPatientData.intraday[key];
             if(!data) return;
             
-            // Forcer le mode demi-horaire si c'est un :30
-            if(data.time.endsWith(':30')) {
+            document.getElementById('intradayDate').value = data.date || todayISO;
+            if(data.time && data.time.endsWith(':30')) {
                 document.getElementById('modeSelect').value = 'demi-horaire';
                 updateTimeOptions();
             }
-            
             document.getElementById('timeSelect').value = data.time;
             document.getElementById('tempInput').value = data.temp !== null ? data.temp : '';
             document.getElementById('drainInput').value = data.drain !== null ? data.drain : '';
             document.getElementById('aspectSelect').value = data.aspect || '';
             
-            // Remonter vers le formulaire
             document.getElementById('sectionIntraday').scrollIntoView({ behavior: 'smooth' });
         };
 
+        window.deleteIntraday = function(key) {
+            if(confirm("Voulez-vous vraiment supprimer cet enregistrement intrajournalier ?")) {
+                remove(ref(db, `suivi_courbes/${currentPatientKey}/intraday/${key}`));
+            }
+        };
+
+        // --- EDIT & DELETE DAILY ---
         window.editDaily = function(day) {
             const data = currentPatientData.daily[day];
             if(!data) return;
             document.getElementById('daySelect').value = data.day;
             document.getElementById('dailyDrainInput').value = data.drain;
+            document.getElementById('dailyAspectSelect').value = data.aspect || '';
             
             document.getElementById('sectionDaily').scrollIntoView({ behavior: 'smooth' });
         };
 
-        // --- SUPPRESSION DES DONNÉES ---
-        window.deleteIntraday = function(key) {
-            if(confirm(`Voulez-vous vraiment supprimer les données de ${key.slice(0,2)}:${key.slice(2)} ?`)) {
-                remove(ref(db, `suivi_courbes/${currentPatientId}/intraday/${key}`));
-            }
-        };
-
         window.deleteDaily = function(day) {
             if(confirm(`Voulez-vous vraiment supprimer le relevé du jour ${day} ?`)) {
-                remove(ref(db, `suivi_courbes/${currentPatientId}/daily/${day}`));
+                remove(ref(db, `suivi_courbes/${currentPatientKey}/daily/${day}`));
             }
         };
 
-
-        // --- RENDU GRAPHIQUES ET TABLEAUX ---
+        // --- RENDU GRAPHIQUE & TABLEAU INTRADAY ---
         function renderIntradayChart(dataObj) {
             const ctx = document.getElementById('intradayChart').getContext('2d');
-            const sortedKeys = Object.keys(dataObj).sort();
+            const sortedKeys = Object.keys(dataObj).sort(); // Tri chronologique YYYY-MM-DD_HHMM
             
-            const labels = sortedKeys.map(k => dataObj[k].time);
+            const labels = sortedKeys.map(k => {
+                const d = dataObj[k];
+                return `${formatDate(d.date)} ${d.time}`;
+            });
             const temps = sortedKeys.map(k => dataObj[k].temp);
             const drains = sortedKeys.map(k => dataObj[k].drain);
             const aspects = sortedKeys.map(k => dataObj[k].aspect || '');
 
-            // MAJ du graphique
             if(intradayChartInstance) intradayChartInstance.destroy();
             intradayChartInstance = new Chart(ctx, {
                 type: 'line',
@@ -351,7 +504,7 @@
                     labels: labels,
                     datasets: [
                         { label: 'Température (°C)', data: temps, borderColor: '#dc2626', backgroundColor: '#dc2626', yAxisID: 'yTemp', tension: 0.3, spanGaps: true },
-                        { label: 'Drain (cc)', data: drains, borderColor: '#0284c7', backgroundColor: '#0284c7', yAxisID: 'yDrain', type: 'line', tension: 0.3, spanGaps: true }
+                        { label: 'Drain (cc)', data: drains, borderColor: '#0284c7', backgroundColor: '#0284c7', yAxisID: 'yDrain', tension: 0.3, spanGaps: true }
                     ]
                 },
                 options: {
@@ -376,7 +529,7 @@
                 }
             });
 
-            // MAJ du tableau d'historique
+            // Mise à jour du tableau
             const tableBody = document.getElementById('intradayTableBody');
             const table = document.getElementById('intradayTable');
             if(sortedKeys.length === 0) {
@@ -386,9 +539,10 @@
                 tableBody.innerHTML = sortedKeys.map(k => {
                     const d = dataObj[k];
                     return `<tr>
+                        <td>${formatDate(d.date)}</td>
                         <td><b>${d.time}</b></td>
-                        <td>${d.temp !== null ? d.temp + ' °C' : '-'}</td>
-                        <td>${d.drain !== null ? d.drain + ' cc' : '-'}</td>
+                        <td>${d.temp !== null && d.temp !== undefined ? d.temp + ' °C' : '-'}</td>
+                        <td>${d.drain !== null && d.drain !== undefined ? d.drain + ' cc' : '-'}</td>
                         <td>${d.aspect || '-'}</td>
                         <td style="text-align:center;">
                             <button class="action-btn" onclick="editIntraday('${k}')" title="Modifier">✏️</button>
@@ -399,16 +553,21 @@
             }
         }
 
+        // --- RENDU GRAPHIQUE & TABLEAU DAILY ---
         function renderDailyChart(dataObj) {
             const ctx = document.getElementById('dailyChart').getContext('2d');
-            const daysOrder = ['J0','J1','J2','J3','J4','J5','J6','J7'];
-            const labels = [], drains = [];
+            const daysOrder = ['J0','J1','J2','J3','J4','J5','J6','J7','J8','J9','J10','J11','J12','J13','J14','J15'];
+            const labels = [], drains = [], aspects = [];
             
             daysOrder.forEach(day => {
-                if(dataObj[day]) { labels.push(day); drains.push(dataObj[day].drain); }
+                if(dataObj[day]) { 
+                    const labelStr = dataObj[day].dateDisplay ? `${day} (${dataObj[day].dateDisplay})` : day;
+                    labels.push(labelStr); 
+                    drains.push(dataObj[day].drain);
+                    aspects.push(dataObj[day].aspect || '');
+                }
             });
 
-            // MAJ Graphique
             if(dailyChartInstance) dailyChartInstance.destroy();
             dailyChartInstance = new Chart(ctx, {
                 type: 'line',
@@ -416,25 +575,42 @@
                     labels: labels,
                     datasets: [{ label: 'Évolution du Drain (cc / jour)', data: drains, borderColor: '#ca8a04', backgroundColor: 'rgba(202, 138, 4, 0.2)', fill: true, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#ca8a04' }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'Quantité totale (cc)' } } } }
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let l = `Drain : ${context.parsed.y} cc`;
+                                    if(aspects[context.dataIndex]) l += ` (${aspects[context.dataIndex]})`;
+                                    return l;
+                                }
+                            }
+                        }
+                    },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Quantité totale (cc)' } } } 
+                }
             });
 
-            // MAJ Tableau d'historique
+            // Mise à jour du tableau
             const tableBody = document.getElementById('dailyTableBody');
             const table = document.getElementById('dailyTable');
-            const sortedKeys = Object.keys(dataObj).sort(); // J0, J1...
-            if(sortedKeys.length === 0) {
+            const existingDays = daysOrder.filter(d => dataObj[d]);
+
+            if(existingDays.length === 0) {
                 table.style.display = 'none';
             } else {
                 table.style.display = 'table';
-                tableBody.innerHTML = sortedKeys.map(k => {
-                    const d = dataObj[k];
+                tableBody.innerHTML = existingDays.map(day => {
+                    const d = dataObj[day];
                     return `<tr>
                         <td><b>${d.day}</b></td>
+                        <td>${d.dateDisplay || '-'}</td>
                         <td>${d.drain} cc</td>
+                        <td>${d.aspect || '-'}</td>
                         <td style="text-align:center; width:100px;">
-                            <button class="action-btn" onclick="editDaily('${k}')" title="Modifier">✏️</button>
-                            <button class="action-btn" onclick="deleteDaily('${k}')" title="Supprimer">🗑️</button>
+                            <button class="action-btn" onclick="editDaily('${day}')" title="Modifier">✏️</button>
+                            <button class="action-btn" onclick="deleteDaily('${day}')" title="Supprimer">🗑️</button>
                         </td>
                     </tr>`;
                 }).join('');
