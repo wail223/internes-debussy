@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Répertoire - CPMC Debussy</title>
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-light: #e0f2fe;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --danger: #dc2626;
+            --whatsapp: #25D366;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 50px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .nav-btn { background: #e2e8f0; color: var(--text); padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.9em; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+        .nav-btn:hover { background: #cbd5e1; }
+        
+        .btn-main { background: var(--primary); color: white; padding: 10px 16px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 0.95em; width: 100%; display: flex; justify-content: center; gap: 8px; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 20px; }
+        .contact-card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 12px; border-left: 4px solid var(--primary); }
+        
+        .contact-header { display: flex; align-items: center; gap: 12px; }
+        .contact-icon { font-size: 2.5em; background: var(--bg); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .contact-info { flex: 1; }
+        .contact-name { margin: 0; font-size: 1.1em; font-weight: 700; color: var(--text); }
+        .contact-title { font-size: 0.85em; color: var(--text-light); font-weight: 600; text-transform: uppercase; }
+        .contact-remarque { font-size: 0.85em; color: var(--text-light); background: #f8fafc; padding: 6px; border-radius: 6px; margin-top: 5px; font-style: italic; }
+
+        .contact-actions { display: flex; gap: 8px; margin-top: auto; }
+        .action-btn { flex: 1; padding: 8px; border-radius: 8px; text-decoration: none; color: white; font-weight: 600; font-size: 0.85em; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.2s; }
+        .action-btn:hover { opacity: 0.9; }
+        .btn-call { background: var(--primary); }
+        .btn-sms { background: var(--warning); }
+        .btn-wa { background: var(--whatsapp); }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--card); width: 90%; max-width: 400px; border-radius: 16px; padding: 20px; box-sizing: border-box; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+        .close-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1em; cursor: pointer; }
+
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .form-group label { font-size: 0.85em; font-weight: 600; color: var(--text); }
+        .form-group input, .form-group select, .form-group textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; background: #f8fafc; width: 100%; box-sizing: border-box; }
+        
+        .delete-btn { background: none; border: none; color: var(--danger); font-size: 1em; cursor: pointer; padding: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="index.html" class="nav-btn">🏠 Retour à l'accueil</a>
+        <h2 style="margin:0; color: var(--primary); font-size: 1.2em;">📞 Répertoire</h2>
+    </div>
+
+    <button class="btn-main" onclick="openModal()">➕ Ajouter un nouveau contact</button>
+
+    <div class="grid" id="contactsGrid">
+        <!-- Les contacts seront générés ici -->
+    </div>
+
+    <!-- MODAL AJOUT CONTACT -->
+    <div id="contactModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin:0; color: var(--primary);">Nouveau Contact</h3>
+                <button class="close-btn" onclick="closeModal()">✕</button>
+            </div>
+            
+            <input type="hidden" id="contactId">
+            
+            <div class="form-group">
+                <label>Titre</label>
+                <select id="cTitre">
+                    <option value="Dr.">Dr. (Docteur)</option>
+                    <option value="Pr.">Pr. (Professeur)</option>
+                    <option value="M.">M. (Monsieur)</option>
+                    <option value="Mme.">Mme. (Madame)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Nom & Prénom</label>
+                <input type="text" id="cNom" placeholder="Ex: Benali">
+            </div>
+            
+            <div class="form-group">
+                <label>Numéro de Téléphone</label>
+                <input type="tel" id="cTel" placeholder="Ex: 0612345678">
+            </div>
+            
+            <div class="form-group">
+                <label>Remarque / Spécialité</label>
+                <textarea id="cRemarque" rows="2" placeholder="Ex: Chef de service, Garde de nuit..."></textarea>
+            </div>
+            
+            <button class="btn-main" style="background: var(--success); margin-top: 10px;" onclick="saveContact()">💾 Enregistrer</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Utilisation de la même configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
+            authDomain: "internes-debussy.firebaseapp.com",
+            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "internes-debussy",
+            storageBucket: "internes-debussy.firebasestorage.app",
+            messagingSenderId: "614550756274",
+            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const contactsRef = ref(db, 'contacts_personnel/');
+
+        // Formatage du numéro pour WhatsApp (enleve les espaces et ajoute l'indicatif si local)
+        function formatWhatsAppNumber(phone) {
+            let cleaned = phone.replace(/\D/g, '');
+            // Si le numéro commence par 0, on le remplace par 213 (Indicatif Algérie)
+            if (cleaned.startsWith('0') && cleaned.length === 10) {
+                cleaned = '213' + cleaned.substring(1);
+            }
+            return cleaned;
+        }
+
+        // Écoute de la base de données
+        onValue(contactsRef, (snapshot) => {
+            const grid = document.getElementById('contactsGrid');
+            grid.innerHTML = '';
+            
+            const data = snapshot.val();
+            if (!data) {
+                grid.innerHTML = '<p style="text-align:center; color:#64748b; width:100%;">Aucun contact enregistré pour le moment.</p>';
+                return;
+            }
+
+            // Trier par nom
+            const contactsArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+            contactsArray.sort((a, b) => a.nom.localeCompare(b.nom));
+
+            contactsArray.forEach(contact => {
+                // Choix de l'icône selon le titre
+                const isMed = (contact.titre === 'Dr.' || contact.titre === 'Pr.');
+                const icon = isMed ? '🩺' : '👤'; // On peut aussi utiliser 👨‍⚕️
+                
+                const waNumber = formatWhatsAppNumber(contact.tel);
+
+                const card = document.createElement('div');
+                card.className = 'contact-card';
+                card.innerHTML = `
+                    <div class="contact-header">
+                        <div class="contact-icon">${icon}</div>
+                        <div class="contact-info">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                                <h4 class="contact-name">${contact.nom}</h4>
+                                <button class="delete-btn" onclick="deleteContact('${contact.id}', '${contact.nom}')" title="Supprimer">🗑️</button>
+                            </div>
+                            <div class="contact-title">${contact.titre}</div>
+                        </div>
+                    </div>
+                    ${contact.remarque ? `<div class="contact-remarque">📝 ${contact.remarque}</div>` : ''}
+                    <div class="contact-actions">
+                        <a href="tel:${contact.tel}" class="action-btn btn-call">📞 Appeler</a>
+                        <a href="sms:${contact.tel}" class="action-btn btn-sms">💬 SMS</a>
+                        <a href="https://wa.me/${waNumber}" target="_blank" class="action-btn btn-wa">📱 WhatsApp</a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        });
+
+        window.openModal = function() {
+            document.getElementById('cTitre').value = 'Dr.';
+            document.getElementById('cNom').value = '';
+            document.getElementById('cTel').value = '';
+            document.getElementById('cRemarque').value = '';
+            document.getElementById('contactModal').classList.add('active');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('contactModal').classList.remove('active');
+        };
+
+        window.saveContact = function() {
+            const titre = document.getElementById('cTitre').value;
+            const nom = document.getElementById('cNom').value.trim();
+            const tel = document.getElementById('cTel').value.trim();
+            const remarque = document.getElementById('cRemarque').value.trim();
+
+            if (!nom || !tel) {
+                alert("Le nom et le numéro de téléphone sont obligatoires.");
+                return;
+            }
+
+            const newContactRef = push(contactsRef);
+            set(newContactRef, {
+                titre: titre,
+                nom: nom,
+                tel: tel,
+                remarque: remarque,
+                dateAjout: new Date().toISOString()
+            }).then(() => {
+                closeModal();
+            }).catch(error => {
+                console.error("Erreur d'ajout :", error);
+                alert("Une erreur s'est produite lors de l'enregistrement.");
+            });
+        };
+
+        window.deleteContact = function(id, nom) {
+            if(confirm(`Êtes-vous sûr de vouloir supprimer le contact de ${nom} ?`)) {
+                remove(ref(db, `contacts_personnel/${id}`));
+            }
+        };
+    </script>
+</body>
+</html>
