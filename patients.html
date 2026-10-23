@@ -71,8 +71,15 @@
             color: #15803d !important;
         }
 
+        /* BADGES D'ANCIENNETÉ SUR LES LITS */
+        .bed-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .bed-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+        .badge { font-size: 0.7em; padding: 2px 5px; border-radius: 4px; font-weight: 700; color: white; line-height: 1.2; }
+        .badge-hospi { background: #0284c7; }
+        .badge-postop { background: #16a34a; }
+
         .bed-code { font-size: 0.8em; opacity: 0.8; text-transform: uppercase; }
-        .bed-patient-name { font-size: 0.95em; font-weight: bold; word-break: break-word; }
+        .bed-patient-name { font-size: 0.95em; font-weight: bold; word-break: break-word; width: 100%; }
 
         /* Modal Général */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); align-items: flex-end; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
@@ -81,16 +88,20 @@
         .modal-header { display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; z-index: 10; }
         .close-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2em; cursor: pointer; }
 
+        /* Actions rapides en haut du dossier */
+        .top-actions { display: flex; gap: 8px; margin: 12px 0; }
+        .top-action-btn { flex: 1; padding: 8px; border-radius: 8px; border: none; font-weight: 700; font-size: 1.1em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+
         /* Modal Changement de lit spécifique */
         #transferModal { align-items: center; }
         #transferModal .modal-content { height: auto; max-width: 480px; border-radius: 20px; padding: 20px; }
 
         .section-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
-        .section-title { font-size: 0.85em; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 10px; }
+        .section-title { font-size: 0.85em; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .data-row { display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; font-size: 0.9em; }
         .data-label { color: var(--text-light); }
         .data-value { font-weight: 600; text-align: right; }
-        .data-text { font-size: 0.9em; line-height: 1.4; background: white; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 4px; }
+        .data-text { font-size: 0.9em; line-height: 1.4; background: white; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 4px; white-space: pre-line; }
         
         .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
         .form-group label { font-size: 0.85em; font-weight: 600; color: var(--text); }
@@ -102,7 +113,7 @@
         .btn-warning { background: var(--warning); color: white; }
         .btn-danger { background: var(--danger); color: white; }
         
-        .btn-today { padding: 0 10px; font-size: 0.75em; background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-today { padding: 4px 8px; font-size: 0.75em; background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .btn-today:hover { background: #cbd5e1; }
 
         .checkbox-group { display: flex; flex-direction: column; gap: 8px; margin-top: 5px; }
@@ -111,6 +122,10 @@
 
         .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
         .gallery-img { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; }
+
+        /* Accordéon pour les bilans */
+        details.section-card summary { cursor: pointer; user-select: none; list-style: none; }
+        details.section-card summary::-webkit-details-marker { display: none; }
 
         /* LÉGENDE FLOTTANTE EN BAS À DROITE (REPLIABLE) */
         .legend-box {
@@ -276,14 +291,14 @@
             <h2 style="margin:0; color: var(--primary);">🏥 CPMC Debussy</h2>
         </div>
         <div class="nav-links">
-        <a href="index.html" class="nav-btn">🏠 Accueil</a>
-        <a href="patients.html" class="nav-btn active">🛏️ Lits / Hospitalisation</a>
-        <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
-        <a href="courbes.html" class="nav-btn">📈 Courbes de Suivi</a>
-        <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
-        <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
-        <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
-    </div>
+            <a href="index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="patients.html" class="nav-btn active">🛏️ Lits / Hospitalisation</a>
+            <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
+            <a href="courbes.html" class="nav-btn">📈 Courbes de Suivi</a>
+            <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
+            <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
+            <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
+        </div>
     </div>
 
     <div class="floor-selector">
@@ -328,7 +343,15 @@
             <input type="hidden" id="currentBedId">
 
             <!-- VUE LECTURE DOSSIER -->
-            <div id="dossierView" style="margin-top: 15px;">
+            <div id="dossierView" style="margin-top: 10px;">
+                
+                <!-- BOUTONS D'ACTION RAPIDES EN HAUT (SYMBOLES SEULEMENT) -->
+                <div class="top-actions">
+                    <button class="top-action-btn btn-warning" onclick="switchToEdit()" title="Modifier le dossier">✏️ Modifier</button>
+                    <button class="top-action-btn" style="background:var(--primary);" onclick="changerDeLit()" title="Changer de lit">🔀 Lit</button>
+                    <button class="top-action-btn btn-danger" onclick="archiveAndFreePatient()" title="Libérer / Archiver">📦 Libérer</button>
+                </div>
+
                 <div class="section-card">
                     <div class="section-title">👤 Identité & Dossier</div>
                     <div class="data-row"><span class="data-label">N° Dossier</span> <span class="data-value" id="vNumDossier">-</span></div>
@@ -357,27 +380,16 @@
                 </div>
 
                 <div class="section-card">
-                    <div class="section-title">🩺 Motif, ATCD & Décisions</div>
+                    <div class="section-title">🩺 Diagnostic & Antécédents</div>
                     <div class="data-row"><span class="data-label">Diagnostic</span> <span class="data-value" id="vDiag">-</span></div>
-                    <div class="data-row"><span class="data-label">Décision Réa</span> <span class="data-value" id="vDecRea">-</span></div>
-                    <div class="data-row"><span class="data-label">Colloque</span> <span class="data-value" id="vDecColloque">-</span></div>
                     <div class="data-label" style="margin-top:6px;">Antécédents :</div>
                     <div class="data-text" id="vAtcd">-</div>
                 </div>
 
-                <div class="section-card">
-                    <div class="section-title">🔬 Bilans & Imagerie (Résultats)</div>
-                    <div class="data-label">Bilan Complet :</div><div class="data-text" id="vBilanComplet">-</div>
-                    <div class="data-label" style="margin-top:6px;">Échographie :</div><div class="data-text" id="vEcho">-</div>
-                    <div class="data-label" style="margin-top:6px;">TDM TAP :</div><div class="data-text" id="vTdmTap">-</div>
-                    <div class="data-label" style="margin-top:6px;">TDM :</div><div class="data-text" id="vTdm">-</div>
-                    <div class="data-label" style="margin-top:6px;">IRM :</div><div class="data-text" id="vIrm">-</div>
-                    <div class="data-label" style="margin-top:6px;">Endoscopie :</div><div class="data-text" id="vEndo">-</div>
-                </div>
-
-                <div class="section-card">
-                    <div class="section-title">📌 Remarques & Photos</div>
-                    <div class="data-text" id="vRemarques">-</div>
+                <!-- JOURNAL D'ÉVOLUTION DE L'HOSPITALISATION (REMARQUES ET PHOTOS SOUS DIAGNOSTIC ET ATCD) -->
+                <div class="section-card" style="border-left: 4px solid var(--primary);">
+                    <div class="section-title">📜 Journal d'Évolution & Remarques</div>
+                    <div class="data-text" id="vRemarques" style="font-family: inherit;">-</div>
                     
                     <div style="margin-top:10px;">
                         <button id="btnTogglePhotos" class="btn-main" style="background:#64748b; font-size:0.85em; display:none;" onclick="togglePhotosView()">📸 Afficher les photos (<span id="photoCount">0</span>)</button>
@@ -385,12 +397,27 @@
                     </div>
                 </div>
 
-                <!-- BOUTONS D'ACTION -->
-                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:15px;">
-                    <button class="btn-main btn-warning" style="flex:1; min-width:140px;" onclick="switchToEdit()">✏️ Modifier</button>
-                    <button class="btn-main" style="flex:1; min-width:140px; background:var(--primary);" onclick="changerDeLit()">🔀 Changer Lit</button>
-                    <button class="btn-main btn-danger" style="flex:1; min-width:140px;" onclick="archiveAndFreePatient()">📦 Libérer (Archiver)</button>
+                <div class="section-card">
+                    <div class="section-title">🏛️ Décisions Médicales</div>
+                    <div class="data-row"><span class="data-label">Décision Réa</span> <span class="data-value" id="vDecRea">-</span></div>
+                    <div class="data-row"><span class="data-label">Colloque</span> <span class="data-value" id="vDecColloque">-</span></div>
                 </div>
+
+                <!-- SECTION BILANS ET IMAGERIE (MASQUÉE AUTOMATIQUEMENT PAR DÉFAUT EN ACCORDÉON) -->
+                <details class="section-card">
+                    <summary class="section-title" style="margin-bottom:0;">
+                        <span>🔬 Bilans & Imagerie (Résultats)</span>
+                        <span style="font-size: 0.9em; color: var(--primary);">▼</span>
+                    </summary>
+                    <div style="margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+                        <div class="data-label">Bilan Complet :</div><div class="data-text" id="vBilanComplet">-</div>
+                        <div class="data-label" style="margin-top:6px;">Échographie :</div><div class="data-text" id="vEcho">-</div>
+                        <div class="data-label" style="margin-top:6px;">TDM TAP :</div><div class="data-text" id="vTdmTap">-</div>
+                        <div class="data-label" style="margin-top:6px;">TDM :</div><div class="data-text" id="vTdm">-</div>
+                        <div class="data-label" style="margin-top:6px;">IRM :</div><div class="data-text" id="vIrm">-</div>
+                        <div class="data-label" style="margin-top:6px;">Endoscopie :</div><div class="data-text" id="vEndo">-</div>
+                    </div>
+                </details>
             </div>
 
             <!-- VUE FORMULAIRE EDITION -->
@@ -467,6 +494,21 @@
                 <div class="form-group"><label>Diagnostic Main</label><input type="text" id="eDiag"></div>
                 <div class="form-group"><label>Antécédents</label><textarea id="eAtcd" rows="2"></textarea></div>
 
+                <!-- ZONE JOURNAL DE REMARQUES DYNAMIQUE AVEC PSEUDO ET HEURE ARRONDIE -->
+                <div class="form-group" style="background: #e0f2fe; padding: 10px; border-radius: 8px; border: 1px solid #7dd3fc;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <label style="color:#0369a1; font-weight:700;">📜 Journal d'Évolution (Remarques)</label>
+                        <button type="button" class="btn-today" onclick="appendTimestampedNote()" style="background:#0284c7; color:white; border:none;">⏱️ + Horodater une remarque</button>
+                    </div>
+                    <textarea id="eRemarques" rows="5" placeholder="Cliquez sur '+ Horodater' pour ajouter une note avec votre pseudo et l'heure arrondie à 5 min..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>📸 Ajouter des Photos (Formats supportés: JPG, PNG, HEIC...)</label>
+                    <input type="file" id="ePhotos" multiple accept="image/*,.heic,.HEIC" onchange="handlePhotoUpload(event)">
+                    <div id="photosPreview" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;"></div>
+                </div>
+
                 <div class="grid-2">
                     <div class="form-group"><label>Décision Réa</label><input type="text" id="eDecRea" placeholder="Ex: Oui (Lit réservé) / Non"></div>
                     <div class="form-group"><label>Décision Colloque</label><input type="text" id="eDecColloque" placeholder="Ex: Opérable"></div>
@@ -481,13 +523,6 @@
                     <div class="form-group"><label>IRM</label><input type="text" id="eIrm"></div>
                 </div>
                 <div class="form-group"><label>Endoscopie</label><input type="text" id="eEndo"></div>
-                <div class="form-group"><label>Remarques / Transmissions</label><textarea id="eRemarques" rows="3"></textarea></div>
-
-                <div class="form-group">
-                    <label>📸 Ajouter des Photos (Formats supportés: JPG, PNG, HEIC...)</label>
-                    <input type="file" id="ePhotos" multiple accept="image/*,.heic,.HEIC" onchange="handlePhotoUpload(event)">
-                    <div id="photosPreview" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;"></div>
-                </div>
 
                 <button class="btn-main" onclick="savePatient()" style="background:var(--success); margin-bottom:8px;">💾 Enregistrer</button>
                 <button class="btn-main" onclick="switchToView()" style="background:transparent; color:var(--text); border:1px solid #cbd5e1;">Annuler</button>
@@ -565,6 +600,26 @@
             return `🛏️ ${floor} — Chambre ${room} (${type}) [Lit ${bedId}]`;
         }
 
+        // Helper pour calculer la différence de jours (J0, J1, J2...)
+        function calculateDaysDiff(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return null;
+            
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            
+            const targetDate = new Date(year, month, day);
+            targetDate.setHours(0, 0, 0, 0);
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const diffDays = Math.floor((today - targetDate) / (1000 * 60 * 60 * 24));
+            return diffDays >= 0 ? diffDays : null;
+        }
+
         // Fermeture automatique de la légende au chargement sur mobile
         if (window.innerWidth <= 640) {
             const legendDetails = document.getElementById('legendDetails');
@@ -583,7 +638,10 @@
                 for(let i=1; i<=6; i++) {
                     bedsHtml += `
                         <button id="btn-REA${i}" class="bed-btn" onclick="openModal('REA${i}')">
-                            <span class="bed-code">🚨 Lit Réa R${i}</span>
+                            <div class="bed-header">
+                                <span class="bed-code">🚨 Lit Réa R${i}</span>
+                                <div class="bed-badges" id="badges-REA${i}"></div>
+                            </div>
                             <span class="bed-patient-name" id="name-REA${i}">(Vide)</span>
                         </button>`;
                 }
@@ -598,11 +656,17 @@
                         <h4 class="room-title">Chambre ${i}</h4>
                         <div class="beds">
                             <button id="btn-${i}P" class="bed-btn" onclick="openModal('${i}P')">
-                                <span class="bed-code">🛏️ ${i}P (Porte)</span>
+                                <div class="bed-header">
+                                    <span class="bed-code">🛏️ ${i}P (Porte)</span>
+                                    <div class="bed-badges" id="badges-${i}P"></div>
+                                </div>
                                 <span class="bed-patient-name" id="name-${i}P">(Vide)</span>
                             </button>
                             <button id="btn-${i}F" class="bed-btn" onclick="openModal('${i}F')">
-                                <span class="bed-code">🛏️ ${i}F (Fenêtre)</span>
+                                <div class="bed-header">
+                                    <span class="bed-code">🛏️ ${i}F (Fenêtre)</span>
+                                    <div class="bed-badges" id="badges-${i}F"></div>
+                                </div>
                                 <span class="bed-patient-name" id="name-${i}F">(Vide)</span>
                             </button>
                         </div>`;
@@ -624,9 +688,11 @@
             document.querySelectorAll('.bed-btn').forEach(btn => {
                 const bedId = btn.id.replace('btn-', '');
                 const nameSpan = document.getElementById(`name-${bedId}`);
+                const badgesDiv = document.getElementById(`badges-${bedId}`);
                 
-                // Réinitialisation des classes de couleur
+                // Réinitialisation des classes de couleur et badges
                 btn.classList.remove('occupied', 'status-surveiller', 'status-bloc', 'status-postop');
+                if(badgesDiv) badgesDiv.innerHTML = '';
                 
                 if(patientsDb[bedId] && patientsDb[bedId].nom) {
                     btn.classList.add('occupied');
@@ -647,6 +713,18 @@
                     else if(statut === 'postop') btn.classList.add('status-postop');
 
                     if(nameSpan) nameSpan.textContent = patientsDb[bedId].nom.toUpperCase();
+
+                    // Calcul et affichage des badges Jx H (Hospi) et Jx C (Chirurgie)
+                    if(badgesDiv) {
+                        const jHospi = calculateDaysDiff(patientsDb[bedId].dateEntree);
+                        const jChir = calculateDaysDiff(patientsDb[bedId].dateIntervention);
+
+                        let badgeHtml = '';
+                        if (jHospi !== null) badgeHtml += `<span class="badge badge-hospi">J${jHospi} H</span>`;
+                        if (jChir !== null) badgeHtml += `<span class="badge badge-postop">J${jChir} C</span>`;
+                        badgesDiv.innerHTML = badgeHtml;
+                    }
+
                 } else {
                     if(nameSpan) nameSpan.textContent = "(Vide)";
                 }
@@ -674,7 +752,6 @@
         function getInterventionDisplayDate(patient) {
             let dateStr = patient.dateIntervention || "";
             
-            // Si aucune date saisie directement, recherche automatique dans les programmes opératoires
             if (!dateStr && patient.nom && programmesOperatoiresData) {
                 const nomCherche = patient.nom.toLowerCase().trim();
                 let datePlusRecente = "";
@@ -701,31 +778,14 @@
 
             if (!dateStr) return "-";
 
-            // Calcul du nombre de jours Post-Op
-            const parts = dateStr.split('-');
-            if (parts.length === 3) {
-                const year = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10) - 1;
-                const day = parseInt(parts[2], 10);
-                
-                const interDate = new Date(year, month, day);
-                interDate.setHours(0, 0, 0, 0);
+            const diffDays = calculateDaysDiff(dateStr);
+            const formattedDate = formatDate(dateStr);
 
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                const diffDays = Math.floor((today - interDate) / (1000 * 60 * 60 * 24));
-                const formattedDate = `${String(day).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`;
-
-                // Si le patient est en post-op (intervention aujourd'hui ou dans le passé)
-                if (diffDays >= 0) {
-                    return `(J${diffDays}) ${formattedDate}`;
-                } else {
-                    return formattedDate;
-                }
+            if (diffDays !== null) {
+                return `(J${diffDays}) ${formattedDate}`;
             }
 
-            return dateStr;
+            return formattedDate;
         }
 
         window.switchFloor = function(floorId, btn) {
@@ -761,6 +821,51 @@
         window.setToday = function(inputId) {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById(inputId).value = today;
+        };
+
+        // AJOUTER UNE ENTRÉE HORODATÉE AVEC PSEUDO ET HEURE ARRONDIE À 5 MIN
+        window.appendTimestampedNote = function() {
+            // Récupération de la session utilisateur
+            const cpmcUser = localStorage.getItem('cpmc_user');
+            let pseudo = "Interne";
+            if (cpmcUser) {
+                try {
+                    const userData = JSON.parse(cpmcUser);
+                    pseudo = userData.nom || userData.username || "Interne";
+                    // Première lettre en majuscule
+                    pseudo = pseudo.charAt(0).toUpperCase() + pseudo.slice(1);
+                } catch(e) {}
+            }
+
+            // Calcul de la date et de l'heure actuelle
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+
+            // Arrondissement des minutes à 5 minutes près (ex: 18:13 -> 18:15)
+            const roundedMinutes = Math.round(minutes / 5) * 5;
+            if (roundedMinutes === 60) {
+                hours = (hours + 1) % 24;
+                minutes = 0;
+            } else {
+                minutes = roundedMinutes;
+            }
+
+            const formattedHours = String(hours).padStart(2, '0');
+            const formattedMinutes = String(minutes).padStart(2, '0');
+
+            const timestampPrefix = `• ${pseudo} ${day}/${month} ${formattedHours}:${formattedMinutes} : `;
+
+            const remarquesArea = document.getElementById('eRemarques');
+            if (remarquesArea.value.trim() !== "") {
+                remarquesArea.value += `\n${timestampPrefix}`;
+            } else {
+                remarquesArea.value = `${timestampPrefix}`;
+            }
+            remarquesArea.focus();
         };
 
         window.openModal = function(bedId) {
@@ -804,7 +909,7 @@
                 document.getElementById('vTdm').textContent = p.tdm || '-';
                 document.getElementById('vIrm').textContent = p.irm || '-';
                 document.getElementById('vEndo').textContent = p.endo || '-';
-                document.getElementById('vRemarques').textContent = p.remarques || '-';
+                document.getElementById('vRemarques').textContent = p.remarques || 'Aucune remarque enregistrée.';
                 
                 currentPhotos = p.photos || [];
                 const photoBtn = document.getElementById('btnTogglePhotos');
@@ -919,7 +1024,6 @@
                 let blobToRead = file;
                 const fileName = file.name.toLowerCase();
                 
-                // Conversion si format HEIC (iPhone)
                 if (fileName.endsWith('.heic') || file.type.includes('heic')) {
                     try {
                         if (window.heic2any) {
@@ -1070,7 +1174,6 @@
             
             if (!patient || !patient.nom) return;
 
-            // Filtrer uniquement les lits réellement VIDES
             const emptyBeds = ALL_BEDS.filter(bedId => !patientsDb[bedId] || !patientsDb[bedId].nom);
 
             if (emptyBeds.length === 0) {
@@ -1078,7 +1181,6 @@
                 return;
             }
 
-            // Alimenter la liste déroulante avec les lits disponibles
             const select = document.getElementById('selectNewBed');
             select.innerHTML = '';
             
