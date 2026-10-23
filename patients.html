@@ -80,19 +80,19 @@
         .modal-content { 
             background: var(--card); width: 100%; max-width: 650px; height: 92vh; 
             border-radius: 20px 20px 0 0; 
-            padding: 0 20px 20px 20px; /* Padding haut à 0 pour l'en-tête collant */
+            padding: 0 20px 20px 20px; 
             overflow-y: auto; overflow-x: hidden; 
             box-sizing: border-box; 
-            -webkit-overflow-scrolling: touch; /* Scroll fluide iOS */
+            -webkit-overflow-scrolling: touch; 
         }
         
         .modal-header { 
             display: flex; justify-content: space-between; align-items: center; 
             position: sticky; top: 0; 
             background: white; 
-            padding: 20px 0 10px 0; /* Déplacement du padding ici */
+            padding: 20px 0 10px 0; 
             border-bottom: 1px solid #e2e8f0; 
-            z-index: 100; /* Z-index plus élevé pour couvrir le texte au scroll */
+            z-index: 100; 
         }
         
         .close-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2em; cursor: pointer; }
@@ -122,8 +122,10 @@
             width: 100%; box-sizing: border-box;
         }
         
+        /* Grilles compactes pour le formulaire */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .grid-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
         
         .btn-main { background: var(--primary); color: white; padding: 12px; border-radius: 8px; border: none; font-weight: 600; width: 100%; cursor: pointer; text-align: center; }
         .btn-warning { background: var(--warning); color: white; }
@@ -143,7 +145,7 @@
         details.section-card summary { cursor: pointer; user-select: none; list-style: none; }
         details.section-card summary::-webkit-details-marker { display: none; }
 
-        /* LÉGENDE FLOTTANTE EN BAS À DROITE (REPLIABLE) */
+        /* LÉGENDE FLOTTANTE EN BAS À DROITE */
         .legend-box { position: fixed; bottom: 12px; right: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 8px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 990; font-size: 0.8em; }
         .legend-title { font-weight: 700; color: var(--text); font-size: 0.85em; cursor: pointer; list-style: none; outline: none; user-select: none; }
         .legend-title::-webkit-details-marker { display: none; }
@@ -163,9 +165,15 @@
         .surveillance-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
         .surveillance-empty { color: var(--text-light); font-style: italic; font-size: 0.85em; margin-top: 2px; }
 
-        /* GESTION RESPONSIVE SPÉCIALE MOBILE POUR ÉVITER TOUTE SUPERPOSITION ET DÉBORDEMENT */
+        /* GESTION RESPONSIVE MOBILE OPTIMISÉE POUR GARDER LA COMPACITÉ */
         @media (max-width: 640px) {
-            .grid-2, .grid-3 { grid-template-columns: 1fr; gap: 8px; } /* Annule les grilles sur petit écran pour éviter les décalages */
+            /* On ne casse plus les grilles ! On réduit juste les marges pour que ça rentre */
+            .grid-2 { gap: 6px; }
+            .grid-3 { gap: 6px; }
+            
+            .form-group input, .form-group textarea, .form-group select { padding: 8px 6px; font-size: 16px; }
+            .form-group label { font-size: 0.75em; } /* Textes des labels un peu plus petits */
+            
             .top-action-btn { font-size: 0.9em; padding: 10px 4px; }
             .surveillance-box { bottom: 10px; left: 10px; width: calc(100vw - 145px); max-width: 220px; max-height: 150px; padding: 8px 10px; font-size: 0.75em; }
             .surveillance-name { max-width: 100px; }
@@ -237,13 +245,15 @@
             
             <input type="hidden" id="currentBedId">
 
-            <!-- VUE LECTURE DOSSIER -->
+            <!-- ============================== -->
+            <!--       VUE LECTURE DOSSIER      -->
+            <!-- ============================== -->
             <div id="dossierView" style="margin-top: 10px;">
                 
-                <!-- BOUTONS D'ACTION RAPIDES EN HAUT -->
+                <!-- BOUTONS D'ACTION RAPIDES EN HAUT (LECTURE) -->
                 <div class="top-actions">
                     <button class="top-action-btn btn-warning" onclick="switchToEdit()" title="Modifier le dossier">✏️ Modifier</button>
-                    <button class="top-action-btn" style="background:var(--primary);" onclick="changerDeLit()" title="Changer de lit">🔀 Lit</button>
+                    <button class="top-action-btn" style="background:var(--primary); color:white;" onclick="changerDeLit()" title="Changer de lit">🔀 Lit</button>
                     <button class="top-action-btn btn-danger" onclick="archiveAndFreePatient()" title="Libérer / Archiver">📦 Libérer</button>
                 </div>
 
@@ -314,19 +324,28 @@
                     </div>
                 </details>
 
-                <!-- BOUTONS D'ACTION RAPIDES EN BAS -->
+                <!-- BOUTONS D'ACTION RAPIDES EN BAS (LECTURE) -->
                 <div class="top-actions" style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
                     <button class="top-action-btn btn-warning" onclick="switchToEdit()" title="Modifier le dossier">✏️ Modifier</button>
-                    <button class="top-action-btn" style="background:var(--primary);" onclick="changerDeLit()" title="Changer de lit">🔀 Lit</button>
+                    <button class="top-action-btn" style="background:var(--primary); color:white;" onclick="changerDeLit()" title="Changer de lit">🔀 Lit</button>
                     <button class="top-action-btn btn-danger" onclick="archiveAndFreePatient()" title="Libérer / Archiver">📦 Libérer</button>
                 </div>
 
             </div>
 
-            <!-- VUE FORMULAIRE EDITION -->
-            <div id="formView" style="display:none; margin-top: 15px;">
+            <!-- ============================== -->
+            <!--     VUE FORMULAIRE EDITION     -->
+            <!-- ============================== -->
+            <div id="formView" style="display:none; margin-top: 10px;">
+                
+                <!-- BOUTONS D'ACTION RAPIDES EN HAUT (FORMULAIRE) -->
+                <div class="top-actions" style="margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">
+                    <button class="top-action-btn" onclick="savePatient()" style="background:var(--success); color:white;" title="Enregistrer">💾 Enregistrer</button>
+                    <button class="top-action-btn" onclick="switchToView()" style="background:#e2e8f0; color:var(--text);" title="Annuler">❌ Annuler</button>
+                </div>
+
                 <div class="grid-2">
-                    <div class="form-group"><label>N° Dossier</label><input type="text" id="eNumDossier" placeholder="Ex: DOS-2026-001"></div>
+                    <div class="form-group"><label>N° Dossier</label><input type="text" id="eNumDossier" placeholder="Ex: DOS-2026"></div>
                     <div class="form-group"><label>Médecin Traitant</label><input type="text" id="eMedecinTraitant" placeholder="Ex: Dr. Benali"></div>
                 </div>
 
@@ -355,8 +374,8 @@
                     </div>
                 </div>
 
-                <div class="grid-3">
-                    <div class="form-group"><label>Date de Naissance</label><input type="date" id="eDob" onchange="calcAgeFromDob()"></div>
+                <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 8px;">
+                    <div class="form-group"><label>Date Naissance</label><input type="date" id="eDob" onchange="calcAgeFromDob()"></div>
                     <div class="form-group"><label>Âge (ans)</label><input type="number" id="eAge"></div>
                     <div class="form-group"><label>Poids (kg)</label><input type="number" id="ePoids" oninput="calcBMI()"></div>
                 </div>
@@ -375,7 +394,7 @@
                     </div>
                 </div>
 
-                <div class="grid-3">
+                <div class="grid-dates">
                     <div class="form-group">
                         <label>Date Entrée</label>
                         <div style="display:flex; gap:4px;">
@@ -383,7 +402,10 @@
                             <button type="button" class="btn-today" onclick="setToday('eDateEntree')">Aujourd'hui</button>
                         </div>
                     </div>
-                    <div class="form-group"><label>Date Intervention</label><input type="date" id="eDateIntervention"></div>
+                    <div class="form-group">
+                        <label>Date Intervention</label>
+                        <input type="date" id="eDateIntervention">
+                    </div>
                     <div class="form-group">
                         <label>Date Sortie Prévue</label>
                         <div style="display:flex; gap:4px;">
@@ -400,20 +422,20 @@
                 <!-- ZONE JOURNAL DE REMARQUES DYNAMIQUE AVEC PSEUDO ET HEURE ARRONDIE -->
                 <div class="form-group" style="background: #e0f2fe; padding: 10px; border-radius: 8px; border: 1px solid #7dd3fc;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <label style="color:#0369a1; font-weight:700;">📜 Journal d'Évolution (Remarques)</label>
-                        <button type="button" class="btn-today" onclick="appendTimestampedNote()" style="background:#0284c7; color:white; border:none;">⏱️ + Horodater une remarque</button>
+                        <label style="color:#0369a1; font-weight:700;">📜 Journal d'Évolution</label>
+                        <button type="button" class="btn-today" onclick="appendTimestampedNote()" style="background:#0284c7; color:white; border:none;">⏱️ + Horodater</button>
                     </div>
-                    <textarea id="eRemarques" rows="5" placeholder="Cliquez sur '+ Horodater' pour ajouter une note avec votre pseudo et l'heure arrondie à 5 min..."></textarea>
+                    <textarea id="eRemarques" rows="5" placeholder="Cliquez sur '+ Horodater' pour ajouter une note avec votre pseudo..."></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label>📸 Ajouter des Photos (Formats supportés: JPG, PNG, HEIC...)</label>
+                    <label>📸 Ajouter des Photos</label>
                     <input type="file" id="ePhotos" multiple accept="image/*,.heic,.HEIC" onchange="handlePhotoUpload(event)">
                     <div id="photosPreview" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;"></div>
                 </div>
 
                 <div class="grid-2">
-                    <div class="form-group"><label>Décision Réa</label><input type="text" id="eDecRea" placeholder="Ex: Oui (Lit réservé) / Non"></div>
+                    <div class="form-group"><label>Décision Réa</label><input type="text" id="eDecRea" placeholder="Ex: Oui / Non"></div>
                     <div class="form-group"><label>Décision Colloque</label><input type="text" id="eDecColloque" placeholder="Ex: Opérable"></div>
                 </div>
                 <div class="form-group"><label>Date Colloque</label><input type="date" id="eDateColloque"></div>
@@ -427,8 +449,12 @@
                 </div>
                 <div class="form-group"><label>Endoscopie</label><input type="text" id="eEndo"></div>
 
-                <button class="btn-main" onclick="savePatient()" style="background:var(--success); margin-bottom:8px;">💾 Enregistrer</button>
-                <button class="btn-main" onclick="switchToView()" style="background:transparent; color:var(--text); border:1px solid #cbd5e1;">Annuler</button>
+                <!-- BOUTONS D'ACTION RAPIDES EN BAS (FORMULAIRE) -->
+                <div class="top-actions" style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                    <button class="top-action-btn" onclick="savePatient()" style="background:var(--success); color:white;" title="Enregistrer">💾 Enregistrer</button>
+                    <button class="top-action-btn" onclick="switchToView()" style="background:#e2e8f0; color:var(--text);" title="Annuler">❌ Annuler</button>
+                </div>
+
             </div>
         </div>
     </div>
@@ -754,7 +780,7 @@
         };
 
         window.openModal = function(bedId) {
-            document.body.classList.add('modal-open'); // BLOQUE LE SCROLL DE L'ARRIERE-PLAN
+            document.body.classList.add('modal-open');
             document.getElementById('currentBedId').value = bedId;
             document.getElementById('modalTitle').textContent = `Lit ${bedId}`;
             const p = patientsDb[bedId];
@@ -845,7 +871,7 @@
 
         window.closeModal = function() { 
             document.getElementById('patientModal').classList.remove('active'); 
-            document.body.classList.remove('modal-open'); // DEBLOQUE LE SCROLL DE L'ARRIERE-PLAN
+            document.body.classList.remove('modal-open'); 
         };
         
         window.switchToEdit = function() {
