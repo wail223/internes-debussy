@@ -25,6 +25,10 @@
         
         .btn-main { background: var(--primary); color: white; padding: 10px 16px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 0.95em; width: 100%; display: flex; justify-content: center; gap: 8px; }
         
+        /* Style de la barre de recherche */
+        .search-bar { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #cbd5e1; margin-top: 15px; font-size: 16px; box-sizing: border-box; background: white; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+        .search-bar:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 20px; }
         .contact-card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 12px; border-left: 4px solid var(--primary); }
         
@@ -66,6 +70,9 @@
     </div>
 
     <button class="btn-main" onclick="openModal()">➕ Ajouter un nouveau contact</button>
+    
+    <!-- BARRE DE RECHERCHE -->
+    <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher un contact par nom..." onkeyup="searchContacts()">
 
     <div class="grid" id="contactsGrid">
         <!-- Les contacts seront générés ici -->
@@ -111,7 +118,6 @@
     </div>
 
     <script type="module">
-        // Ajout de 'update' dans l'import
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
@@ -155,13 +161,15 @@
                 const icon = isMed ? '🩺' : '👤'; 
                 const waNumber = formatWhatsAppNumber(contact.tel);
                 
-                // Utilisation de encodeURIComponent pour éviter les bugs avec les apostrophes et retours à la ligne
                 const safeNom = encodeURIComponent(contact.nom);
                 const safeTel = encodeURIComponent(contact.tel);
                 const safeRemarque = encodeURIComponent(contact.remarque || '');
 
                 const card = document.createElement('div');
                 card.className = 'contact-card';
+                // Attribut data-nom utilisé pour la recherche (on ignore le titre)
+                card.setAttribute('data-nom', contact.nom.toLowerCase());
+                
                 card.innerHTML = `
                     <div class="contact-header">
                         <div class="contact-icon">${icon}</div>
@@ -184,7 +192,28 @@
                 `;
                 grid.appendChild(card);
             });
+
+            // Réappliquer la recherche si une recherche était en cours pendant une mise à jour de la DB
+            if(typeof window.searchContacts === 'function') {
+                window.searchContacts();
+            }
         });
+
+        // FONCTION DE RECHERCHE
+        window.searchContacts = function() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const cards = document.querySelectorAll('.contact-card');
+            
+            cards.forEach(card => {
+                const nom = card.getAttribute('data-nom');
+                // Affiche la carte si le nom contient la recherche, sinon la cache
+                if (nom && nom.includes(query)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        };
 
         window.openModal = function() {
             document.getElementById('contactId').value = '';
@@ -231,7 +260,6 @@
             };
 
             if (id) {
-                // Mise à jour (Modification)
                 update(ref(db, `contacts_personnel/${id}`), contactData).then(() => {
                     closeModal();
                 }).catch(error => {
@@ -239,7 +267,6 @@
                     alert("Erreur lors de la modification.");
                 });
             } else {
-                // Ajout (Nouveau)
                 contactData.dateAjout = new Date().toISOString();
                 push(contactsRef, contactData).then(() => {
                     closeModal();
