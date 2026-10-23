@@ -29,10 +29,14 @@
         .contact-card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 12px; border-left: 4px solid var(--primary); }
         
         .contact-header { display: flex; align-items: center; gap: 12px; }
-        .contact-icon { font-size: 2.5em; background: var(--bg); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .contact-icon { font-size: 2.5em; background: var(--bg); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .contact-info { flex: 1; }
         .contact-name { margin: 0; font-size: 1.1em; font-weight: 700; color: var(--text); }
-        .contact-title { font-size: 0.85em; color: var(--text-light); font-weight: 600; text-transform: uppercase; }
+        
+        .action-icons { display: flex; gap: 4px; }
+        .icon-btn { background: none; border: none; font-size: 1.1em; cursor: pointer; padding: 4px; border-radius: 4px; transition: background 0.2s; }
+        .icon-btn:hover { background: #e2e8f0; }
+        
         .contact-remarque { font-size: 0.85em; color: var(--text-light); background: #f8fafc; padding: 6px; border-radius: 6px; margin-top: 5px; font-style: italic; }
 
         .contact-actions { display: flex; gap: 8px; margin-top: auto; }
@@ -52,8 +56,6 @@
         .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
         .form-group label { font-size: 0.85em; font-weight: 600; color: var(--text); }
         .form-group input, .form-group select, .form-group textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; background: #f8fafc; width: 100%; box-sizing: border-box; }
-        
-        .delete-btn { background: none; border: none; color: var(--danger); font-size: 1em; cursor: pointer; padding: 4px; }
     </style>
 </head>
 <body>
@@ -69,11 +71,11 @@
         <!-- Les contacts seront générés ici -->
     </div>
 
-    <!-- MODAL AJOUT CONTACT -->
+    <!-- MODAL AJOUT / MODIFICATION CONTACT -->
     <div id="contactModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 style="margin:0; color: var(--primary);">Nouveau Contact</h3>
+                <h3 id="modalTitle" style="margin:0; color: var(--primary);">Nouveau Contact</h3>
                 <button class="close-btn" onclick="closeModal()">✕</button>
             </div>
             
@@ -109,10 +111,10 @@
     </div>
 
     <script type="module">
+        // Ajout de 'update' dans l'import
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Utilisation de la même configuration Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
             authDomain: "internes-debussy.firebaseapp.com",
@@ -127,17 +129,14 @@
         const db = getDatabase(app);
         const contactsRef = ref(db, 'contacts_personnel/');
 
-        // Formatage du numéro pour WhatsApp (enleve les espaces et ajoute l'indicatif si local)
         function formatWhatsAppNumber(phone) {
             let cleaned = phone.replace(/\D/g, '');
-            // Si le numéro commence par 0, on le remplace par 213 (Indicatif Algérie)
             if (cleaned.startsWith('0') && cleaned.length === 10) {
                 cleaned = '213' + cleaned.substring(1);
             }
             return cleaned;
         }
 
-        // Écoute de la base de données
         onValue(contactsRef, (snapshot) => {
             const grid = document.getElementById('contactsGrid');
             grid.innerHTML = '';
@@ -148,16 +147,18 @@
                 return;
             }
 
-            // Trier par nom
             const contactsArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
             contactsArray.sort((a, b) => a.nom.localeCompare(b.nom));
 
             contactsArray.forEach(contact => {
-                // Choix de l'icône selon le titre
                 const isMed = (contact.titre === 'Dr.' || contact.titre === 'Pr.');
-                const icon = isMed ? '🩺' : '👤'; // On peut aussi utiliser 👨‍⚕️
-                
+                const icon = isMed ? '🩺' : '👤'; 
                 const waNumber = formatWhatsAppNumber(contact.tel);
+                
+                // Utilisation de encodeURIComponent pour éviter les bugs avec les apostrophes et retours à la ligne
+                const safeNom = encodeURIComponent(contact.nom);
+                const safeTel = encodeURIComponent(contact.tel);
+                const safeRemarque = encodeURIComponent(contact.remarque || '');
 
                 const card = document.createElement('div');
                 card.className = 'contact-card';
@@ -166,10 +167,12 @@
                         <div class="contact-icon">${icon}</div>
                         <div class="contact-info">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                                <h4 class="contact-name">${contact.nom}</h4>
-                                <button class="delete-btn" onclick="deleteContact('${contact.id}', '${contact.nom}')" title="Supprimer">🗑️</button>
+                                <h4 class="contact-name">${contact.titre} ${contact.nom}</h4>
+                                <div class="action-icons">
+                                    <button class="icon-btn" onclick="editContact('${contact.id}', '${contact.titre}', '${safeNom}', '${safeTel}', '${safeRemarque}')" title="Modifier">✏️</button>
+                                    <button class="icon-btn" onclick="deleteContact('${contact.id}', '${safeNom}')" title="Supprimer">🗑️</button>
+                                </div>
                             </div>
-                            <div class="contact-title">${contact.titre}</div>
                         </div>
                     </div>
                     ${contact.remarque ? `<div class="contact-remarque">📝 ${contact.remarque}</div>` : ''}
@@ -184,10 +187,22 @@
         });
 
         window.openModal = function() {
+            document.getElementById('contactId').value = '';
             document.getElementById('cTitre').value = 'Dr.';
             document.getElementById('cNom').value = '';
             document.getElementById('cTel').value = '';
             document.getElementById('cRemarque').value = '';
+            document.getElementById('modalTitle').innerText = 'Nouveau Contact';
+            document.getElementById('contactModal').classList.add('active');
+        };
+
+        window.editContact = function(id, titre, safeNom, safeTel, safeRemarque) {
+            document.getElementById('contactId').value = id;
+            document.getElementById('cTitre').value = titre;
+            document.getElementById('cNom').value = decodeURIComponent(safeNom);
+            document.getElementById('cTel').value = decodeURIComponent(safeTel);
+            document.getElementById('cRemarque').value = decodeURIComponent(safeRemarque);
+            document.getElementById('modalTitle').innerText = 'Modifier Contact';
             document.getElementById('contactModal').classList.add('active');
         };
 
@@ -196,6 +211,7 @@
         };
 
         window.saveContact = function() {
+            const id = document.getElementById('contactId').value;
             const titre = document.getElementById('cTitre').value;
             const nom = document.getElementById('cNom').value.trim();
             const tel = document.getElementById('cTel').value.trim();
@@ -206,22 +222,36 @@
                 return;
             }
 
-            const newContactRef = push(contactsRef);
-            set(newContactRef, {
+            const contactData = {
                 titre: titre,
                 nom: nom,
                 tel: tel,
                 remarque: remarque,
-                dateAjout: new Date().toISOString()
-            }).then(() => {
-                closeModal();
-            }).catch(error => {
-                console.error("Erreur d'ajout :", error);
-                alert("Une erreur s'est produite lors de l'enregistrement.");
-            });
+                dateMaj: new Date().toISOString()
+            };
+
+            if (id) {
+                // Mise à jour (Modification)
+                update(ref(db, `contacts_personnel/${id}`), contactData).then(() => {
+                    closeModal();
+                }).catch(error => {
+                    console.error("Erreur de modification :", error);
+                    alert("Erreur lors de la modification.");
+                });
+            } else {
+                // Ajout (Nouveau)
+                contactData.dateAjout = new Date().toISOString();
+                push(contactsRef, contactData).then(() => {
+                    closeModal();
+                }).catch(error => {
+                    console.error("Erreur d'ajout :", error);
+                    alert("Erreur lors de l'enregistrement.");
+                });
+            }
         };
 
-        window.deleteContact = function(id, nom) {
+        window.deleteContact = function(id, safeNom) {
+            const nom = decodeURIComponent(safeNom);
             if(confirm(`Êtes-vous sûr de vouloir supprimer le contact de ${nom} ?`)) {
                 remove(ref(db, `contacts_personnel/${id}`));
             }
