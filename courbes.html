@@ -399,11 +399,23 @@
             const currentVal = selector.value;
             selector.innerHTML = '<option value="">-- Choisir un patient --</option>';
 
+            const todayISO = new Date().toISOString().split('T')[0];
+
             Object.keys(patientsDataMap).forEach(bedId => {
                 const p = patientsDataMap[bedId];
                 if(p && p.nom) {
                     const pKey = getPatientKey(p);
-                    selector.innerHTML += `<option value="${pKey}" data-bed="${bedId}">Lit ${bedId} - ${p.nom}</option>`;
+                    const interDate = detectInterventionDate(p);
+                    
+                    let highlightStyle = "";
+                    let opIndicator = "";
+                    
+                    if (interDate && interDate <= todayISO) {
+                        highlightStyle = 'style="background-color: #dcfce7; color: #16a34a; font-weight: bold;"';
+                        opIndicator = " ✅ (Opéré)";
+                    }
+
+                    selector.innerHTML += `<option value="${pKey}" data-bed="${bedId}" ${highlightStyle}>Lit ${bedId} - ${p.nom}${opIndicator}</option>`;
                 }
             });
             if(currentVal) selector.value = currentVal;
