@@ -72,7 +72,6 @@
             <a href="courbes.html" class="nav-btn active">📈 Courbes de Suivi</a>
             <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
             <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
-            <a href="contacts.html" class="nav-btn">📞 Répertoire</a>
         </div>
     </div>
 
@@ -254,6 +253,28 @@
 
         const todayISO = new Date().toISOString().split('T')[0];
         document.getElementById('intradayDate').value = todayISO;
+
+        // --- PLUGIN CHART.JS POUR AFFICHER LES VALEURS AU-DESSUS DES POINTS ---
+        const topLabelsPlugin = {
+            id: 'topLabels',
+            afterDatasetsDraw(chart, args, pluginOptions) {
+                const { ctx } = chart;
+                chart.data.datasets.forEach((dataset, i) => {
+                    const meta = chart.getDatasetMeta(i);
+                    if (meta.hidden) return;
+                    meta.data.forEach((element, index) => {
+                        const val = dataset.data[index];
+                        if (val !== null && val !== undefined && val !== '') {
+                            ctx.fillStyle = dataset.borderColor; // Même couleur que la ligne
+                            ctx.font = 'bold 11px sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+                            ctx.fillText(val, element.x, element.y - 8); // -8 pour mettre juste au-dessus du point
+                        }
+                    });
+                });
+            }
+        };
 
         window.setDailyTab = function(tab) {
             currentDailyTab = tab;
@@ -496,10 +517,10 @@
               else if (currentDailyTab === 'Hb') { document.getElementById('dailyHbInput').value = ''; }
         };
 
-        window.editIntraday = function(key) { /*... inchangé ...*/ };
-        window.deleteIntraday = function(key) { /*... inchangé ...*/ };
-        window.editDaily = function(day) { /*... inchangé ...*/ };
-        window.deleteDaily = function(day) { /*... inchangé ...*/ };
+        window.editIntraday = function(key) { /*...*/ };
+        window.deleteIntraday = function(key) { /*...*/ };
+        window.editDaily = function(day) { /*...*/ };
+        window.deleteDaily = function(day) { /*...*/ };
 
         // --- GESTION DE L'EXPORTATION DE L'IMAGE ET PARTAGE ---
         function getChartImageBlob() {
@@ -507,7 +528,6 @@
                 const chartCanvas = document.getElementById('dailyChart');
                 const destCanvas = document.createElement('canvas');
                 
-                // Calculer un espace pour l'entête
                 const headerHeight = 70;
                 destCanvas.width = chartCanvas.width;
                 destCanvas.height = chartCanvas.height + headerHeight;
@@ -517,50 +537,62 @@
                 ctx.fillStyle = 'white';
                 ctx.fillRect(0, 0, destCanvas.width, destCanvas.height);
                 
-                // Récupérer les infos (Nom, Lit, J max)
-                let pName = "Patient", pBed = "?";
+                // Récupérer les infos (Nom, Lit, Date d'intervention)
+                let pName = "Patient", pBed = "?", interDate = "";
                 if (currentPatientKey) {
                     Object.keys(patientsDataMap).forEach(bedId => {
-                        if (getPatientKey(patientsDataMap[bedId]) === currentPatientKey) {
-                            pName = patientsDataMap[bedId].nom;
+                        const p = patientsDataMap[bedId];
+                        if (getPatientKey(p) === currentPatientKey) {
+                            pName = p.nom;
                             pBed = bedId;
+                            interDate = detectInterventionDate(p);
                         }
                     });
                 }
                 
-                // Chercher le plus grand 'J' enregistré dans les courbes
-                let maxJ = -1;
-                if (currentPatientData && currentPatientData.daily) {
-                    Object.keys(currentPatientData.daily).forEach(d => {
-                        let num = parseInt(d.replace('J', ''));
-                        if(!isNaN(num) && num > maxJ) maxJ = num;
-                    });
+                // Calculer le J exact en fonction de la date actuelle
+                let jStr = "";
+                if (interDate && interDate.split('-').length === 3) {
+                    const [y, m, d] = interDate.split('-').map(Number);
+                    const opDate = new Date(y, m - 1, d);
+                    const today = new Date();
+                    
+                    // On met les heures à 0 pour calculer juste la différence en jours pleins
+                    opDate.setHours(0,0,0,0);
+                    today.setHours(0,0,0,0);
+                    
+                    const diffDays = Math.round((today - opDate) / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays >= 0) {
+                        jStr = `J${diffDays} Post-Op`;
+                    } else {
+                        jStr = `J${Math.abs(diffDays)} Pré-Op`;
+                    }
+                } else {
+                    jStr = "(Date d'intervention inconnue)";
                 }
-                const jStr = maxJ >= 0 ? `J${maxJ} Post-Op` : "";
                 
                 // Dessiner le texte de l'entête
                 ctx.fillStyle = '#0369a1';
-                // La police s'adapte à la résolution du graphique
                 const fontSize = Math.max(20, Math.floor(destCanvas.width * 0.025));
                 ctx.font = `bold ${fontSize}px sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(`Lit : ${pBed} | Patient : ${pName} | ${jStr}`, destCanvas.width / 2, headerHeight / 2);
                 
-                // Dessiner le graphique en dessous de l'entête
+                // Dessiner le graphique
                 ctx.drawImage(chartCanvas, 0, headerHeight);
                 
                 destCanvas.toBlob((blob) => {
                     resolve({
                         blob: blob,
                         dataUrl: destCanvas.toDataURL('image/jpeg', 1.0),
-                        fileName: `Courbes_${pName.replace(/\s+/g, '_')}_J${maxJ}.jpg`
+                        fileName: `Courbes_${pName.replace(/\s+/g, '_')}_${jStr}.jpg`
                     });
                 }, 'image/jpeg', 1.0);
             });
         }
 
-        // Télécharger JPG
         window.downloadJPG = async function() {
             const { dataUrl, fileName } = await getChartImageBlob();
             const link = document.createElement('a');
@@ -569,7 +601,6 @@
             link.click();
         };
 
-        // Partage natif (qui ouvrira le menu OS avec WhatsApp, Mail, etc.)
         window.shareChartNative = async function() {
             const { blob, fileName } = await getChartImageBlob();
             const file = new File([blob], fileName, { type: 'image/jpeg' });
@@ -581,16 +612,49 @@
                         files: [file]
                     });
                 } else {
-                    throw new Error("Partage de fichier non supporté par ce navigateur.");
+                    throw new Error("Partage de fichier non supporté.");
                 }
             } catch (error) {
-                alert("Le partage direct n'est pas supporté par votre navigateur (souvent le cas sur PC). L'image va être téléchargée pour que vous puissiez l'envoyer manuellement.");
+                alert("Le partage direct n'est pas supporté par votre navigateur. L'image va être téléchargée pour que vous puissiez l'envoyer manuellement sur WhatsApp.");
                 window.downloadJPG();
             }
         };
 
         function renderIntradayChart(dataObj) {
-            /* ... (Identique à précédemment si vous l'aviez complété) ... */
+            /* Identique à avant (optionnellement vous pouvez aussi ajouter le plugins: [topLabelsPlugin] ici) */
+            const ctx = document.getElementById('intradayChart').getContext('2d');
+            const sortedKeys = Object.keys(dataObj).sort(); 
+            
+            const labels = sortedKeys.map(k => `${formatDate(dataObj[k].date)} ${dataObj[k].time}`);
+            const temps = sortedKeys.map(k => dataObj[k].temp);
+            const drains = sortedKeys.map(k => dataObj[k].drain);
+            const aspects = sortedKeys.map(k => dataObj[k].aspect || '');
+
+            if(intradayChartInstance) intradayChartInstance.destroy();
+            intradayChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Température (°C)', data: temps, borderColor: '#dc2626', backgroundColor: '#dc2626', yAxisID: 'yTemp', tension: 0.3, spanGaps: true },
+                        { label: 'Drain (cc)', data: drains, borderColor: '#0284c7', backgroundColor: '#0284c7', yAxisID: 'yDrain', tension: 0.3, spanGaps: true }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    layout: { padding: { top: 25 } }, // Ajoute de l'espace pour les labels
+                    plugins: {
+                        tooltip: { callbacks: { label: function(c) { let l = c.dataset.label + ' : ' + c.parsed.y; if(c.datasetIndex === 1 && aspects[c.dataIndex]) l += ' ('+aspects[c.dataIndex]+')'; return l; } } }
+                    },
+                    scales: {
+                        yTemp: { type: 'linear', position: 'left', title: { display: true, text: 'Température (°C)' }, min: 35, max: 42 },
+                        yDrain: { type: 'linear', position: 'right', title: { display: true, text: 'Quantité Drain (cc)' }, min: 0, max: 1000, ticks: { stepSize: 50 }, grid: { drawOnChartArea: false } }
+                    }
+                },
+                plugins: [topLabelsPlugin] // <- Ajout du plugin pour afficher les chiffres
+            });
+
+            // Tableau...
         }
 
         function renderDailyChart(dataObj) {
@@ -623,8 +687,8 @@
                     { label: 'CRP (mg/L)', data: dataCRP, borderColor: '#dc2626', backgroundColor: 'rgba(220, 38, 38, 0.1)', fill: false, tension: 0.3, yAxisID: 'yCRP' },
                     { label: 'Hb (g/dL)', data: dataHb, borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.1)', fill: false, tension: 0.3, yAxisID: 'yHb' }
                 ];
-                scales.yDrain = { type: 'linear', position: 'left', title: { display: true, text: 'Drain (cc)' } };
-                scales.yCRP = { type: 'linear', position: 'right', title: { display: true, text: 'CRP (mg/L)' }, grid: { drawOnChartArea: false } };
+                scales.yDrain = { type: 'linear', position: 'left', title: { display: true, text: 'Drain (cc)' }, suggestedMax: Math.max(...dataDrain.filter(v=>v!==null)) + 100 };
+                scales.yCRP = { type: 'linear', position: 'right', title: { display: true, text: 'CRP (mg/L)' }, grid: { drawOnChartArea: false }, suggestedMax: Math.max(...dataCRP.filter(v=>v!==null)) + 20 };
                 scales.yHb = { type: 'linear', position: 'right', title: { display: true, text: 'Hb (g/dL)' }, grid: { drawOnChartArea: false }, min: 5, max: 20 };
             } else {
                 let dLabel = '', bColor = '', bgCol = '', yTitle = '', dPoints = [];
@@ -633,7 +697,7 @@
                 else if(currentDailyTab === 'Hb') { dLabel = 'Hb (g/dL)'; bColor = '#0284c7'; bgCol = 'rgba(2, 132, 199, 0.2)'; yTitle = 'Hémoglobine (g/dL)'; dPoints = dataHb; }
                 
                 datasets = [{ label: dLabel, data: dPoints, borderColor: bColor, backgroundColor: bgCol, fill: true, tension: 0.3, pointRadius: 6, pointBackgroundColor: bColor }];
-                scales.y = { beginAtZero: true, title: { display: true, text: yTitle } };
+                scales.y = { beginAtZero: true, title: { display: true, text: yTitle }, suggestedMax: Math.max(...dPoints.filter(v=>v!==null)) * 1.2 }; // Espace en haut pour le texte
             }
 
             dailyChartInstance = new Chart(ctx, {
@@ -642,6 +706,9 @@
                 options: { 
                     responsive: true, maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
+                    layout: {
+                        padding: { top: 25 } // Ajoute de l'espace en haut pour ne pas couper les étiquettes de chiffres
+                    },
                     plugins: {
                         tooltip: {
                             callbacks: {
@@ -654,7 +721,8 @@
                         }
                     },
                     scales: scales
-                }
+                },
+                plugins: [topLabelsPlugin] // <- Ligne critique pour afficher les valeurs sur le graphe
             });
 
             const tableBody = document.getElementById('dailyTableBody');
