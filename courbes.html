@@ -3,714 +3,840 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suivi des Courbes Patients</title>
+    <title>Courbes de Suivi - CPMC Debussy</title>
+    <!-- Intégration de Chart.js pour dessiner les courbes -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1, h2 { color: #1f2937; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: #374151; }
-        select, input { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; }
-        button { background-color: #2563eb; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #1d4ed8; }
-        .action-btn { background: none; color: inherit; padding: 5px; font-size: 1.2em; border: none; cursor: pointer; }
-        .action-btn:hover { transform: scale(1.1); }
-        .badge { background-color: #dbeafe; color: #1e40af; padding: 10px; border-radius: 6px; display: inline-block; margin-bottom: 20px; border: 1px solid #bfdbfe; }
+        :root {
+            --primary: #0284c7;
+            --primary-light: #e0f2fe;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --danger: #dc2626;
+            --whatsapp: #25D366;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+        .header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; }
+        .nav-links { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+        .nav-btn { background: #e2e8f0; color: var(--text); padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space: nowrap; border: none; cursor: pointer; }
+        .nav-btn.active { background: var(--primary); color: white; }
         
-        .section-card { border: 1px solid #e5e7eb; padding: 15px; border-radius: 6px; margin-bottom: 20px; background-color: #f9fafb; }
-        .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: end; }
-        .chart-container { height: 400px; margin-top: 20px; background: white; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; }
+        .section-card { background: var(--card); border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .section-title { font-size: 1.1em; color: var(--primary); font-weight: 700; margin-bottom: 15px; border-bottom: 2px solid var(--primary-light); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
-        th { background-color: #f3f4f6; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .form-group label { font-size: 0.85em; font-weight: 600; color: var(--text); }
+        .form-group input, .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; background: #f8fafc; }
         
-        .tabs { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; }
-        .tab { padding: 8px 16px; cursor: pointer; border-radius: 4px; font-weight: bold; color: #6b7280; }
-        .tab.active { background-color: #2563eb; color: white; }
-        .alert { background-color: #fef3c7; color: #92400e; padding: 10px; border-radius: 4px; display: none; margin-bottom: 15px; }
-        .export-btns { margin-top: 15px; display: flex; gap: 10px; }
-        .btn-green { background-color: #16a34a; }
-        .btn-green:hover { background-color: #15803d; }
+        .grid-6 { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+        
+        .btn-main { background: var(--success); color: white; padding: 10px 15px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; text-align: center; height: fit-content; align-self: flex-end; }
+        .btn-main:hover { opacity: 0.9; }
+
+        .btn-wa { background: var(--whatsapp); color: white; padding: 10px 15px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .btn-wa:hover { opacity: 0.9; }
+        .btn-export { background: #64748b; color: white; padding: 10px 15px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px;}
+        .btn-export:hover { opacity: 0.9; }
+        
+        .chart-container { position: relative; height: 400px; width: 100%; margin-top: 20px; margin-bottom: 20px; background: white; padding: 10px; border-radius: 8px; }
+        
+        #patientSelector { font-size: 1.1em; padding: 12px; border: 2px solid var(--primary); background: #f0f9ff; color: #0369a1; font-weight: bold; }
+
+        .history-table { width: 100%; border-collapse: collapse; font-size: 0.85em; margin-top: 15px; background: white; }
+        .history-table th, .history-table td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+        .history-table th { background: #f8fafc; color: var(--primary); }
+        .action-btn { background: transparent; border: none; font-size: 1.2em; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+        .action-btn:hover { background: #e2e8f0; }
+
+        .info-badge { background: #e0f2fe; color: #0369a1; padding: 8px 12px; border-radius: 8px; font-size: 0.85em; font-weight: 600; margin-bottom: 12px; display: inline-block; }
+
+        .export-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>📈 Suivi des Courbes</h1>
-    
-    <div class="form-group">
-        <label>Sélectionner un Patient :</label>
-        <select id="patientSelector" onchange="loadPatientData()">
-            <option value="">-- Chargement des patients... --</option>
-        </select>
+    <div class="header">
+        <div class="top-bar">
+            <h2 style="margin:0; color: var(--primary);">🏥 CPMC Debussy - Courbes</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="patients.html" class="nav-btn">🛏️ Lits / Hospitalisation</a>
+            <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
+            <a href="courbes.html" class="nav-btn active">📈 Courbes de Suivi</a>
+            <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
+            <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
+            <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
+        </div>
     </div>
 
-    <div id="patientInfoBadge" class="badge" style="display:none;"></div>
+    <!-- SÉLECTION DU PATIENT -->
+    <div class="section-card">
+        <div class="form-group" style="margin: 0;">
+            <label>Sélectionner un patient hospitalisé :</label>
+            <select id="patientSelector" onchange="loadPatientData()">
+                <option value="">-- Choisir un patient --</option>
+            </select>
+        </div>
+        <div id="patientInfoBadge" class="info-badge" style="display:none; margin-top:10px; margin-bottom:0;"></div>
+    </div>
 
-    <!-- SUIVI INTRAJOURNALIER -->
-    <div id="sectionIntraday" class="section-card" style="display:none;">
-        <h2>Suivi Intrajournalier (Température & Drain)</h2>
-        <div class="grid-inputs">
-            <div><label>Date</label><input type="date" id="intradayDate"></div>
-            <div>
-                <label>Mode de saisie</label>
+    <!-- 1. COURBE HORAIRE/DEMI-HORAIRE -->
+    <div class="section-card" id="sectionIntraday" style="display:none;">
+        <div class="section-title">⏱️ Suivi Intrajournalier (Température & Drain)</div>
+        
+        <div class="grid-6" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; align-items: end;">
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="intradayDate">
+            </div>
+            <div class="form-group">
+                <label>Mode</label>
                 <select id="modeSelect" onchange="updateTimeOptions()">
-                    <option value="horaire">Horaire fixe (12:00)</option>
-                    <option value="demi">Demi-heure (12:30)</option>
+                    <option value="horaire">Horaire</option>
+                    <option value="demi-horaire">Demi-horaire</option>
                 </select>
             </div>
-            <div><label>Heure</label><select id="timeSelect"></select></div>
-            <div><label>Température (°C)</label><input type="number" id="tempInput" step="0.1" placeholder="Ex: 37.5"></div>
-            <div><label>Drain (cc)</label><input type="number" id="drainInput" step="5" placeholder="Ex: 150"></div>
-            <div>
+            <div class="form-group">
+                <label>Heure</label>
+                <select id="timeSelect"></select>
+            </div>
+            <div class="form-group">
+                <label>T°C</label>
+                <input type="number" id="tempInput" step="0.1" placeholder="Ex: 37.5">
+            </div>
+            <div class="form-group">
+                <label>Drain (cc)</label>
+                <input type="number" id="drainInput" step="10" placeholder="Ex: 150">
+            </div>
+            <div class="form-group">
                 <label>Aspect</label>
                 <select id="aspectSelect">
-                    <option value="">--</option>
-                    <option value="Séreux">Séreux</option>
+                    <option value="">-- Aspect --</option>
                     <option value="Hémorragique">Hémorragique</option>
+                    <option value="Séreux">Séreux</option>
+                    <option value="Séro-hématique">Séro-hématique</option>
+                    <option value="Clair">Clair</option>
                     <option value="Purulent">Purulent</option>
+                    <option value="Chyleux">Chyleux</option>
+                    <option value="Biliaire">Biliaire</option>
+                    <option value="Urinaire">Urinaire</option>
                 </select>
             </div>
-            <div><button onclick="addIntradayData()">Ajouter / Modifier</button></div>
+            <button class="btn-main" onclick="addIntradayData()">➕ Enregistrer</button>
         </div>
 
-        <div class="chart-container"><canvas id="intradayChart"></canvas></div>
+        <div class="chart-container">
+            <canvas id="intradayChart"></canvas>
+        </div>
 
-        <table id="intradayTable" style="display:none;">
-            <thead><tr><th>Date</th><th>Heure</th><th>Temp.</th><th>Drain</th><th>Aspect</th><th>Actions</th></tr></thead>
-            <tbody id="intradayTableBody"></tbody>
-        </table>
+        <!-- Historique Intraday pour Modification/Suppression -->
+        <div style="overflow-x:auto;">
+            <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
+            <table class="history-table" id="intradayTable" style="display:none;">
+                <thead>
+                    <tr><th>Date</th><th>Heure</th><th>Température</th><th>Drain</th><th>Aspect</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="intradayTableBody"></tbody>
+            </table>
+        </div>
     </div>
 
-    <!-- SUIVI QUOTIDIEN -->
-    <div id="sectionDaily" class="section-card" style="display:none;">
-        <h2>Suivi Quotidien Post-Opératoire</h2>
+    <!-- 2. COURBE JOURNALIÈRE -->
+    <div class="section-card" id="sectionDaily" style="display:none;">
+        <div class="section-title">
+            <span>📅 Suivi Journalier (Post-Op)</span>
+        </div>
+
+        <!-- Boutons de sélection du type de courbe -->
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px;">
+            <button class="nav-btn active" id="tabDrain" onclick="setDailyTab('Drain')">🩸 Drain</button>
+            <button class="nav-btn" id="tabCRP" onclick="setDailyTab('CRP')">🦠 CRP</button>
+            <button class="nav-btn" id="tabHb" onclick="setDailyTab('Hb')">💉 Hémoglobine</button>
+            <button class="nav-btn" id="tabAll" onclick="setDailyTab('All')">📊 Toutes les courbes</button>
+        </div>
         
-        <div class="tabs">
-            <div id="tabDrain" class="tab active" onclick="setDailyTab('Drain')">Drain</div>
-            <div id="tabCRP" class="tab" onclick="setDailyTab('CRP')">CRP</div>
-            <div id="tabHb" class="tab" onclick="setDailyTab('Hb')">Hémoglobine</div>
-            <div id="tabAll" class="tab" onclick="setDailyTab('All')">Toutes les courbes</div>
-        </div>
-
-        <div id="allTabAlert" class="alert">
-            Mode "Toutes les courbes" : Affichage global uniquement. Sélectionnez un onglet spécifique pour ajouter des données.
-        </div>
-
-        <div id="dailyForm" class="grid-inputs">
-            <div><label>Jour</label><select id="daySelect"></select></div>
+        <div class="grid-4" id="dailyForm" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; align-items: end;">
+            <div class="form-group">
+                <label>Jour Post-Op</label>
+                <select id="daySelect"></select>
+            </div>
             
-            <div class="input-drain"><label>Total Drain (cc/24h)</label><input type="number" id="dailyDrainInput" step="10"></div>
-            <div class="input-drain">
-                <label>Aspect dominant</label>
+            <div class="form-group input-drain">
+                <label>Quantité totale (cc)</label>
+                <input type="number" id="dailyDrainInput" step="10" placeholder="Ex: 450">
+            </div>
+            <div class="form-group input-drain">
+                <label>Aspect principal</label>
                 <select id="dailyAspectSelect">
-                    <option value="">--</option>
-                    <option value="Séreux">Séreux</option>
+                    <option value="">-- Aspect --</option>
                     <option value="Hémorragique">Hémorragique</option>
+                    <option value="Séreux">Séreux</option>
+                    <option value="Séro-hématique">Séro-hématique</option>
+                    <option value="Clair">Clair</option>
                     <option value="Purulent">Purulent</option>
+                    <option value="Chyleux">Chyleux</option>
+                    <option value="Biliaire">Biliaire</option>
+                    <option value="Urinaire">Urinaire</option>
                 </select>
             </div>
-            
-            <div class="input-crp" style="display:none;"><label>CRP (mg/L)</label><input type="number" id="dailyCrpInput" step="1"></div>
-            
-            <div class="input-hb" style="display:none;"><label>Hémoglobine (g/dL)</label><input type="number" id="dailyHbInput" step="0.1"></div>
-            
-            <div><button onclick="addDailyData()">Enregistrer pour ce jour</button></div>
+
+            <div class="form-group input-crp" style="display:none;">
+                <label>CRP (mg/L)</label>
+                <input type="number" id="dailyCrpInput" step="0.1" placeholder="Ex: 12.5">
+            </div>
+
+            <div class="form-group input-hb" style="display:none;">
+                <label>Hémoglobine (g/dL)</label>
+                <input type="number" id="dailyHbInput" step="0.1" placeholder="Ex: 13.2">
+            </div>
+
+            <button class="btn-main" onclick="addDailyData()">➕ Enregistrer</button>
         </div>
 
-        <div class="export-btns">
-            <button class="btn-green" onclick="downloadJPG()">📥 Télécharger Image</button>
-            <button class="btn-green" onclick="shareChartNative()">📲 Partager (WhatsApp...)</button>
+        <!-- Alerte en mode 'Toutes' -->
+        <div id="allTabAlert" style="display:none; background: #e0f2fe; color: #0369a1; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.9em;">
+            ℹ️ Mode lecture seule. Sélectionnez un paramètre spécifique pour ajouter ou modifier des données.
         </div>
 
-        <div class="chart-container"><canvas id="dailyChart"></canvas></div>
+        <div class="chart-container">
+            <canvas id="dailyChart"></canvas>
+        </div>
 
-        <table id="dailyTable" style="display:none;">
-            <thead><tr><th>Jour</th><th>Date</th><th>Drain</th><th>Aspect</th><th>CRP</th><th>Hb</th><th>Actions</th></tr></thead>
-            <tbody id="dailyTableBody"></tbody>
-        </table>
+        <!-- BARRE D'EXPORTATION ET PARTAGE -->
+        <div class="export-bar">
+            <button class="btn-export" onclick="downloadJPG()">⬇️ Télécharger l'image</button>
+            <button class="btn-wa" onclick="shareChartNative()">📱 Partager la courbe</button>
+        </div>
+
+        <!-- Historique Journalier pour Modification/Suppression -->
+        <div style="overflow-x:auto;">
+            <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
+            <table class="history-table" id="dailyTable" style="display:none;">
+                <thead>
+                    <tr><th>Jour</th><th>Date</th><th>Drain total</th><th>Aspect</th><th>CRP</th><th>Hb</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="dailyTableBody"></tbody>
+            </table>
+        </div>
     </div>
 
-</div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
+            authDomain: "internes-debussy.firebaseapp.com",
+            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "internes-debussy",
+            storageBucket: "internes-debussy.firebasestorage.app",
+            messagingSenderId: "614550756274",
+            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
+        };
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
-        authDomain: "internes-debussy.firebaseapp.com",
-        databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "internes-debussy",
-        storageBucket: "internes-debussy.firebasestorage.app",
-        messagingSenderId: "614550756274",
-        appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
-    };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    let intradayChartInstance = null;
-    let dailyChartInstance = null;
-    let currentPatientKey = null;
-    let patientsDataMap = {};
-    let programmesOperatoiresData = {};
-    let currentPatientData = { intraday: {}, daily: {} };
-    
-    let currentDailyTab = 'Drain'; 
-
-    const todayISO = new Date().toISOString().split('T')[0];
-    document.getElementById('intradayDate').value = todayISO;
-
-    const topLabelsPlugin = {
-        id: 'topLabels',
-        afterDatasetsDraw(chart, args, pluginOptions) {
-            const { ctx } = chart;
-            chart.data.datasets.forEach((dataset, i) => {
-                const meta = chart.getDatasetMeta(i);
-                if (meta.hidden) return;
-                meta.data.forEach((element, index) => {
-                    const val = dataset.data[index];
-                    if (val !== null && val !== undefined && val !== '') {
-                        ctx.fillStyle = dataset.borderColor;
-                        ctx.font = 'bold 11px sans-serif';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'bottom';
-                        ctx.fillText(val, element.x, element.y - 8);
-                    }
-                });
-            });
-        }
-    };
-
-    window.setDailyTab = function(tab) {
-        currentDailyTab = tab;
+        let intradayChartInstance = null;
+        let dailyChartInstance = null;
+        let currentPatientKey = null;
+        let patientsDataMap = {};
+        let programmesOperatoiresData = {};
+        let currentPatientData = { intraday: {}, daily: {} };
         
-        document.getElementById('tabDrain').classList.remove('active');
-        document.getElementById('tabCRP').classList.remove('active');
-        document.getElementById('tabHb').classList.remove('active');
-        document.getElementById('tabAll').classList.remove('active');
-        document.getElementById('tab' + tab).classList.add('active');
-        
-        document.querySelectorAll('.input-drain').forEach(el => el.style.display = 'none');
-        document.querySelectorAll('.input-crp').forEach(el => el.style.display = 'none');
-        document.querySelectorAll('.input-hb').forEach(el => el.style.display = 'none');
-        
-        const dailyForm = document.getElementById('dailyForm');
-        const alertBox = document.getElementById('allTabAlert');
+        let currentDailyTab = 'Drain'; 
 
-        if(tab === 'All') {
-            dailyForm.style.display = 'none';
-            alertBox.style.display = 'block';
-        } else {
-            dailyForm.style.display = 'grid';
-            alertBox.style.display = 'none';
-            
-            if(tab === 'Drain') document.querySelectorAll('.input-drain').forEach(el => el.style.display = 'flex');
-            if(tab === 'CRP') document.querySelectorAll('.input-crp').forEach(el => el.style.display = 'flex');
-            if(tab === 'Hb') document.querySelectorAll('.input-hb').forEach(el => el.style.display = 'flex');
-        }
-        
-        renderDailyChart(currentPatientData.daily || {});
-    };
+        // Définir la date par défaut (Aujourd'hui)
+        const todayISO = new Date().toISOString().split('T')[0];
+        document.getElementById('intradayDate').value = todayISO;
 
-    function getPatientKey(p) {
-        if (p.numDossier && p.numDossier.trim()) return 'dos_' + p.numDossier.trim().replace(/[^a-zA-Z0-9]/g, '_');
-        const nomClean = (p.nom || 'PATIENT').trim().toUpperCase().replace(/[^a-zA-Z0-9]/g, '_');
-        const dobClean = (p.dob || p.dateEntree || '0000').replace(/[^a-zA-Z0-9]/g, '');
-        return 'pat_' + nomClean + '_' + dobClean;
-    }
-
-    function formatDate(dateStr) {
-        if (!dateStr) return "-";
-        const parts = dateStr.split('-');
-        if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        return dateStr;
-    }
-
-    function detectInterventionDate(patient) {
-        if (!patient) return "";
-        let dateStr = patient.dateIntervention || "";
-        if (!dateStr && patient.nom && programmesOperatoiresData) {
-            const nomCherche = patient.nom.toLowerCase().trim();
-            let datePlusRecente = "";
-            for (const dateKey in programmesOperatoiresData) {
-                const listeOps = programmesOperatoiresData[dateKey];
-                for (const index in listeOps) {
-                    const op = listeOps[index];
-                    const nomOp = (op.patientText || op.patient || op.nom || "").toLowerCase();
-                    if (nomOp.includes(nomCherche) && nomCherche !== "") {
-                        const statut = (op.status || op.statut || "").toLowerCase();
-                        if (!statut.includes("reprogramm") && !statut.includes("annul")) {
-                            if (dateKey > datePlusRecente) datePlusRecente = dateKey;
+        // --- PLUGIN CHART.JS POUR AFFICHER LES VALEURS AU-DESSUS DES POINTS ---
+        const topLabelsPlugin = {
+            id: 'topLabels',
+            afterDatasetsDraw(chart, args, pluginOptions) {
+                const { ctx } = chart;
+                chart.data.datasets.forEach((dataset, i) => {
+                    const meta = chart.getDatasetMeta(i);
+                    if (meta.hidden) return;
+                    meta.data.forEach((element, index) => {
+                        const val = dataset.data[index];
+                        if (val !== null && val !== undefined && val !== '') {
+                            ctx.fillStyle = dataset.borderColor;
+                            ctx.font = 'bold 11px sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+                            ctx.fillText(val, element.x, element.y - 8);
                         }
-                    }
-                }
+                    });
+                });
             }
-            if (datePlusRecente) dateStr = datePlusRecente;
-        }
-        return dateStr;
-    }
+        };
 
-    window.updateTimeOptions = function() {
-        const mode = document.getElementById('modeSelect').value;
-        const timeSelect = document.getElementById('timeSelect');
-        timeSelect.innerHTML = '';
-        
-        const now = new Date();
-        let currentHour = now.getHours();
-        let currentMinute = now.getMinutes();
-        let closestTime = "";
-        let minDiff = Infinity;
-
-        for (let h = 0; h < 24; h++) {
-            let hourStr = h.toString().padStart(2, '0');
-            let timesToAdd = mode === 'horaire' ? [`${hourStr}:00`] : [`${hourStr}:00`, `${hourStr}:30`];
+        // --- GESTION DES ONGLETS JOURNALIERS ---
+        window.setDailyTab = function(tab) {
+            currentDailyTab = tab;
             
-            timesToAdd.forEach(time => {
-                timeSelect.innerHTML += `<option value="${time}">${time}</option>`;
-                let [optH, optM] = time.split(':').map(Number);
-                let diff = Math.abs((currentHour * 60 + currentMinute) - (optH * 60 + optM));
-                if(diff < minDiff) { minDiff = diff; closestTime = time; }
-            });
-        }
-        if (closestTime) timeSelect.value = closestTime;
-    };
+            document.getElementById('tabDrain').classList.remove('active');
+            document.getElementById('tabCRP').classList.remove('active');
+            document.getElementById('tabHb').classList.remove('active');
+            document.getElementById('tabAll').classList.remove('active');
+            document.getElementById('tab' + tab).classList.add('active');
+            
+            document.querySelectorAll('.input-drain').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.input-crp').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.input-hb').forEach(el => el.style.display = 'none');
+            
+            const dailyForm = document.getElementById('dailyForm');
+            const alertBox = document.getElementById('allTabAlert');
 
-    window.addEventListener('DOMContentLoaded', updateTimeOptions);
-
-    onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
-        programmesOperatoiresData = snapshot.val() || {};
-        refreshPatientSelector();
-    });
-
-    onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
-        patientsDataMap = snapshot.val() || {};
-        refreshPatientSelector();
-    });
-
-    function refreshPatientSelector() {
-        const selector = document.getElementById('patientSelector');
-        const currentVal = selector.value;
-        selector.innerHTML = '<option value="">-- Choisir un patient --</option>';
-
-        Object.keys(patientsDataMap).forEach(bedId => {
-            const p = patientsDataMap[bedId];
-            if(p && p.nom) {
-                const pKey = getPatientKey(p);
-                selector.innerHTML += `<option value="${pKey}" data-bed="${bedId}">Lit ${bedId} - ${p.nom}</option>`;
-            }
-        });
-        if(currentVal) selector.value = currentVal;
-    }
-
-    function updateDaySelectOptions(dateInterventionStr) {
-        const daySelect = document.getElementById('daySelect');
-        daySelect.innerHTML = '';
-        let baseDate = null;
-        let defaultJ = "J0"; // Par défaut J0 si on ne trouve pas la date d'aujourd'hui
-        
-        // Date d'aujourd'hui sans les heures pour comparer correctement
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (dateInterventionStr && dateInterventionStr.split('-').length === 3) {
-            const [y, m, d] = dateInterventionStr.split('-').map(Number);
-            baseDate = new Date(y, m - 1, d);
-            baseDate.setHours(0, 0, 0, 0);
-        }
-
-        for (let i = 0; i <= 15; i++) {
-            let dayLabel = `J${i}`;
-            let dateDisplay = "";
-            if (baseDate) {
-                const d = new Date(baseDate);
-                d.setDate(d.getDate() + i);
-                const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-                dateDisplay = ` (${formatted})`;
+            if(tab === 'All') {
+                dailyForm.style.display = 'none';
+                alertBox.style.display = 'block';
+            } else {
+                dailyForm.style.display = 'grid';
+                alertBox.style.display = 'none';
                 
-                // Si la date calculée correspond à aujourd'hui, on mémorise ce "J"
-                if (d.getTime() === today.getTime()) {
-                    defaultJ = `J${i}`;
-                }
+                if(tab === 'Drain') document.querySelectorAll('.input-drain').forEach(el => el.style.display = 'flex');
+                if(tab === 'CRP') document.querySelectorAll('.input-crp').forEach(el => el.style.display = 'flex');
+                if(tab === 'Hb') document.querySelectorAll('.input-hb').forEach(el => el.style.display = 'flex');
             }
-            daySelect.innerHTML += `<option value="J${i}">J${i}${dateDisplay}</option>`;
-        }
-        
-        // Sélectionne automatiquement la date d'aujourd'hui dans la liste
-        daySelect.value = defaultJ;
-    }
-
-    window.loadPatientData = function() {
-        currentPatientKey = document.getElementById('patientSelector').value;
-        const badge = document.getElementById('patientInfoBadge');
-
-        if(!currentPatientKey) {
-            document.getElementById('sectionIntraday').style.display = 'none';
-            document.getElementById('sectionDaily').style.display = 'none';
-            badge.style.display = 'none';
-            return;
-        }
-
-        let patientObj = null, currentBedId = "";
-        Object.keys(patientsDataMap).forEach(bedId => {
-            const p = patientsDataMap[bedId];
-            if (p && getPatientKey(p) === currentPatientKey) {
-                patientObj = p; currentBedId = bedId;
-            }
-        });
-
-        if (patientObj) {
-            const interDate = detectInterventionDate(patientObj);
-            patientObj.detectedInterventionDate = interDate;
-            badge.innerHTML = `<span id="pNameText">👤 ${patientObj.nom}</span> | Lit : <b>${currentBedId}</b> | Date Intervention : <b>${interDate ? formatDate(interDate) : 'Non renseignée'}</b>`;
-            badge.style.display = 'inline-block';
-            updateDaySelectOptions(interDate);
-        } else {
-            badge.style.display = 'none';
-            updateDaySelectOptions("");
-        }
-
-        document.getElementById('sectionIntraday').style.display = 'block';
-        document.getElementById('sectionDaily').style.display = 'block';
-
-        onValue(ref(db, `suivi_courbes/${currentPatientKey}`), (snapshot) => {
-            currentPatientData = snapshot.val() || { intraday: {}, daily: {} };
-            renderIntradayChart(currentPatientData.intraday || {});
+            
             renderDailyChart(currentPatientData.daily || {});
-        });
-    };
+        };
 
-    window.addIntradayData = function() {
-        if(!currentPatientKey) return alert("Veuillez sélectionner un patient.");
-        const date = document.getElementById('intradayDate').value;
-        const time = document.getElementById('timeSelect').value;
-        const temp = parseFloat(document.getElementById('tempInput').value);
-        const drain = parseFloat(document.getElementById('drainInput').value);
-        const aspect = document.getElementById('aspectSelect').value;
-
-        if(!date) return alert("Veuillez choisir une date.");
-        if(isNaN(temp) && isNaN(drain)) return alert("Veuillez saisir au moins une valeur.");
-
-        const key = `${date}_${time.replace(':', '')}`;
-        set(ref(db, `suivi_courbes/${currentPatientKey}/intraday/${key}`), {
-            date: date, time: time, temp: isNaN(temp) ? null : temp, drain: isNaN(drain) ? null : drain, aspect: aspect || null
-        });
-
-        document.getElementById('tempInput').value = '';
-        document.getElementById('drainInput').value = '';
-        document.getElementById('aspectSelect').value = '';
-    };
-
-    window.addDailyData = function() {
-        if(!currentPatientKey) return alert("Veuillez sélectionner un patient.");
-        if(currentDailyTab === 'All') return; 
-        
-        const day = document.getElementById('daySelect').value;
-        const drain = parseFloat(document.getElementById('dailyDrainInput').value);
-        const aspect = document.getElementById('dailyAspectSelect').value;
-        const crp = parseFloat(document.getElementById('dailyCrpInput').value);
-        const hb = parseFloat(document.getElementById('dailyHbInput').value);
-
-        if(currentDailyTab === 'Drain' && isNaN(drain)) return alert("Veuillez saisir la quantité du drain.");
-        if(currentDailyTab === 'CRP' && isNaN(crp)) return alert("Veuillez saisir la valeur de la CRP.");
-        if(currentDailyTab === 'Hb' && isNaN(hb)) return alert("Veuillez saisir la valeur de l'Hémoglobine.");
-
-        const selectElem = document.getElementById('daySelect');
-        const selectedText = selectElem.options[selectElem.selectedIndex].text;
-        let dateAssociated = "";
-        if (selectedText.includes('(') && selectedText.includes(')')) {
-            dateAssociated = selectedText.split('(')[1].replace(')', '');
-        }
-
-        const existingData = currentPatientData.daily[day] || {};
-
-        set(ref(db, `suivi_courbes/${currentPatientKey}/daily/${day}`), {
-            day: day,
-            dateDisplay: dateAssociated,
-            drain: currentDailyTab === 'Drain' ? (isNaN(drain) ? null : drain) : (existingData.drain !== undefined ? existingData.drain : null),
-            aspect: currentDailyTab === 'Drain' ? (aspect || null) : (existingData.aspect || null),
-            crp: currentDailyTab === 'CRP' ? (isNaN(crp) ? null : crp) : (existingData.crp !== undefined ? existingData.crp : null),
-            hb: currentDailyTab === 'Hb' ? (isNaN(hb) ? null : hb) : (existingData.hb !== undefined ? existingData.hb : null)
-        });
-
-        if (currentDailyTab === 'Drain') {
-            document.getElementById('dailyDrainInput').value = ''; document.getElementById('dailyAspectSelect').value = '';
-        } else if (currentDailyTab === 'CRP') { document.getElementById('dailyCrpInput').value = ''; } 
-          else if (currentDailyTab === 'Hb') { document.getElementById('dailyHbInput').value = ''; }
-    };
-
-    window.editIntraday = function(key) {
-        const d = currentPatientData.intraday[key];
-        if(!d) return;
-        document.getElementById('intradayDate').value = d.date;
-        document.getElementById('timeSelect').innerHTML = `<option value="${d.time}">${d.time}</option>`;
-        document.getElementById('timeSelect').value = d.time;
-        document.getElementById('tempInput').value = d.temp || '';
-        document.getElementById('drainInput').value = d.drain || '';
-        document.getElementById('aspectSelect').value = d.aspect || '';
-        window.scrollTo(0, document.getElementById('sectionIntraday').offsetTop);
-    };
-
-    window.deleteIntraday = function(key) {
-        if(confirm("Voulez-vous vraiment supprimer cette donnée horaire ?")) {
-            remove(ref(db, `suivi_courbes/${currentPatientKey}/intraday/${key}`));
-        }
-    };
-
-    window.editDaily = function(day) {
-        const d = currentPatientData.daily[day];
-        if(!d) return;
-        document.getElementById('daySelect').value = day;
-        document.getElementById('dailyDrainInput').value = d.drain || '';
-        document.getElementById('dailyAspectSelect').value = d.aspect || '';
-        document.getElementById('dailyCrpInput').value = d.crp || '';
-        document.getElementById('dailyHbInput').value = d.hb || '';
-        window.scrollTo(0, document.getElementById('sectionDaily').offsetTop);
-    };
-
-    window.deleteDaily = function(day) {
-        if(confirm(`Voulez-vous vraiment supprimer les données du ${day} ?`)) {
-            remove(ref(db, `suivi_courbes/${currentPatientKey}/daily/${day}`));
-        }
-    };
-
-    function getChartImageBlob() {
-        return new Promise((resolve) => {
-            const chartCanvas = document.getElementById('dailyChart');
-            const destCanvas = document.createElement('canvas');
-            
-            const headerHeight = 70;
-            destCanvas.width = chartCanvas.width;
-            destCanvas.height = chartCanvas.height + headerHeight;
-            const ctx = destCanvas.getContext('2d');
-            
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, destCanvas.width, destCanvas.height);
-            
-            let pName = "Patient", pBed = "?", interDate = "";
-            if (currentPatientKey) {
-                Object.keys(patientsDataMap).forEach(bedId => {
-                    const p = patientsDataMap[bedId];
-                    if (getPatientKey(p) === currentPatientKey) {
-                        pName = p.nom;
-                        pBed = bedId;
-                        interDate = detectInterventionDate(p);
-                    }
-                });
+        // Générateur de clé unique patient (Délié du lit)
+        function getPatientKey(p) {
+            if (p.numDossier && p.numDossier.trim()) {
+                return 'dos_' + p.numDossier.trim().replace(/[^a-zA-Z0-9]/g, '_');
             }
-            
-            let jStr = "";
-            if (interDate && interDate.split('-').length === 3) {
-                const [y, m, d] = interDate.split('-').map(Number);
-                const opDate = new Date(y, m - 1, d);
-                const today = new Date();
-                opDate.setHours(0,0,0,0);
-                today.setHours(0,0,0,0);
-                const diffDays = Math.round((today - opDate) / (1000 * 60 * 60 * 24));
-                if (diffDays >= 0) {
-                    jStr = `J${diffDays} Post-Op`;
-                } else {
-                    jStr = `J${Math.abs(diffDays)} Pré-Op`;
-                }
-            } else {
-                jStr = "(Date d'intervention inconnue)";
-            }
-            
-            ctx.fillStyle = '#0369a1';
-            const fontSize = Math.max(20, Math.floor(destCanvas.width * 0.025));
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(`Lit : ${pBed} | Patient : ${pName} | ${jStr}`, destCanvas.width / 2, headerHeight / 2);
-            
-            ctx.drawImage(chartCanvas, 0, headerHeight);
-            
-            destCanvas.toBlob((blob) => {
-                resolve({
-                    blob: blob,
-                    dataUrl: destCanvas.toDataURL('image/jpeg', 1.0),
-                    fileName: `Courbes_${pName.replace(/\s+/g, '_')}_${jStr}.jpg`
-                });
-            }, 'image/jpeg', 1.0);
-        });
-    }
-
-    window.downloadJPG = async function() {
-        const { dataUrl, fileName } = await getChartImageBlob();
-        const link = document.createElement('a');
-        link.download = fileName;
-        link.href = dataUrl;
-        link.click();
-    };
-
-    window.shareChartNative = async function() {
-        const { blob, fileName } = await getChartImageBlob();
-        const file = new File([blob], fileName, { type: 'image/jpeg' });
-        try {
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    title: 'Courbes de suivi',
-                    files: [file]
-                });
-            } else {
-                throw new Error("Partage de fichier non supporté.");
-            }
-        } catch (error) {
-            alert("Le partage direct n'est pas supporté par votre navigateur. L'image va être téléchargée pour que vous puissiez l'envoyer manuellement sur WhatsApp.");
-            window.downloadJPG();
-        }
-    };
-
-    function renderIntradayChart(dataObj) {
-        const ctx = document.getElementById('intradayChart').getContext('2d');
-        const sortedKeys = Object.keys(dataObj).sort(); 
-        
-        const labels = sortedKeys.map(k => `${formatDate(dataObj[k].date)} ${dataObj[k].time}`);
-        const temps = sortedKeys.map(k => dataObj[k].temp);
-        const drains = sortedKeys.map(k => dataObj[k].drain);
-        const aspects = sortedKeys.map(k => dataObj[k].aspect || '');
-
-        if(intradayChartInstance) intradayChartInstance.destroy();
-        intradayChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    { label: 'Température (°C)', data: temps, borderColor: '#dc2626', backgroundColor: '#dc2626', yAxisID: 'yTemp', tension: 0.3, spanGaps: true },
-                    { label: 'Drain (cc)', data: drains, borderColor: '#0284c7', backgroundColor: '#0284c7', yAxisID: 'yDrain', tension: 0.3, spanGaps: true }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-                layout: { padding: { top: 25 } }, 
-                plugins: {
-                    tooltip: { callbacks: { label: function(c) { let l = c.dataset.label + ' : ' + c.parsed.y; if(c.datasetIndex === 1 && aspects[c.dataIndex]) l += ' ('+aspects[c.dataIndex]+')'; return l; } } }
-                },
-                scales: {
-                    yTemp: { type: 'linear', position: 'left', title: { display: true, text: 'Température (°C)' }, min: 35, max: 42 },
-                    yDrain: { type: 'linear', position: 'right', title: { display: true, text: 'Quantité Drain (cc)' }, min: 0, max: 1000, ticks: { stepSize: 50 }, grid: { drawOnChartArea: false } }
-                }
-            },
-            plugins: [topLabelsPlugin]
-        });
-
-        const tableBody = document.getElementById('intradayTableBody');
-        const table = document.getElementById('intradayTable');
-
-        if(sortedKeys.length === 0) { 
-            table.style.display = 'none'; 
-        } else {
-            table.style.display = 'table';
-            tableBody.innerHTML = sortedKeys.map(key => {
-                const d = dataObj[key];
-                return `<tr>
-                    <td>${formatDate(d.date)}</td>
-                    <td>${d.time}</td>
-                    <td>${d.temp !== undefined && d.temp !== null ? d.temp + ' °C' : '-'}</td>
-                    <td>${d.drain !== undefined && d.drain !== null ? d.drain + ' cc' : '-'}</td>
-                    <td>${d.aspect || '-'}</td>
-                    <td style="text-align:center; width:100px;">
-                        <button class="action-btn" onclick="editIntraday('${key}')" title="Modifier">✏️</button>
-                        <button class="action-btn" onclick="deleteIntraday('${key}')" title="Supprimer">🗑️</button>
-                    </td>
-                </tr>`;
-            }).join('');
-        }
-    }
-
-    function renderDailyChart(dataObj) {
-        const ctx = document.getElementById('dailyChart').getContext('2d');
-        const daysOrder = ['J0','J1','J2','J3','J4','J5','J6','J7','J8','J9','J10','J11','J12','J13','J14','J15'];
-        const labels = [];
-        
-        const dataDrain = [], dataCRP = [], dataHb = [], aspects = [];
-        
-        daysOrder.forEach(day => {
-            if(dataObj[day]) { 
-                const labelStr = dataObj[day].dateDisplay ? `${day} \n(${dataObj[day].dateDisplay})` : day;
-                labels.push(labelStr); 
-                
-                dataDrain.push(dataObj[day].drain);
-                dataCRP.push(dataObj[day].crp);
-                dataHb.push(dataObj[day].hb);
-                aspects.push(dataObj[day].aspect || '');
-            }
-        });
-
-        if(dailyChartInstance) dailyChartInstance.destroy();
-
-        let datasets = [];
-        let scales = { x: { ticks: { maxRotation: 0, minRotation: 0 } } };
-
-        if(currentDailyTab === 'All') {
-            datasets = [
-                { label: 'Drain (cc)', data: dataDrain, borderColor: '#ca8a04', backgroundColor: 'rgba(202, 138, 4, 0.1)', fill: false, tension: 0.3, yAxisID: 'yDrain' },
-                { label: 'CRP (mg/L)', data: dataCRP, borderColor: '#dc2626', backgroundColor: 'rgba(220, 38, 38, 0.1)', fill: false, tension: 0.3, yAxisID: 'yCRP' },
-                { label: 'Hb (g/dL)', data: dataHb, borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.1)', fill: false, tension: 0.3, yAxisID: 'yHb' }
-            ];
-            scales.yDrain = { type: 'linear', position: 'left', title: { display: true, text: 'Drain (cc)' }, suggestedMax: Math.max(...dataDrain.filter(v=>v!==null)) + 100 };
-            scales.yCRP = { type: 'linear', position: 'right', title: { display: true, text: 'CRP (mg/L)' }, grid: { drawOnChartArea: false }, suggestedMax: Math.max(...dataCRP.filter(v=>v!==null)) + 20 };
-            scales.yHb = { type: 'linear', position: 'right', title: { display: true, text: 'Hb (g/dL)' }, grid: { drawOnChartArea: false }, min: 5, max: 20 };
-        } else {
-            let dLabel = '', bColor = '', bgCol = '', yTitle = '', dPoints = [];
-            if(currentDailyTab === 'Drain') { dLabel = 'Drain (cc)'; bColor = '#ca8a04'; bgCol = 'rgba(202, 138, 4, 0.2)'; yTitle = 'Quantité (cc)'; dPoints = dataDrain; } 
-            else if(currentDailyTab === 'CRP') { dLabel = 'CRP (mg/L)'; bColor = '#dc2626'; bgCol = 'rgba(220, 38, 38, 0.2)'; yTitle = 'CRP (mg/L)'; dPoints = dataCRP; } 
-            else if(currentDailyTab === 'Hb') { dLabel = 'Hb (g/dL)'; bColor = '#0284c7'; bgCol = 'rgba(2, 132, 199, 0.2)'; yTitle = 'Hémoglobine (g/dL)'; dPoints = dataHb; }
-            
-            datasets = [{ label: dLabel, data: dPoints, borderColor: bColor, backgroundColor: bgCol, fill: true, tension: 0.3, pointRadius: 6, pointBackgroundColor: bColor }];
-            scales.y = { beginAtZero: true, title: { display: true, text: yTitle }, suggestedMax: Math.max(...dPoints.filter(v=>v!==null)) * 1.2 };
+            const nomClean = (p.nom || 'PATIENT').trim().toUpperCase().replace(/[^a-zA-Z0-9]/g, '_');
+            const dobClean = (p.dob || p.dateEntree || '0000').replace(/[^a-zA-Z0-9]/g, '');
+            return 'pat_' + nomClean + '_' + dobClean;
         }
 
-        dailyChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: { labels: labels, datasets: datasets },
-            options: { 
-                responsive: true, maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                layout: { padding: { top: 25 } }, 
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let l = `${context.dataset.label} : ${context.parsed.y}`;
-                                if(context.dataset.label.includes('Drain') && aspects[context.dataIndex]) l += ` (${aspects[context.dataIndex]})`;
-                                return l;
+        // Format de date JJ/MM/AAAA
+        function formatDate(dateStr) {
+            if (!dateStr) return "-";
+            const parts = dateStr.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            return dateStr;
+        }
+
+        // Recherche auto de la date d'intervention (dossier ou archives programmes)
+        function detectInterventionDate(patient) {
+            if (!patient) return "";
+            let dateStr = patient.dateIntervention || "";
+            if (!dateStr && patient.nom && programmesOperatoiresData) {
+                const nomCherche = patient.nom.toLowerCase().trim();
+                let datePlusRecente = "";
+                for (const dateKey in programmesOperatoiresData) {
+                    const listeOps = programmesOperatoiresData[dateKey];
+                    for (const index in listeOps) {
+                        const op = listeOps[index];
+                        const nomOp = (op.patientText || op.patient || op.nom || "").toLowerCase();
+                        if (nomOp.includes(nomCherche) && nomCherche !== "") {
+                            const statut = (op.status || op.statut || "").toLowerCase();
+                            if (!statut.includes("reprogramm") && !statut.includes("annul")) {
+                                if (dateKey > datePlusRecente) {
+                                    datePlusRecente = dateKey;
+                                }
                             }
                         }
                     }
-                },
-                scales: scales
-            },
-            plugins: [topLabelsPlugin] 
+                }
+                if (datePlusRecente) dateStr = datePlusRecente;
+            }
+            return dateStr;
+        }
+
+        // Générer les heures selon le mode
+        window.updateTimeOptions = function() {
+            const mode = document.getElementById('modeSelect').value;
+            const timeSelect = document.getElementById('timeSelect');
+            timeSelect.innerHTML = '';
+            
+            const now = new Date();
+            let currentHour = now.getHours();
+            let currentMinute = now.getMinutes();
+            let closestTime = "";
+            let minDiff = Infinity;
+
+            for (let h = 0; h < 24; h++) {
+                let hourStr = h.toString().padStart(2, '0');
+                let timesToAdd = mode === 'horaire' ? [`${hourStr}:00`] : [`${hourStr}:00`, `${hourStr}:30`];
+                
+                timesToAdd.forEach(time => {
+                    timeSelect.innerHTML += `<option value="${time}">${time}</option>`;
+                    let [optH, optM] = time.split(':').map(Number);
+                    let diff = Math.abs((currentHour * 60 + currentMinute) - (optH * 60 + optM));
+                    if(diff < minDiff) {
+                        minDiff = diff;
+                        closestTime = time;
+                    }
+                });
+            }
+            if (closestTime) timeSelect.value = closestTime;
+        };
+
+        window.addEventListener('DOMContentLoaded', updateTimeOptions);
+
+        // Écoute de la base de données : Dossiers Patients et Programmes Opératoires
+        onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
+            programmesOperatoiresData = snapshot.val() || {};
+            refreshPatientSelector();
         });
 
-        const tableBody = document.getElementById('dailyTableBody');
-        const table = document.getElementById('dailyTable');
-        const existingDays = daysOrder.filter(d => dataObj[d]);
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+            patientsDataMap = snapshot.val() || {};
+            refreshPatientSelector();
+        });
 
-        if(existingDays.length === 0) { table.style.display = 'none'; } 
-        else {
-            table.style.display = 'table';
-            tableBody.innerHTML = existingDays.map(day => {
-                const d = dataObj[day];
-                return `<tr>
-                    <td><b>${d.day}</b></td>
-                    <td>${d.dateDisplay || '-'}</td>
-                    <td>${d.drain !== undefined && d.drain !== null ? d.drain + ' cc' : '-'}</td>
-                    <td>${d.aspect || '-'}</td>
-                    <td>${d.crp !== undefined && d.crp !== null ? d.crp + ' mg/L' : '-'}</td>
-                    <td>${d.hb !== undefined && d.hb !== null ? d.hb + ' g/dL' : '-'}</td>
-                    <td style="text-align:center; width:100px;">
-                        <button class="action-btn" onclick="editDaily('${day}')" title="Modifier">✏️</button>
-                        <button class="action-btn" onclick="deleteDaily('${day}')" title="Supprimer">🗑️</button>
-                    </td>
-                </tr>`;
-            }).join('');
+        function refreshPatientSelector() {
+            const selector = document.getElementById('patientSelector');
+            const currentVal = selector.value;
+            selector.innerHTML = '<option value="">-- Choisir un patient --</option>';
+
+            Object.keys(patientsDataMap).forEach(bedId => {
+                const p = patientsDataMap[bedId];
+                if(p && p.nom) {
+                    const pKey = getPatientKey(p);
+                    selector.innerHTML += `<option value="${pKey}" data-bed="${bedId}">Lit ${bedId} - ${p.nom}</option>`;
+                }
+            });
+            if(currentVal) selector.value = currentVal;
         }
-    }
-</script>
+
+        // Mettre à jour les choix de J0, J1... avec les dates réelles calculées
+        function updateDaySelectOptions(dateInterventionStr) {
+            const daySelect = document.getElementById('daySelect');
+            daySelect.innerHTML = '';
+
+            let baseDate = null;
+            if (dateInterventionStr && dateInterventionStr.split('-').length === 3) {
+                const [y, m, d] = dateInterventionStr.split('-').map(Number);
+                baseDate = new Date(y, m - 1, d);
+            }
+
+            for (let i = 0; i <= 15; i++) {
+                let dayLabel = `J${i}`;
+                let dateDisplay = "";
+                if (baseDate) {
+                    const d = new Date(baseDate);
+                    d.setDate(d.getDate() + i);
+                    const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                    dateDisplay = ` (${formatted})`;
+                }
+                daySelect.innerHTML += `<option value="J${i}">J${i}${dateDisplay}</option>`;
+            }
+        }
+
+        window.loadPatientData = function() {
+            currentPatientKey = document.getElementById('patientSelector').value;
+            const badge = document.getElementById('patientInfoBadge');
+
+            if(!currentPatientKey) {
+                document.getElementById('sectionIntraday').style.display = 'none';
+                document.getElementById('sectionDaily').style.display = 'none';
+                badge.style.display = 'none';
+                return;
+            }
+
+            // Trouver le dossier patient correspondant
+            let patientObj = null;
+            let currentBedId = "";
+            Object.keys(patientsDataMap).forEach(bedId => {
+                const p = patientsDataMap[bedId];
+                if (p && getPatientKey(p) === currentPatientKey) {
+                    patientObj = p;
+                    currentBedId = bedId;
+                }
+            });
+
+            if (patientObj) {
+                const interDate = detectInterventionDate(patientObj);
+                patientObj.detectedInterventionDate = interDate;
+                badge.innerHTML = `👤 <b>${patientObj.nom}</b> | Lit : <b>${currentBedId}</b> | Date Intervention : <b>${interDate ? formatDate(interDate) : 'Non renseignée'}</b>`;
+                badge.style.display = 'inline-block';
+
+                updateDaySelectOptions(interDate);
+            } else {
+                badge.style.display = 'none';
+                updateDaySelectOptions("");
+            }
+
+            document.getElementById('sectionIntraday').style.display = 'block';
+            document.getElementById('sectionDaily').style.display = 'block';
+
+            // Écoute directe des courbes liées au PATIENT (et non au lit)
+            onValue(ref(db, `suivi_courbes/${currentPatientKey}`), (snapshot) => {
+                currentPatientData = snapshot.val() || { intraday: {}, daily: {} };
+                renderIntradayChart(currentPatientData.intraday || {});
+                renderDailyChart(currentPatientData.daily || {});
+            });
+        };
+
+        // --- SAUVEGARDE INTRADAY ---
+        window.addIntradayData = function() {
+            if(!currentPatientKey) return alert("Veuillez sélectionner un patient.");
+            
+            const date = document.getElementById('intradayDate').value;
+            const time = document.getElementById('timeSelect').value;
+            const temp = parseFloat(document.getElementById('tempInput').value);
+            const drain = parseFloat(document.getElementById('drainInput').value);
+            const aspect = document.getElementById('aspectSelect').value;
+
+            if(!date) return alert("Veuillez choisir une date.");
+            if(isNaN(temp) && isNaN(drain)) return alert("Veuillez saisir au moins une valeur (Température ou Drain).");
+
+            const key = `${date}_${time.replace(':', '')}`;
+
+            set(ref(db, `suivi_courbes/${currentPatientKey}/intraday/${key}`), {
+                date: date,
+                time: time,
+                temp: isNaN(temp) ? null : temp,
+                drain: isNaN(drain) ? null : drain,
+                aspect: aspect || null
+            });
+
+            document.getElementById('tempInput').value = '';
+            document.getElementById('drainInput').value = '';
+            document.getElementById('aspectSelect').value = '';
+        };
+
+        // --- SAUVEGARDE DAILY ---
+        window.addDailyData = function() {
+            if(!currentPatientKey) return alert("Veuillez sélectionner un patient.");
+            if(currentDailyTab === 'All') return;
+            
+            const day = document.getElementById('daySelect').value;
+            const drain = parseFloat(document.getElementById('dailyDrainInput').value);
+            const aspect = document.getElementById('dailyAspectSelect').value;
+            const crp = parseFloat(document.getElementById('dailyCrpInput').value);
+            const hb = parseFloat(document.getElementById('dailyHbInput').value);
+
+            if(currentDailyTab === 'Drain' && isNaN(drain)) return alert("Veuillez saisir la quantité du drain.");
+            if(currentDailyTab === 'CRP' && isNaN(crp)) return alert("Veuillez saisir la valeur de la CRP.");
+            if(currentDailyTab === 'Hb' && isNaN(hb)) return alert("Veuillez saisir la valeur de l'Hémoglobine.");
+
+            const selectElem = document.getElementById('daySelect');
+            const selectedText = selectElem.options[selectElem.selectedIndex].text;
+            let dateAssociated = "";
+            if (selectedText.includes('(') && selectedText.includes(')')) {
+                dateAssociated = selectedText.split('(')[1].replace(')', '');
+            }
+
+            const existingData = currentPatientData.daily[day] || {};
+
+            set(ref(db, `suivi_courbes/${currentPatientKey}/daily/${day}`), {
+                day: day,
+                dateDisplay: dateAssociated,
+                drain: currentDailyTab === 'Drain' ? (isNaN(drain) ? null : drain) : (existingData.drain !== undefined ? existingData.drain : null),
+                aspect: currentDailyTab === 'Drain' ? (aspect || null) : (existingData.aspect || null),
+                crp: currentDailyTab === 'CRP' ? (isNaN(crp) ? null : crp) : (existingData.crp !== undefined ? existingData.crp : null),
+                hb: currentDailyTab === 'Hb' ? (isNaN(hb) ? null : hb) : (existingData.hb !== undefined ? existingData.hb : null)
+            });
+
+            if (currentDailyTab === 'Drain') {
+                document.getElementById('dailyDrainInput').value = ''; document.getElementById('dailyAspectSelect').value = '';
+            } else if (currentDailyTab === 'CRP') { document.getElementById('dailyCrpInput').value = ''; } 
+              else if (currentDailyTab === 'Hb') { document.getElementById('dailyHbInput').value = ''; }
+        };
+
+        // --- EDIT & DELETE INTRADAY ---
+        window.editIntraday = function(key) {
+            const data = currentPatientData.intraday[key];
+            if(!data) return;
+            
+            document.getElementById('intradayDate').value = data.date || todayISO;
+            if(data.time && data.time.endsWith(':30')) {
+                document.getElementById('modeSelect').value = 'demi-horaire';
+                updateTimeOptions();
+            }
+            document.getElementById('timeSelect').value = data.time;
+            document.getElementById('tempInput').value = data.temp !== null ? data.temp : '';
+            document.getElementById('drainInput').value = data.drain !== null ? data.drain : '';
+            document.getElementById('aspectSelect').value = data.aspect || '';
+            
+            document.getElementById('sectionIntraday').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.deleteIntraday = function(key) {
+            if(confirm("Voulez-vous vraiment supprimer cet enregistrement intrajournalier ?")) {
+                remove(ref(db, `suivi_courbes/${currentPatientKey}/intraday/${key}`));
+            }
+        };
+
+        // --- EDIT & DELETE DAILY ---
+        window.editDaily = function(day) {
+            const data = currentPatientData.daily[day];
+            if(!data) return;
+            
+            document.getElementById('daySelect').value = data.day;
+            if(data.drain !== undefined && data.drain !== null) document.getElementById('dailyDrainInput').value = data.drain;
+            if(data.aspect) document.getElementById('dailyAspectSelect').value = data.aspect;
+            if(data.crp !== undefined && data.crp !== null) document.getElementById('dailyCrpInput').value = data.crp;
+            if(data.hb !== undefined && data.hb !== null) document.getElementById('dailyHbInput').value = data.hb;
+            
+            document.getElementById('sectionDaily').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.deleteDaily = function(day) {
+            if(confirm(`Voulez-vous vraiment supprimer le relevé du jour ${day} ?`)) {
+                remove(ref(db, `suivi_courbes/${currentPatientKey}/daily/${day}`));
+            }
+        };
+
+        // --- GESTION DE L'EXPORTATION DE L'IMAGE ET PARTAGE ---
+        function getChartImageBlob() {
+            return new Promise((resolve) => {
+                const chartCanvas = document.getElementById('dailyChart');
+                const destCanvas = document.createElement('canvas');
+                
+                const headerHeight = 70;
+                destCanvas.width = chartCanvas.width;
+                destCanvas.height = chartCanvas.height + headerHeight;
+                const ctx = destCanvas.getContext('2d');
+                
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, destCanvas.width, destCanvas.height);
+                
+                let pName = "Patient", pBed = "?", interDate = "";
+                if (currentPatientKey) {
+                    Object.keys(patientsDataMap).forEach(bedId => {
+                        const p = patientsDataMap[bedId];
+                        if (getPatientKey(p) === currentPatientKey) {
+                            pName = p.nom;
+                            pBed = bedId;
+                            interDate = detectInterventionDate(p);
+                        }
+                    });
+                }
+                
+                let jStr = "";
+                if (interDate && interDate.split('-').length === 3) {
+                    const [y, m, d] = interDate.split('-').map(Number);
+                    const opDate = new Date(y, m - 1, d);
+                    const today = new Date();
+                    opDate.setHours(0,0,0,0);
+                    today.setHours(0,0,0,0);
+                    
+                    const diffDays = Math.round((today - opDate) / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays >= 0) {
+                        jStr = `J${diffDays} Post-Op`;
+                    } else {
+                        jStr = `J${Math.abs(diffDays)} Pré-Op`;
+                    }
+                } else {
+                    jStr = "(Date d'intervention inconnue)";
+                }
+                
+                ctx.fillStyle = '#0369a1';
+                const fontSize = Math.max(20, Math.floor(destCanvas.width * 0.025));
+                ctx.font = `bold ${fontSize}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`Lit : ${pBed} | Patient : ${pName} | ${jStr} | Courbe: ${currentDailyTab}`, destCanvas.width / 2, headerHeight / 2);
+                
+                ctx.drawImage(chartCanvas, 0, headerHeight);
+                
+                destCanvas.toBlob((blob) => {
+                    resolve({
+                        blob: blob,
+                        dataUrl: destCanvas.toDataURL('image/jpeg', 1.0),
+                        fileName: `Courbes_${pName.replace(/\s+/g, '_')}_${jStr}.jpg`
+                    });
+                }, 'image/jpeg', 1.0);
+            });
+        }
+
+        window.downloadJPG = async function() {
+            const { dataUrl, fileName } = await getChartImageBlob();
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = dataUrl;
+            link.click();
+        };
+
+        window.shareChartNative = async function() {
+            const { blob, fileName } = await getChartImageBlob();
+            const file = new File([blob], fileName, { type: 'image/jpeg' });
+            
+            try {
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: 'Courbes de suivi',
+                        files: [file]
+                    });
+                } else {
+                    throw new Error("Partage de fichier non supporté.");
+                }
+            } catch (error) {
+                alert("Le partage direct n'est pas supporté par votre navigateur. L'image va être téléchargée pour que vous puissiez l'envoyer manuellement sur WhatsApp.");
+                window.downloadJPG();
+            }
+        };
+
+        // --- RENDU GRAPHIQUE & TABLEAU INTRADAY ---
+        function renderIntradayChart(dataObj) {
+            const ctx = document.getElementById('intradayChart').getContext('2d');
+            const sortedKeys = Object.keys(dataObj).sort(); 
+            
+            const labels = sortedKeys.map(k => {
+                const d = dataObj[k];
+                return `${formatDate(d.date)} ${d.time}`;
+            });
+            const temps = sortedKeys.map(k => dataObj[k].temp);
+            const drains = sortedKeys.map(k => dataObj[k].drain);
+            const aspects = sortedKeys.map(k => dataObj[k].aspect || '');
+
+            if(intradayChartInstance) intradayChartInstance.destroy();
+            intradayChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Température (°C)', data: temps, borderColor: '#dc2626', backgroundColor: '#dc2626', yAxisID: 'yTemp', tension: 0.3, spanGaps: true },
+                        { label: 'Drain (cc)', data: drains, borderColor: '#0284c7', backgroundColor: '#0284c7', yAxisID: 'yDrain', tension: 0.3, spanGaps: true }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        topLabels: {},
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ' : ';
+                                    if (context.parsed.y !== null) label += context.parsed.y;
+                                    if (context.datasetIndex === 1 && aspects[context.dataIndex]) label += ' (' + aspects[context.dataIndex] + ')';
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        yTemp: { type: 'linear', position: 'left', title: { display: true, text: 'Température (°C)' }, min: 35, max: 42 },
+                        yDrain: { type: 'linear', position: 'right', title: { display: true, text: 'Quantité Drain (cc)' }, min: 0, max: 1000, ticks: { stepSize: 50 }, grid: { drawOnChartArea: false } }
+                    }
+                },
+                plugins: [topLabelsPlugin]
+            });
+
+            const tableBody = document.getElementById('intradayTableBody');
+            const table = document.getElementById('intradayTable');
+            if(sortedKeys.length === 0) {
+                table.style.display = 'none';
+            } else {
+                table.style.display = 'table';
+                tableBody.innerHTML = sortedKeys.map(k => {
+                    const d = dataObj[k];
+                    return `<tr>
+                        <td>${formatDate(d.date)}</td>
+                        <td><b>${d.time}</b></td>
+                        <td>${d.temp !== null && d.temp !== undefined ? d.temp + ' °C' : '-'}</td>
+                        <td>${d.drain !== null && d.drain !== undefined ? d.drain + ' cc' : '-'}</td>
+                        <td>${d.aspect || '-'}</td>
+                        <td style="text-align:center;">
+                            <button class="action-btn" onclick="editIntraday('${k}')" title="Modifier">✏️</button>
+                            <button class="action-btn" onclick="deleteIntraday('${k}')" title="Supprimer">🗑️</button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
+        }
+
+        // --- RENDU GRAPHIQUE & TABLEAU DAILY ---
+        function renderDailyChart(dataObj) {
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            const daysOrder = ['J0','J1','J2','J3','J4','J5','J6','J7','J8','J9','J10','J11','J12','J13','J14','J15'];
+            const labels = [], drains = [], crps = [], hbs = [], aspects = [];
+            
+            daysOrder.forEach(day => {
+                if(dataObj[day]) { 
+                    const labelStr = dataObj[day].dateDisplay ? `${day} (${dataObj[day].dateDisplay})` : day;
+                    labels.push(labelStr); 
+                    drains.push(dataObj[day].drain);
+                    crps.push(dataObj[day].crp);
+                    hbs.push(dataObj[day].hb);
+                    aspects.push(dataObj[day].aspect || '');
+                }
+            });
+
+            let datasets = [];
+            if(currentDailyTab === 'Drain' || currentDailyTab === 'All') {
+                datasets.push({ label: 'Drain (cc)', data: drains, borderColor: '#ca8a04', backgroundColor: 'rgba(202, 138, 4, 0.2)', fill: false, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#ca8a04', yAxisID: 'yPrimary' });
+            }
+            if(currentDailyTab === 'CRP' || currentDailyTab === 'All') {
+                datasets.push({ label: 'CRP (mg/L)', data: crps, borderColor: '#dc2626', backgroundColor: '#dc2626', fill: false, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#dc2626', yAxisID: 'yPrimary' });
+            }
+            if(currentDailyTab === 'Hb' || currentDailyTab === 'All') {
+                datasets.push({ label: 'Hb (g/dL)', data: hbs, borderColor: '#0284c7', backgroundColor: '#0284c7', fill: false, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#0284c7', yAxisID: 'yHb' });
+            }
+
+            if(dailyChartInstance) dailyChartInstance.destroy();
+            dailyChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        topLabels: {},
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let l = `${context.dataset.label}: ${context.parsed.y}`;
+                                    if(context.dataset.label.includes('Drain') && aspects[context.dataIndex]) l += ` (${aspects[context.dataIndex]})`;
+                                    return l;
+                                }
+                            }
+                        }
+                    },
+                    scales: { 
+                        yPrimary: { type: 'linear', position: 'left', title: { display: true, text: 'Valeur (cc ou mg/L)' } },
+                        yHb: { type: 'linear', position: 'right', title: { display: true, text: 'Hémoglobine (g/dL)' }, grid: { drawOnChartArea: false }, min: 0, max: 20 }
+                    } 
+                },
+                plugins: [topLabelsPlugin]
+            });
+
+            // Mise à jour du tableau
+            const tableBody = document.getElementById('dailyTableBody');
+            const table = document.getElementById('dailyTable');
+            const existingDays = daysOrder.filter(d => dataObj[d]);
+
+            if(existingDays.length === 0) {
+                table.style.display = 'none';
+            } else {
+                table.style.display = 'table';
+                tableBody.innerHTML = existingDays.map(day => {
+                    const d = dataObj[day];
+                    return `<tr>
+                        <td><b>${d.day}</b></td>
+                        <td>${d.dateDisplay || '-'}</td>
+                        <td>${d.drain !== null && d.drain !== undefined ? d.drain + ' cc' : '-'}</td>
+                        <td>${d.aspect || '-'}</td>
+                        <td>${d.crp !== null && d.crp !== undefined ? d.crp : '-'}</td>
+                        <td>${d.hb !== null && d.hb !== undefined ? d.hb : '-'}</td>
+                        <td style="text-align:center; width:100px;">
+                            <button class="action-btn" onclick="editDaily('${day}')" title="Modifier">✏️</button>
+                            <button class="action-btn" onclick="deleteDaily('${day}')" title="Supprimer">🗑️</button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
+        }
+    </script>
 </body>
 </html>
