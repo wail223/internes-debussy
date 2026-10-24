@@ -22,7 +22,7 @@
         .header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; }
         .nav-links { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
-        .nav-btn { background: #e2e8f0; color: var(--text); padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space: nowrap; }
+        .nav-btn { background: #e2e8f0; color: var(--text); padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space: nowrap; border: none; cursor: pointer;}
         .nav-btn.active { background: var(--primary); color: white; }
         
         .section-card { background: var(--card); border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
@@ -80,7 +80,75 @@
         <div id="patientInfoBadge" class="info-badge" style="display:none; margin-top:10px; margin-bottom:0;"></div>
     </div>
 
-    <!-- 1. COURBE HORAIRE/DEMI-HORAIRE -->
+    <!-- 1. COURBE JOURNALIÈRE (Maintenant en haut) -->
+    <div class="section-card" id="sectionDaily" style="display:none;">
+        <div class="section-title">📅 Suivi Journalier (Post-Op)</div>
+        
+        <!-- Boutons de sélection du type de courbe -->
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="nav-btn active" id="tabDrain" onclick="setDailyTab('Drain')">🩸 Drain</button>
+            <button class="nav-btn" id="tabCRP" onclick="setDailyTab('CRP')">🦠 CRP</button>
+            <button class="nav-btn" id="tabHb" onclick="setDailyTab('Hb')">💉 Hémoglobine (Hb)</button>
+        </div>
+
+        <div class="grid-4" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; align-items: end;">
+            <div class="form-group">
+                <label>Jour Post-Op</label>
+                <select id="daySelect"></select>
+            </div>
+            
+            <!-- Champs pour le Drain -->
+            <div class="form-group input-drain">
+                <label>Quantité totale (cc)</label>
+                <input type="number" id="dailyDrainInput" step="10" placeholder="Ex: 450">
+            </div>
+            <div class="form-group input-drain">
+                <label>Aspect principal</label>
+                <select id="dailyAspectSelect">
+                    <option value="">-- Aspect --</option>
+                    <option value="Hémorragique">Hémorragique</option>
+                    <option value="Séreux">Séreux</option>
+                    <option value="Séro-hématique">Séro-hématique</option>
+                    <option value="Clair">Clair</option>
+                    <option value="Purulent">Purulent</option>
+                    <option value="Chyleux">Chyleux</option>
+                    <option value="Biliaire">Biliaire</option>
+                    <option value="Urinaire">Urinaire</option>
+                </select>
+            </div>
+
+            <!-- Champ pour la CRP -->
+            <div class="form-group input-crp" style="display:none;">
+                <label>CRP (mg/L)</label>
+                <input type="number" id="dailyCrpInput" step="0.1" placeholder="Ex: 12.5">
+            </div>
+
+            <!-- Champ pour l'Hémoglobine -->
+            <div class="form-group input-hb" style="display:none;">
+                <label>Hémoglobine (g/dL)</label>
+                <input type="number" id="dailyHbInput" step="0.1" placeholder="Ex: 13.2">
+            </div>
+
+            <button class="btn-main" onclick="addDailyData()">➕ Enregistrer</button>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="dailyChart"></canvas>
+        </div>
+
+        <!-- Historique Journalier -->
+        <div style="overflow-x:auto;">
+            <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
+            <table class="history-table" id="dailyTable" style="display:none;">
+                <thead>
+                    <tr><th>Jour</th><th>Date</th><th>Drain total</th><th>Aspect</th><th>CRP</th><th>Hb</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="dailyTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 2. COURBE HORAIRE/DEMI-HORAIRE (Maintenant en bas) -->
     <div class="section-card" id="sectionIntraday" style="display:none;">
         <div class="section-title">⏱️ Suivi Intrajournalier (Température & Drain)</div>
         
@@ -129,7 +197,7 @@
             <canvas id="intradayChart"></canvas>
         </div>
 
-        <!-- Historique Intraday pour Modification/Suppression -->
+        <!-- Historique Intraday -->
         <div style="overflow-x:auto;">
             <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
             <table class="history-table" id="intradayTable" style="display:none;">
@@ -137,52 +205,6 @@
                     <tr><th>Date</th><th>Heure</th><th>Température</th><th>Drain</th><th>Aspect</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="intradayTableBody"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- 2. COURBE JOURNALIÈRE -->
-    <div class="section-card" id="sectionDaily" style="display:none;">
-        <div class="section-title">📅 Suivi Journalier du Drain (Post-Op)</div>
-        
-        <div class="grid-4" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; align-items: end;">
-            <div class="form-group">
-                <label>Jour Post-Op</label>
-                <select id="daySelect"></select>
-            </div>
-            <div class="form-group">
-                <label>Quantité totale (cc)</label>
-                <input type="number" id="dailyDrainInput" step="10" placeholder="Ex: 450">
-            </div>
-            <div class="form-group">
-                <label>Aspect principal</label>
-                <select id="dailyAspectSelect">
-                    <option value="">-- Aspect --</option>
-                    <option value="Hémorragique">Hémorragique</option>
-                    <option value="Séreux">Séreux</option>
-                    <option value="Séro-hématique">Séro-hématique</option>
-                    <option value="Clair">Clair</option>
-                    <option value="Purulent">Purulent</option>
-                    <option value="Chyleux">Chyleux</option>
-                    <option value="Biliaire">Biliaire</option>
-                    <option value="Urinaire">Urinaire</option>
-                </select>
-            </div>
-            <button class="btn-main" onclick="addDailyData()">➕ Enregistrer</button>
-        </div>
-
-        <div class="chart-container">
-            <canvas id="dailyChart"></canvas>
-        </div>
-
-        <!-- Historique Journalier pour Modification/Suppression -->
-        <div style="overflow-x:auto;">
-            <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
-            <table class="history-table" id="dailyTable" style="display:none;">
-                <thead>
-                    <tr><th>Jour</th><th>Date</th><th>Drain total</th><th>Aspect</th><th>Actions</th></tr>
-                </thead>
-                <tbody id="dailyTableBody"></tbody>
             </table>
         </div>
     </div>
@@ -210,10 +232,39 @@
         let patientsDataMap = {};
         let programmesOperatoiresData = {};
         let currentPatientData = { intraday: {}, daily: {} };
+        
+        let currentDailyTab = 'Drain'; // Variable pour tracker l'onglet actif
 
         // Définir la date par défaut (Aujourd'hui)
         const todayISO = new Date().toISOString().split('T')[0];
         document.getElementById('intradayDate').value = todayISO;
+
+        // Fonction pour changer d'onglet
+        window.setDailyTab = function(tab) {
+            currentDailyTab = tab;
+            
+            // Mise à jour des boutons
+            document.getElementById('tabDrain').classList.remove('active');
+            document.getElementById('tabCRP').classList.remove('active');
+            document.getElementById('tabHb').classList.remove('active');
+            document.getElementById('tab' + tab).classList.add('active');
+            
+            // Affichage/Masquage des champs de saisie
+            document.querySelectorAll('.input-drain').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.input-crp').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.input-hb').forEach(el => el.style.display = 'none');
+            
+            if(tab === 'Drain') {
+                document.querySelectorAll('.input-drain').forEach(el => el.style.display = 'flex');
+            } else if(tab === 'CRP') {
+                document.querySelectorAll('.input-crp').forEach(el => el.style.display = 'flex');
+            } else if(tab === 'Hb') {
+                document.querySelectorAll('.input-hb').forEach(el => el.style.display = 'flex');
+            }
+            
+            // Rafraîchir le graphique avec la nouvelle donnée
+            renderDailyChart(currentPatientData.daily || {});
+        };
 
         // Générateur de clé unique patient (Délié du lit)
         function getPatientKey(p) {
@@ -225,7 +276,6 @@
             return 'pat_' + nomClean + '_' + dobClean;
         }
 
-        // Format de date JJ/MM/AAAA
         function formatDate(dateStr) {
             if (!dateStr) return "-";
             const parts = dateStr.split('-');
@@ -233,7 +283,6 @@
             return dateStr;
         }
 
-        // Recherche auto de la date d'intervention (dossier ou archives programmes)
         function detectInterventionDate(patient) {
             if (!patient) return "";
             let dateStr = patient.dateIntervention || "";
@@ -260,7 +309,6 @@
             return dateStr;
         }
 
-        // Générer les heures selon le mode
         window.updateTimeOptions = function() {
             const mode = document.getElementById('modeSelect').value;
             const timeSelect = document.getElementById('timeSelect');
@@ -291,7 +339,6 @@
 
         window.addEventListener('DOMContentLoaded', updateTimeOptions);
 
-        // Écoute de la base de données : Dossiers Patients et Programmes Opératoires
         onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
             programmesOperatoiresData = snapshot.val() || {};
             refreshPatientSelector();
@@ -317,7 +364,6 @@
             if(currentVal) selector.value = currentVal;
         }
 
-        // Mettre à jour les choix de J0, J1... avec les dates réelles calculées
         function updateDaySelectOptions(dateInterventionStr) {
             const daySelect = document.getElementById('daySelect');
             daySelect.innerHTML = '';
@@ -352,7 +398,6 @@
                 return;
             }
 
-            // Trouver le dossier patient correspondant
             let patientObj = null;
             let currentBedId = "";
             Object.keys(patientsDataMap).forEach(bedId => {
@@ -378,7 +423,6 @@
             document.getElementById('sectionIntraday').style.display = 'block';
             document.getElementById('sectionDaily').style.display = 'block';
 
-            // Écoute directe des courbes liées au PATIENT (et non au lit)
             onValue(ref(db, `suivi_courbes/${currentPatientKey}`), (snapshot) => {
                 currentPatientData = snapshot.val() || { intraday: {}, daily: {} };
                 renderIntradayChart(currentPatientData.intraday || {});
@@ -386,7 +430,6 @@
             });
         };
 
-        // --- SAUVEGARDE INTRADAY ---
         window.addIntradayData = function() {
             if(!currentPatientKey) return alert("Veuillez sélectionner un patient.");
             
@@ -414,17 +457,19 @@
             document.getElementById('aspectSelect').value = '';
         };
 
-        // --- SAUVEGARDE DAILY ---
         window.addDailyData = function() {
             if(!currentPatientKey) return alert("Veuillez sélectionner un patient.");
             
             const day = document.getElementById('daySelect').value;
             const drain = parseFloat(document.getElementById('dailyDrainInput').value);
             const aspect = document.getElementById('dailyAspectSelect').value;
+            const crp = parseFloat(document.getElementById('dailyCrpInput').value);
+            const hb = parseFloat(document.getElementById('dailyHbInput').value);
 
-            if(isNaN(drain)) return alert("Veuillez saisir la quantité du drain.");
+            if(currentDailyTab === 'Drain' && isNaN(drain)) return alert("Veuillez saisir la quantité du drain.");
+            if(currentDailyTab === 'CRP' && isNaN(crp)) return alert("Veuillez saisir la valeur de la CRP.");
+            if(currentDailyTab === 'Hb' && isNaN(hb)) return alert("Veuillez saisir la valeur de l'Hémoglobine.");
 
-            // Récupérer la date formatée associée au jour J0, J1...
             const selectElem = document.getElementById('daySelect');
             const selectedText = selectElem.options[selectElem.selectedIndex].text;
             let dateAssociated = "";
@@ -432,18 +477,29 @@
                 dateAssociated = selectedText.split('(')[1].replace(')', '');
             }
 
+            // Récupérer les données existantes pour ne pas les écraser
+            const existingData = currentPatientData.daily[day] || {};
+
             set(ref(db, `suivi_courbes/${currentPatientKey}/daily/${day}`), {
                 day: day,
                 dateDisplay: dateAssociated,
-                drain: drain,
-                aspect: aspect || null
+                drain: currentDailyTab === 'Drain' ? (isNaN(drain) ? null : drain) : (existingData.drain !== undefined ? existingData.drain : null),
+                aspect: currentDailyTab === 'Drain' ? (aspect || null) : (existingData.aspect || null),
+                crp: currentDailyTab === 'CRP' ? (isNaN(crp) ? null : crp) : (existingData.crp !== undefined ? existingData.crp : null),
+                hb: currentDailyTab === 'Hb' ? (isNaN(hb) ? null : hb) : (existingData.hb !== undefined ? existingData.hb : null)
             });
 
-            document.getElementById('dailyDrainInput').value = '';
-            document.getElementById('dailyAspectSelect').value = '';
+            // Vider les champs selon l'onglet actif
+            if (currentDailyTab === 'Drain') {
+                document.getElementById('dailyDrainInput').value = '';
+                document.getElementById('dailyAspectSelect').value = '';
+            } else if (currentDailyTab === 'CRP') {
+                document.getElementById('dailyCrpInput').value = '';
+            } else if (currentDailyTab === 'Hb') {
+                document.getElementById('dailyHbInput').value = '';
+            }
         };
 
-        // --- EDIT & DELETE INTRADAY ---
         window.editIntraday = function(key) {
             const data = currentPatientData.intraday[key];
             if(!data) return;
@@ -467,27 +523,28 @@
             }
         };
 
-        // --- EDIT & DELETE DAILY ---
         window.editDaily = function(day) {
             const data = currentPatientData.daily[day];
             if(!data) return;
+            
             document.getElementById('daySelect').value = data.day;
-            document.getElementById('dailyDrainInput').value = data.drain;
+            document.getElementById('dailyDrainInput').value = data.drain !== undefined && data.drain !== null ? data.drain : '';
             document.getElementById('dailyAspectSelect').value = data.aspect || '';
+            document.getElementById('dailyCrpInput').value = data.crp !== undefined && data.crp !== null ? data.crp : '';
+            document.getElementById('dailyHbInput').value = data.hb !== undefined && data.hb !== null ? data.hb : '';
             
             document.getElementById('sectionDaily').scrollIntoView({ behavior: 'smooth' });
         };
 
         window.deleteDaily = function(day) {
-            if(confirm(`Voulez-vous vraiment supprimer le relevé du jour ${day} ?`)) {
+            if(confirm(`Voulez-vous vraiment supprimer le relevé complet du jour ${day} ?`)) {
                 remove(ref(db, `suivi_courbes/${currentPatientKey}/daily/${day}`));
             }
         };
 
-        // --- RENDU GRAPHIQUE & TABLEAU INTRADAY ---
         function renderIntradayChart(dataObj) {
             const ctx = document.getElementById('intradayChart').getContext('2d');
-            const sortedKeys = Object.keys(dataObj).sort(); // Tri chronologique YYYY-MM-DD_HHMM
+            const sortedKeys = Object.keys(dataObj).sort(); 
             
             const labels = sortedKeys.map(k => {
                 const d = dataObj[k];
@@ -529,7 +586,6 @@
                 }
             });
 
-            // Mise à jour du tableau
             const tableBody = document.getElementById('intradayTableBody');
             const table = document.getElementById('intradayTable');
             if(sortedKeys.length === 0) {
@@ -553,27 +609,69 @@
             }
         }
 
-        // --- RENDU GRAPHIQUE & TABLEAU DAILY ---
+        // --- NOUVEAU RENDU GRAPHIQUE & TABLEAU DAILY ---
         function renderDailyChart(dataObj) {
             const ctx = document.getElementById('dailyChart').getContext('2d');
             const daysOrder = ['J0','J1','J2','J3','J4','J5','J6','J7','J8','J9','J10','J11','J12','J13','J14','J15'];
-            const labels = [], drains = [], aspects = [];
+            const labels = [], dataPoints = [], aspects = [];
             
+            // Préparer les données en fonction de l'onglet actif
             daysOrder.forEach(day => {
                 if(dataObj[day]) { 
                     const labelStr = dataObj[day].dateDisplay ? `${day} (${dataObj[day].dateDisplay})` : day;
                     labels.push(labelStr); 
-                    drains.push(dataObj[day].drain);
-                    aspects.push(dataObj[day].aspect || '');
+                    
+                    if(currentDailyTab === 'Drain') {
+                        dataPoints.push(dataObj[day].drain);
+                        aspects.push(dataObj[day].aspect || '');
+                    } else if (currentDailyTab === 'CRP') {
+                        dataPoints.push(dataObj[day].crp);
+                        aspects.push('');
+                    } else if (currentDailyTab === 'Hb') {
+                        dataPoints.push(dataObj[day].hb);
+                        aspects.push('');
+                    }
                 }
             });
+
+            let datasetLabel = '';
+            let borderColor = '';
+            let bgColor = '';
+            let yAxisTitle = '';
+
+            // Configuration esthétique par onglet
+            if(currentDailyTab === 'Drain') {
+                datasetLabel = 'Évolution du Drain (cc / jour)';
+                borderColor = '#ca8a04'; // Jaune/Or
+                bgColor = 'rgba(202, 138, 4, 0.2)';
+                yAxisTitle = 'Quantité (cc)';
+            } else if(currentDailyTab === 'CRP') {
+                datasetLabel = 'Évolution de la CRP (mg/L)';
+                borderColor = '#dc2626'; // Rouge
+                bgColor = 'rgba(220, 38, 38, 0.2)';
+                yAxisTitle = 'CRP (mg/L)';
+            } else if(currentDailyTab === 'Hb') {
+                datasetLabel = "Évolution de l'Hémoglobine (g/dL)";
+                borderColor = '#0284c7'; // Bleu
+                bgColor = 'rgba(2, 132, 199, 0.2)';
+                yAxisTitle = 'Hémoglobine (g/dL)';
+            }
 
             if(dailyChartInstance) dailyChartInstance.destroy();
             dailyChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{ label: 'Évolution du Drain (cc / jour)', data: drains, borderColor: '#ca8a04', backgroundColor: 'rgba(202, 138, 4, 0.2)', fill: true, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#ca8a04' }]
+                    datasets: [{ 
+                        label: datasetLabel, 
+                        data: dataPoints, 
+                        borderColor: borderColor, 
+                        backgroundColor: bgColor, 
+                        fill: true, 
+                        tension: 0.3, 
+                        pointRadius: 6, 
+                        pointBackgroundColor: borderColor 
+                    }]
                 },
                 options: { 
                     responsive: true, maintainAspectRatio: false,
@@ -581,18 +679,18 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    let l = `Drain : ${context.parsed.y} cc`;
-                                    if(aspects[context.dataIndex]) l += ` (${aspects[context.dataIndex]})`;
+                                    let l = `${context.dataset.label} : ${context.parsed.y}`;
+                                    if(currentDailyTab === 'Drain' && aspects[context.dataIndex]) l += ` (${aspects[context.dataIndex]})`;
                                     return l;
                                 }
                             }
                         }
                     },
-                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Quantité totale (cc)' } } } 
+                    scales: { y: { beginAtZero: true, title: { display: true, text: yAxisTitle } } } 
                 }
             });
 
-            // Mise à jour du tableau
+            // Mise à jour du tableau avec toutes les données
             const tableBody = document.getElementById('dailyTableBody');
             const table = document.getElementById('dailyTable');
             const existingDays = daysOrder.filter(d => dataObj[d]);
@@ -606,8 +704,10 @@
                     return `<tr>
                         <td><b>${d.day}</b></td>
                         <td>${d.dateDisplay || '-'}</td>
-                        <td>${d.drain} cc</td>
+                        <td>${d.drain !== undefined && d.drain !== null ? d.drain + ' cc' : '-'}</td>
                         <td>${d.aspect || '-'}</td>
+                        <td>${d.crp !== undefined && d.crp !== null ? d.crp + ' mg/L' : '-'}</td>
+                        <td>${d.hb !== undefined && d.hb !== null ? d.hb + ' g/dL' : '-'}</td>
                         <td style="text-align:center; width:100px;">
                             <button class="action-btn" onclick="editDaily('${day}')" title="Modifier">✏️</button>
                             <button class="action-btn" onclick="deleteDaily('${day}')" title="Supprimer">🗑️</button>
