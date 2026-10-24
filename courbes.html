@@ -310,10 +310,18 @@
         const daySelect = document.getElementById('daySelect');
         daySelect.innerHTML = '';
         let baseDate = null;
+        let defaultJ = "J0"; // Par défaut J0 si on ne trouve pas la date d'aujourd'hui
+        
+        // Date d'aujourd'hui sans les heures pour comparer correctement
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         if (dateInterventionStr && dateInterventionStr.split('-').length === 3) {
             const [y, m, d] = dateInterventionStr.split('-').map(Number);
             baseDate = new Date(y, m - 1, d);
+            baseDate.setHours(0, 0, 0, 0);
         }
+
         for (let i = 0; i <= 15; i++) {
             let dayLabel = `J${i}`;
             let dateDisplay = "";
@@ -322,9 +330,17 @@
                 d.setDate(d.getDate() + i);
                 const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
                 dateDisplay = ` (${formatted})`;
+                
+                // Si la date calculée correspond à aujourd'hui, on mémorise ce "J"
+                if (d.getTime() === today.getTime()) {
+                    defaultJ = `J${i}`;
+                }
             }
             daySelect.innerHTML += `<option value="J${i}">J${i}${dateDisplay}</option>`;
         }
+        
+        // Sélectionne automatiquement la date d'aujourd'hui dans la liste
+        daySelect.value = defaultJ;
     }
 
     window.loadPatientData = function() {
