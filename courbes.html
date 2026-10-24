@@ -56,7 +56,7 @@
 
         .info-badge { background: #e0f2fe; color: #0369a1; padding: 8px 12px; border-radius: 8px; font-size: 0.85em; font-weight: 600; margin-bottom: 12px; display: inline-block; }
 
-        .export-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 15px; }
+        .export-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -150,14 +150,8 @@
 
         <!-- BARRE D'EXPORTATION ET PARTAGE -->
         <div class="export-bar">
-            <button class="btn-export" onclick="downloadJPG()">⬇️ Télécharger JPG</button>
-            <div style="flex:1;"></div>
-            <div class="form-group" style="margin:0; min-width: 200px;">
-                <select id="contactSelectShare">
-                    <option value="">-- Choisir un contact --</option>
-                </select>
-            </div>
-            <button class="btn-wa" onclick="shareToWhatsApp()">📱 Envoyer</button>
+            <button class="btn-export" onclick="downloadJPG()">⬇️ Télécharger l'image</button>
+            <button class="btn-wa" onclick="shareChartNative()">📱 Partager la courbe</button>
         </div>
 
         <!-- Historique Journalier -->
@@ -260,30 +254,6 @@
 
         const todayISO = new Date().toISOString().split('T')[0];
         document.getElementById('intradayDate').value = todayISO;
-
-        // Fonction pour formater le numéro WhatsApp comme dans contacts.html
-        function formatWhatsAppNumber(phone) {
-            let cleaned = phone.replace(/\D/g, '');
-            if (cleaned.startsWith('0') && cleaned.length === 10) {
-                cleaned = '213' + cleaned.substring(1);
-            }
-            return cleaned;
-        }
-
-        // Récupérer les contacts pour la liste déroulante
-        onValue(ref(db, 'contacts_personnel/'), (snapshot) => {
-            const contactSelect = document.getElementById('contactSelectShare');
-            contactSelect.innerHTML = '<option value="">-- Choisir un contact --</option>';
-            const data = snapshot.val();
-            if(data) {
-                const contactsArray = Object.values(data);
-                contactsArray.sort((a, b) => a.nom.localeCompare(b.nom));
-                contactsArray.forEach(c => {
-                    const waNum = formatWhatsAppNumber(c.tel);
-                    contactSelect.innerHTML += `<option value="${waNum}">${c.titre} ${c.nom}</option>`;
-                });
-            }
-        });
 
         window.setDailyTab = function(tab) {
             currentDailyTab = tab;
@@ -531,56 +501,96 @@
         window.editDaily = function(day) { /*... inchangé ...*/ };
         window.deleteDaily = function(day) { /*... inchangé ...*/ };
 
-        // Export JPG
-        window.downloadJPG = function() {
-            const canvas = document.getElementById('dailyChart');
-            // Fond blanc forcé
-            const ctx = canvas.getContext('2d');
-            ctx.save(); ctx.globalCompositeOperation = 'destination-over'; ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
-            
-            const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+        // --- GESTION DE L'EXPORTATION DE L'IMAGE ET PARTAGE ---
+        function getChartImageBlob() {
+            return new Promise((resolve) => {
+                const chartCanvas = document.getElementById('dailyChart');
+                const destCanvas = document.createElement('canvas');
+                
+                // Calculer un espace pour l'entête
+                const headerHeight = 70;
+                destCanvas.width = chartCanvas.width;
+                destCanvas.height = chartCanvas.height + headerHeight;
+                const ctx = destCanvas.getContext('2d');
+                
+                // Fond blanc
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, destCanvas.width, destCanvas.height);
+                
+                // Récupérer les infos (Nom, Lit, J max)
+                let pName = "Patient", pBed = "?";
+                if (currentPatientKey) {
+                    Object.keys(patientsDataMap).forEach(bedId => {
+                        if (getPatientKey(patientsDataMap[bedId]) === currentPatientKey) {
+                            pName = patientsDataMap[bedId].nom;
+                            pBed = bedId;
+                        }
+                    });
+                }
+                
+                // Chercher le plus grand 'J' enregistré dans les courbes
+                let maxJ = -1;
+                if (currentPatientData && currentPatientData.daily) {
+                    Object.keys(currentPatientData.daily).forEach(d => {
+                        let num = parseInt(d.replace('J', ''));
+                        if(!isNaN(num) && num > maxJ) maxJ = num;
+                    });
+                }
+                const jStr = maxJ >= 0 ? `J${maxJ} Post-Op` : "";
+                
+                // Dessiner le texte de l'entête
+                ctx.fillStyle = '#0369a1';
+                // La police s'adapte à la résolution du graphique
+                const fontSize = Math.max(20, Math.floor(destCanvas.width * 0.025));
+                ctx.font = `bold ${fontSize}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`Lit : ${pBed} | Patient : ${pName} | ${jStr}`, destCanvas.width / 2, headerHeight / 2);
+                
+                // Dessiner le graphique en dessous de l'entête
+                ctx.drawImage(chartCanvas, 0, headerHeight);
+                
+                destCanvas.toBlob((blob) => {
+                    resolve({
+                        blob: blob,
+                        dataUrl: destCanvas.toDataURL('image/jpeg', 1.0),
+                        fileName: `Courbes_${pName.replace(/\s+/g, '_')}_J${maxJ}.jpg`
+                    });
+                }, 'image/jpeg', 1.0);
+            });
+        }
+
+        // Télécharger JPG
+        window.downloadJPG = async function() {
+            const { dataUrl, fileName } = await getChartImageBlob();
             const link = document.createElement('a');
-            link.download = `Courbes_Patient_${currentPatientKey}.jpg`;
+            link.download = fileName;
             link.href = dataUrl;
             link.click();
         };
 
-        // Partage WhatsApp
-        window.shareToWhatsApp = async function() {
-            const contactVal = document.getElementById('contactSelectShare').value;
-            if(!contactVal) return alert("Veuillez sélectionner un contact dans la liste.");
+        // Partage natif (qui ouvrira le menu OS avec WhatsApp, Mail, etc.)
+        window.shareChartNative = async function() {
+            const { blob, fileName } = await getChartImageBlob();
+            const file = new File([blob], fileName, { type: 'image/jpeg' });
             
-            const pNameEl = document.getElementById('pNameText');
-            const patientName = pNameEl ? pNameEl.innerText.replace('👤', '').trim() : "le patient";
-            const textMsg = `Voici les courbes de suivi (Bilan et Drains) pour ${patientName}.`;
-
-            const canvas = document.getElementById('dailyChart');
-            const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
-
             try {
-                const blob = await (await fetch(dataUrl)).blob();
-                const file = new File([blob], `courbes_${patientName}.jpg`, { type: 'image/jpeg' });
-
-                // Tente d'utiliser Web Share API si supporté par le navigateur (marche bien sur mobile et Mac/Safari)
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     await navigator.share({
                         title: 'Courbes de suivi',
-                        text: textMsg,
                         files: [file]
                     });
                 } else {
-                    throw new Error("API Share non supportée avec des fichiers.");
+                    throw new Error("Partage de fichier non supporté par ce navigateur.");
                 }
             } catch (error) {
-                // Fallback: Le navigateur (comme Chrome PC) bloque le partage direct de fichiers vers WhatsApp Web.
-                alert("Le partage direct d'image n'est pas supporté sur ce navigateur. L'image va être téléchargée. Vous pourrez ensuite l'ajouter manuellement dans la conversation WhatsApp qui va s'ouvrir.");
+                alert("Le partage direct n'est pas supporté par votre navigateur (souvent le cas sur PC). L'image va être téléchargée pour que vous puissiez l'envoyer manuellement.");
                 window.downloadJPG();
-                window.open(`https://wa.me/${contactVal}?text=${encodeURIComponent(textMsg)}`, '_blank');
             }
         };
 
         function renderIntradayChart(dataObj) {
-            /* ... (Code précédent identique) ... */
+            /* ... (Identique à précédemment si vous l'aviez complété) ... */
         }
 
         function renderDailyChart(dataObj) {
@@ -608,7 +618,6 @@
             let scales = { x: { ticks: { maxRotation: 0, minRotation: 0 } } };
 
             if(currentDailyTab === 'All') {
-                // Mode MULTI-COURBES
                 datasets = [
                     { label: 'Drain (cc)', data: dataDrain, borderColor: '#ca8a04', backgroundColor: 'rgba(202, 138, 4, 0.1)', fill: false, tension: 0.3, yAxisID: 'yDrain' },
                     { label: 'CRP (mg/L)', data: dataCRP, borderColor: '#dc2626', backgroundColor: 'rgba(220, 38, 38, 0.1)', fill: false, tension: 0.3, yAxisID: 'yCRP' },
@@ -618,7 +627,6 @@
                 scales.yCRP = { type: 'linear', position: 'right', title: { display: true, text: 'CRP (mg/L)' }, grid: { drawOnChartArea: false } };
                 scales.yHb = { type: 'linear', position: 'right', title: { display: true, text: 'Hb (g/dL)' }, grid: { drawOnChartArea: false }, min: 5, max: 20 };
             } else {
-                // Mode SINGLE-COURBE (Comportement précédent)
                 let dLabel = '', bColor = '', bgCol = '', yTitle = '', dPoints = [];
                 if(currentDailyTab === 'Drain') { dLabel = 'Drain (cc)'; bColor = '#ca8a04'; bgCol = 'rgba(202, 138, 4, 0.2)'; yTitle = 'Quantité (cc)'; dPoints = dataDrain; } 
                 else if(currentDailyTab === 'CRP') { dLabel = 'CRP (mg/L)'; bColor = '#dc2626'; bgCol = 'rgba(220, 38, 38, 0.2)'; yTitle = 'CRP (mg/L)'; dPoints = dataCRP; } 
@@ -649,7 +657,6 @@
                 }
             });
 
-            // Mise à jour du tableau
             const tableBody = document.getElementById('dailyTableBody');
             const table = document.getElementById('dailyTable');
             const existingDays = daysOrder.filter(d => dataObj[d]);
