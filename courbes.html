@@ -87,7 +87,7 @@
         <div id="patientInfoBadge" class="info-badge" style="display:none; margin-top:10px; margin-bottom:0;"></div>
     </div>
 
-    <!-- 1. COURBE JOURNALIÈRE (Placée en haut) -->
+    <!-- 1. COURBE JOURNALIÈRE -->
     <div class="section-card" id="sectionDaily" style="display:none;">
         <div class="section-title">
             <span>📅 Suivi Journalier (Post-Op)</span>
@@ -154,7 +154,7 @@
             <button class="btn-wa" onclick="shareChartNative()">📱 Partager la courbe</button>
         </div>
 
-        <!-- Historique Journalier pour Modification/Suppression -->
+        <!-- Historique Journalier -->
         <div style="overflow-x:auto;">
             <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
             <table class="history-table" id="dailyTable" style="display:none;">
@@ -166,7 +166,7 @@
         </div>
     </div>
 
-    <!-- 2. COURBE HORAIRE/DEMI-HORAIRE (Placée en bas) -->
+    <!-- 2. COURBE HORAIRE/DEMI-HORAIRE -->
     <div class="section-card" id="sectionIntraday" style="display:none;">
         <div class="section-title">⏱️ Suivi Intrajournalier (Température & Drain)</div>
         
@@ -215,7 +215,7 @@
             <canvas id="intradayChart"></canvas>
         </div>
 
-        <!-- Historique Intraday pour Modification/Suppression -->
+        <!-- Historique Intraday -->
         <div style="overflow-x:auto;">
             <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
             <table class="history-table" id="intradayTable" style="display:none;">
@@ -253,11 +253,9 @@
         
         let currentDailyTab = 'Drain'; 
 
-        // Définir la date par défaut (Aujourd'hui) pour intraday
         const todayISO = new Date().toISOString().split('T')[0];
         document.getElementById('intradayDate').value = todayISO;
 
-        // --- PLUGIN CHART.JS POUR AFFICHER LES VALEURS AU-DESSUS DES POINTS ---
         const topLabelsPlugin = {
             id: 'topLabels',
             afterDatasetsDraw(chart, args, pluginOptions) {
@@ -279,7 +277,6 @@
             }
         };
 
-        // --- GESTION DES ONGLETS JOURNALIERS ---
         window.setDailyTab = function(tab) {
             currentDailyTab = tab;
             
@@ -311,7 +308,6 @@
             renderDailyChart(currentPatientData.daily || {});
         };
 
-        // Générateur de clé unique patient
         function getPatientKey(p) {
             if (p.numDossier && p.numDossier.trim()) {
                 return 'dos_' + p.numDossier.trim().replace(/[^a-zA-Z0-9]/g, '_');
@@ -421,19 +417,17 @@
             if(currentVal) selector.value = currentVal;
         }
 
-        // Mettre à jour les choix de J0, J1... et sélectionner AUJOURD'HUI par défaut
         function updateDaySelectOptions(dateInterventionStr) {
             const daySelect = document.getElementById('daySelect');
             daySelect.innerHTML = '';
 
             let baseDate = null;
-            let todayJIndex = 0; // Par défaut sur J0 si pas de date
+            let todayJIndex = 0;
 
             if (dateInterventionStr && dateInterventionStr.split('-').length === 3) {
                 const [y, m, d] = dateInterventionStr.split('-').map(Number);
                 baseDate = new Date(y, m - 1, d);
                 
-                // Calculer l'index du jour actuel pour la sélection par défaut
                 const today = new Date();
                 today.setHours(0,0,0,0);
                 const opDateCheck = new Date(baseDate);
@@ -448,7 +442,6 @@
             }
 
             for (let i = 0; i <= 15; i++) {
-                let dayLabel = `J${i}`;
                 let dateDisplay = "";
                 if (baseDate) {
                     const d = new Date(baseDate);
@@ -511,26 +504,28 @@
             
             const date = document.getElementById('intradayDate').value;
             const time = document.getElementById('timeSelect').value;
-            const temp = parseFloat(document.getElementById('tempInput').value);
-            const drain = parseFloat(document.getElementById('drainInput').value);
+            const tempVal = document.getElementById('tempInput').value.trim();
+            const drainVal = document.getElementById('drainInput').value.trim();
+            const temp = tempVal !== "" ? parseFloat(tempVal) : null;
+            const drain = drainVal !== "" ? parseFloat(drainVal) : null;
             const aspect = document.getElementById('aspectSelect').value;
 
             if(!date) return alert("Veuillez choisir une date.");
-            if(isNaN(temp) && isNaN(drain)) return alert("Veuillez saisir au moins une valeur (Température ou Drain).");
+            if(temp === null && drain === null) return alert("Veuillez saisir au moins une valeur (Température ou Drain).");
 
             const key = `${date}_${time.replace(':', '')}`;
 
             set(ref(db, `suivi_courbes/${currentPatientKey}/intraday/${key}`), {
                 date: date,
                 time: time,
-                temp: isNaN(temp) ? null : temp,
-                drain: isNaN(drain) ? null : drain,
+                temp: temp,
+                drain: drain,
                 aspect: aspect || null
-            });
-
-            document.getElementById('tempInput').value = '';
-            document.getElementById('drainInput').value = '';
-            document.getElementById('aspectSelect').value = '';
+            }).then(() => {
+                document.getElementById('tempInput').value = '';
+                document.getElementById('drainInput').value = '';
+                document.getElementById('aspectSelect').value = '';
+            }).catch(err => alert("Erreur lors de l'enregistrement : " + err.message));
         };
 
         // --- SAUVEGARDE DAILY ---
@@ -539,14 +534,18 @@
             if(currentDailyTab === 'All') return;
             
             const day = document.getElementById('daySelect').value;
-            const drain = parseFloat(document.getElementById('dailyDrainInput').value);
+            const drainVal = document.getElementById('dailyDrainInput').value.trim();
             const aspect = document.getElementById('dailyAspectSelect').value;
-            const crp = parseFloat(document.getElementById('dailyCrpInput').value);
-            const hb = parseFloat(document.getElementById('dailyHbInput').value);
+            const crpVal = document.getElementById('dailyCrpInput').value.trim();
+            const hbVal = document.getElementById('dailyHbInput').value.trim();
 
-            if(currentDailyTab === 'Drain' && isNaN(drain)) return alert("Veuillez saisir la quantité du drain.");
-            if(currentDailyTab === 'CRP' && isNaN(crp)) return alert("Veuillez saisir la valeur de la CRP.");
-            if(currentDailyTab === 'Hb' && isNaN(hb)) return alert("Veuillez saisir la valeur de l'Hémoglobine.");
+            const drain = drainVal !== "" ? parseFloat(drainVal) : null;
+            const crp = crpVal !== "" ? parseFloat(crpVal) : null;
+            const hb = hbVal !== "" ? parseFloat(hbVal) : null;
+
+            if(currentDailyTab === 'Drain' && drain === null) return alert("Veuillez saisir la quantité du drain.");
+            if(currentDailyTab === 'CRP' && crp === null) return alert("Veuillez saisir la valeur de la CRP.");
+            if(currentDailyTab === 'Hb' && hb === null) return alert("Veuillez saisir la valeur de l'Hémoglobine.");
 
             const selectElem = document.getElementById('daySelect');
             const selectedText = selectElem.options[selectElem.selectedIndex].text;
@@ -555,21 +554,27 @@
                 dateAssociated = selectedText.split('(')[1].replace(')', '');
             }
 
-            const existingData = currentPatientData.daily[day] || {};
+            const existingData = (currentPatientData.daily && currentPatientData.daily[day]) ? currentPatientData.daily[day] : {};
 
-            set(ref(db, `suivi_courbes/${currentPatientKey}/daily/${day}`), {
+            const newData = {
                 day: day,
-                dateDisplay: dateAssociated,
-                drain: currentDailyTab === 'Drain' ? (isNaN(drain) ? null : drain) : (existingData.drain !== undefined ? existingData.drain : null),
+                dateDisplay: dateAssociated || existingData.dateDisplay || "",
+                drain: currentDailyTab === 'Drain' ? drain : (existingData.drain !== undefined ? existingData.drain : null),
                 aspect: currentDailyTab === 'Drain' ? (aspect || null) : (existingData.aspect || null),
-                crp: currentDailyTab === 'CRP' ? (isNaN(crp) ? null : crp) : (existingData.crp !== undefined ? existingData.crp : null),
-                hb: currentDailyTab === 'Hb' ? (isNaN(hb) ? null : hb) : (existingData.hb !== undefined ? existingData.hb : null)
-            });
+                crp: currentDailyTab === 'CRP' ? crp : (existingData.crp !== undefined ? existingData.crp : null),
+                hb: currentDailyTab === 'Hb' ? hb : (existingData.hb !== undefined ? existingData.hb : null)
+            };
 
-            if (currentDailyTab === 'Drain') {
-                document.getElementById('dailyDrainInput').value = ''; document.getElementById('dailyAspectSelect').value = '';
-            } else if (currentDailyTab === 'CRP') { document.getElementById('dailyCrpInput').value = ''; } 
-              else if (currentDailyTab === 'Hb') { document.getElementById('dailyHbInput').value = ''; }
+            set(ref(db, `suivi_courbes/${currentPatientKey}/daily/${day}`), newData).then(() => {
+                if (currentDailyTab === 'Drain') {
+                    document.getElementById('dailyDrainInput').value = ''; 
+                    document.getElementById('dailyAspectSelect').value = '';
+                } else if (currentDailyTab === 'CRP') { 
+                    document.getElementById('dailyCrpInput').value = ''; 
+                } else if (currentDailyTab === 'Hb') { 
+                    document.getElementById('dailyHbInput').value = ''; 
+                }
+            }).catch(err => alert("Erreur d'enregistrement : " + err.message));
         };
 
         // --- EDIT & DELETE INTRADAY ---
@@ -583,8 +588,8 @@
                 updateTimeOptions();
             }
             document.getElementById('timeSelect').value = data.time;
-            document.getElementById('tempInput').value = data.temp !== null ? data.temp : '';
-            document.getElementById('drainInput').value = data.drain !== null ? data.drain : '';
+            document.getElementById('tempInput').value = (data.temp !== null && data.temp !== undefined) ? data.temp : '';
+            document.getElementById('drainInput').value = (data.drain !== null && data.drain !== undefined) ? data.drain : '';
             document.getElementById('aspectSelect').value = data.aspect || '';
             
             document.getElementById('sectionIntraday').scrollIntoView({ behavior: 'smooth' });
@@ -616,7 +621,7 @@
             }
         };
 
-        // --- GESTION DE L'EXPORTATION DE L'IMAGE ET PARTAGE ---
+        // --- EXPORTATION ET PARTAGE ---
         function getChartImageBlob() {
             return new Promise((resolve) => {
                 const chartCanvas = document.getElementById('dailyChart');
@@ -642,7 +647,6 @@
                     });
                 }
                 
-                // Calcul Dynamique du J Post-Op pour l'image
                 let jStr = "";
                 if (interDate && interDate.split('-').length === 3) {
                     const [y, m, d] = interDate.split('-').map(Number);
@@ -700,15 +704,15 @@
                         files: [file]
                     });
                 } else {
-                    throw new Error("Partage de fichier non supporté.");
+                    throw new Error("Partage non supporté");
                 }
             } catch (error) {
-                alert("Le partage direct n'est pas supporté par votre navigateur. L'image va être téléchargée pour que vous puissiez l'envoyer manuellement.");
+                alert("Le partage direct n'est pas supporté. Téléchargement en cours...");
                 window.downloadJPG();
             }
         };
 
-        // --- RENDU GRAPHIQUE & TABLEAU INTRADAY ---
+        // --- RENDU INTRADAY ---
         function renderIntradayChart(dataObj) {
             const ctx = document.getElementById('intradayChart').getContext('2d');
             const sortedKeys = Object.keys(dataObj).sort(); 
@@ -778,7 +782,7 @@
             }
         }
 
-        // --- RENDU GRAPHIQUE & TABLEAU DAILY ---
+        // --- RENDU DAILY ---
         function renderDailyChart(dataObj) {
             const ctx = document.getElementById('dailyChart').getContext('2d');
             const daysOrder = ['J0','J1','J2','J3','J4','J5','J6','J7','J8','J9','J10','J11','J12','J13','J14','J15'];
@@ -788,9 +792,9 @@
                 if(dataObj[day]) { 
                     const labelStr = dataObj[day].dateDisplay ? `${day} (${dataObj[day].dateDisplay})` : day;
                     labels.push(labelStr); 
-                    drains.push(dataObj[day].drain);
-                    crps.push(dataObj[day].crp);
-                    hbs.push(dataObj[day].hb);
+                    drains.push(dataObj[day].drain !== undefined ? dataObj[day].drain : null);
+                    crps.push(dataObj[day].crp !== undefined ? dataObj[day].crp : null);
+                    hbs.push(dataObj[day].hb !== undefined ? dataObj[day].hb : null);
                     aspects.push(dataObj[day].aspect || '');
                 }
             });
