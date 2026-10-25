@@ -603,8 +603,39 @@
         buildGrid('grid-3', 301, 308);
         buildGrid('grid-rea', 1, 6, true);
 
-        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
-            patientsDb = snapshot.val() || {};
+        // NOUVELLE FONCTION GLOBALE POUR TROUVER TOUTES LES INTERVENTIONS D'UN PATIENT DEPUIS LE PROGRAMME
+        function getPatientInterventions(patient) {
+            let foundOps = [];
+            if (patient.nom && programmesOperatoiresData) {
+                const nomCherche = patient.nom.toLowerCase().trim();
+                for (const dateKey in programmesOperatoiresData) {
+                    const listeOps = programmesOperatoiresData[dateKey];
+                    for (const index in listeOps) {
+                        const op = listeOps[index];
+                        const nomOp = (op.patientText || op.patient || op.nom || "").toLowerCase();
+                        if (nomOp.includes(nomCherche) && nomCherche !== "") {
+                            const statut = (op.status || op.statut || "").toLowerCase();
+                            if (!statut.includes("reprogramm") && !statut.includes("annul")) {
+                                foundOps.push({ date: dateKey, intervention: op.intervention || "Geste non précisé" });
+                            }
+                        }
+                    }
+                }
+            }
+            const uniqueOps = [];
+            const seenDates = new Set();
+            for (const op of foundOps) {
+                if (!seenDates.has(op.date)) {
+                    seenDates.add(op.date);
+                    uniqueOps.push(op);
+                }
+            }
+            uniqueOps.sort((a, b) => a.date.localeCompare(b.date));
+            return uniqueOps;
+        }
+
+        // NOUVELLE FONCTION POUR METTRE À JOUR L'INTERFACE DES LITS
+        function updateBedsUI() {
             let countSurveillance = 0;
             let surveillanceHtml = '';
 
@@ -617,27 +648,36 @@
                 if(badgesDiv) badgesDiv.innerHTML = '';
                 
                 if(patientsDb[bedId] && patientsDb[bedId].nom) {
+                    const patient = patientsDb[bedId];
                     btn.classList.add('occupied');
                     
-                    const statut = patientsDb[bedId].statut;
+                    const statut = patient.statut;
                     if(statut === 'surveiller') {
                         btn.classList.add('status-surveiller');
                         countSurveillance++;
                         surveillanceHtml += `
                             <div class="surveillance-item" onclick="openModal('${bedId}')">
                                 <span class="surveillance-bed">Lit ${bedId}</span>
-                                <span class="surveillance-name">${patientsDb[bedId].nom}</span>
+                                <span class="surveillance-name">${patient.nom}</span>
                             </div>
                         `;
                     }
                     else if(statut === 'bloc') btn.classList.add('status-bloc');
                     else if(statut === 'postop') btn.classList.add('status-postop');
 
-                    if(nameSpan) nameSpan.textContent = patientsDb[bedId].nom.toUpperCase();
+                    if(nameSpan) nameSpan.textContent = patient.nom.toUpperCase();
 
                     if(badgesDiv) {
-                        const jHospi = calculateDaysDiff(patientsDb[bedId].dateEntree);
-                        const jChir = calculateDaysDiff(patientsDb[bedId].dateIntervention);
+                        const jHospi = calculateDaysDiff(patient.dateEntree);
+                        
+                        // FIX: Utiliser la date du programme opératoire s'il n'y a pas de date manuelle
+                        let dateChir = patient.dateIntervention;
+                        const ops = getPatientInterventions(patient);
+                        if (ops.length > 0) {
+                            dateChir = ops[0].date;
+                        }
+
+                        const jChir = calculateDaysDiff(dateChir);
 
                         let badgeHtml = '';
                         if (jHospi !== null) badgeHtml += `<span class="badge badge-hospi">J${jHospi} H</span>`;
@@ -652,10 +692,16 @@
 
             document.getElementById('surveillanceCount').textContent = countSurveillance;
             document.getElementById('surveillanceList').innerHTML = surveillanceHtml || '<span class="surveillance-empty">Aucun patient</span>';
+        }
+
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+            patientsDb = snapshot.val() || {};
+            updateBedsUI();
         });
 
         onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
             programmesOperatoiresData = snapshot.val() || {};
+            updateBedsUI(); // Met à jour les badges si le programme opératoire change
         });
 
         function formatDate(dateStr) {
@@ -665,57 +711,18 @@
             return dateStr;
         }
 
-        // NOUVELLE FONCTION POUR GERER PLUSIEURS INTERVENTIONS
+        // FONCTION MISE À JOUR POUR AFFICHER LES INTERVENTIONS (AVEC LE HELPER CENTRALISÉ)
         function getInterventionDisplayDate(patient) {
-            let foundOps = [];
-            
-            if (patient.nom && programmesOperatoiresData) {
-                const nomCherche = patient.nom.toLowerCase().trim();
-                for (const dateKey in programmesOperatoiresData) {
-                    const listeOps = programmesOperatoiresData[dateKey];
-                    for (const index in listeOps) {
-                        const op = listeOps[index];
-                        const nomOp = (op.patientText || op.patient || op.nom || "").toLowerCase();
-                        
-                        if (nomOp.includes(nomCherche) && nomCherche !== "") {
-                            const statut = (op.status || op.statut || "").toLowerCase();
-                            // On vérifie que ce n'est ni annulé, ni reprogrammé
-                            if (!statut.includes("reprogramm") && !statut.includes("annul")) {
-                                foundOps.push({ 
-                                    date: dateKey, 
-                                    intervention: op.intervention || "Geste non précisé" 
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Filtrer les doublons éventuels pour le même jour (par sécurité)
-            const uniqueOps = [];
-            const seenDates = new Set();
-            for (const op of foundOps) {
-                if (!seenDates.has(op.date)) {
-                    seenDates.add(op.date);
-                    uniqueOps.push(op);
-                }
-            }
-
-            // Trier par ordre chronologique (du plus ancien au plus récent)
-            uniqueOps.sort((a, b) => a.date.localeCompare(b.date));
+            const uniqueOps = getPatientInterventions(patient);
 
             if (uniqueOps.length > 0) {
                 const firstOp = uniqueOps[0];
                 const diffDays1 = calculateDaysDiff(firstOp.date);
                 const formattedDate1 = formatDate(firstOp.date);
                 
-                // 1. Affichage de la première date avec le J-
                 let result = (diffDays1 !== null) ? `(J${diffDays1}) ${formattedDate1}` : formattedDate1;
-
-                // 2. Ajout du type d'intervention en rouge juste en dessous
                 result += `<br><span style="color:var(--danger); font-size: 0.9em; font-weight: 600;">${firstOp.intervention}</span>`;
 
-                // 3. S'il y a une deuxième intervention maintenue, on ajoute J- devant la date
                 if (uniqueOps.length >= 2) {
                     const secondOp = uniqueOps[1];
                     const diffDays2 = calculateDaysDiff(secondOp.date);
@@ -727,7 +734,6 @@
                 return result;
             }
 
-            // Fallback (repli) si aucune opération trouvée dans le programme mais date insérée manuellement
             let dateStr = patient.dateIntervention || "";
             if (!dateStr) return "-";
             
