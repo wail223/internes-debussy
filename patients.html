@@ -708,16 +708,21 @@
                 const firstOp = uniqueOps[0];
                 const diffDays1 = calculateDaysDiff(firstOp.date);
                 const formattedDate1 = formatDate(firstOp.date);
+                
+                // 1. Affichage de la première date avec le J-
                 let result = (diffDays1 !== null) ? `(J${diffDays1}) ${formattedDate1}` : formattedDate1;
 
-                // S'il y a une deuxième intervention maintenue
+                // 2. Ajout du type d'intervention en rouge juste en dessous
+                result += `<br><span style="color:var(--danger); font-size: 0.9em; font-weight: 600;">${firstOp.intervention}</span>`;
+
+                // 3. S'il y a une deuxième intervention maintenue, on ajoute J- devant la date
                 if (uniqueOps.length >= 2) {
                     const secondOp = uniqueOps[1];
                     const diffDays2 = calculateDaysDiff(secondOp.date);
                     const formattedDate2 = formatDate(secondOp.date);
                     const jStr2 = diffDays2 !== null ? `(J${diffDays2}) ` : '';
                     
-                    result += `<br><span style="color:var(--danger); font-size: 0.9em;">(2ème : ${jStr2}${formattedDate2} - ${secondOp.intervention})</span>`;
+                    result += `<br><span style="color:var(--danger); font-size: 0.9em; font-weight: 600;">(2ème : ${jStr2}${formattedDate2} - ${secondOp.intervention})</span>`;
                 }
                 return result;
             }
