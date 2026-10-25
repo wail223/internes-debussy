@@ -20,7 +20,7 @@
         body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 50px; }
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .nav-btn { background: #e2e8f0; color: var(--text); padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.9em; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+        .nav-btn { background: #e2e8f0; color: var(--text); padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.9em; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; border: none; }
         .nav-btn:hover { background: #cbd5e1; }
         
         .btn-main { background: var(--primary); color: white; padding: 10px 16px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 0.95em; width: 100%; display: flex; justify-content: center; gap: 8px; }
@@ -31,11 +31,13 @@
 
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 20px; }
         .contact-card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 12px; border-left: 4px solid var(--primary); }
+        .contact-card.archived-card { border-left-color: var(--text-light); opacity: 0.85; }
         
         .contact-header { display: flex; align-items: center; gap: 12px; }
         .contact-icon { font-size: 2.5em; background: var(--bg); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .contact-info { flex: 1; }
-        .contact-name { margin: 0; font-size: 1.1em; font-weight: 700; color: var(--text); }
+        .contact-name { margin: 0; font-size: 1.1em; font-weight: 700; color: var(--text); display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+        .badge-archive { background: var(--danger); color: white; font-size: 0.65em; padding: 2px 6px; border-radius: 4px; font-weight: normal; }
         
         .action-icons { display: flex; gap: 4px; }
         .icon-btn { background: none; border: none; font-size: 1.1em; cursor: pointer; padding: 4px; border-radius: 4px; transition: background 0.2s; }
@@ -65,14 +67,17 @@
 <body>
 
     <div class="header">
-        <a href="index.html" class="nav-btn">🏠 Retour à l'accueil</a>
+        <div style="display:flex; gap:8px;">
+            <a href="index.html" class="nav-btn">🏠 Accueil</a>
+            <button id="btnArchiveToggle" class="nav-btn" onclick="toggleArchives()">🗄️ Archives</button>
+        </div>
         <h2 style="margin:0; color: var(--primary); font-size: 1.2em;">📞 Répertoire</h2>
     </div>
 
-    <button class="btn-main" onclick="openModal()">➕ Ajouter un nouveau contact</button>
+    <button id="btnAddContact" class="btn-main" onclick="openModal()">➕ Ajouter un nouveau contact</button>
     
     <!-- BARRE DE RECHERCHE -->
-    <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher un contact par nom..." onkeyup="searchContacts()">
+    <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Rechercher un contact par nom..." onkeyup="filterContacts()">
 
     <div class="grid" id="contactsGrid">
         <!-- Les contacts seront générés ici -->
@@ -135,6 +140,9 @@
         const db = getDatabase(app);
         const contactsRef = ref(db, 'contacts_personnel/');
 
+        // Variable d'état pour savoir si on regarde les archives ou non
+        window.showingArchives = false;
+
         function formatWhatsAppNumber(phone) {
             let cleaned = phone.replace(/\D/g, '');
             if (cleaned.startsWith('0') && cleaned.length === 10) {
@@ -164,24 +172,39 @@
                 const safeNom = encodeURIComponent(contact.nom);
                 const safeTel = encodeURIComponent(contact.tel);
                 const safeRemarque = encodeURIComponent(contact.remarque || '');
+                const isArchived = contact.archive === true;
 
                 const card = document.createElement('div');
-                card.className = 'contact-card';
-                // Attribut data-nom utilisé pour la recherche (on ignore le titre)
-                card.setAttribute('data-nom', contact.nom.toLowerCase());
+                card.className = isArchived ? 'contact-card archived-card' : 'contact-card';
                 
+                // Attributs pour la logique de filtrage
+                card.setAttribute('data-nom', contact.nom.toLowerCase());
+                card.setAttribute('data-archive', isArchived ? 'true' : 'false');
+                
+                const badgeArchive = isArchived ? `<span class="badge-archive">Archivé</span>` : '';
+                
+                // Si archivé, on affiche le bouton Restaurer, sinon Modifier/Archiver
+                let actionsIcons = '';
+                if(isArchived) {
+                    actionsIcons = `<button class="icon-btn" onclick="restoreContact('${contact.id}', '${safeNom}')" title="Restaurer ce contact">♻️</button>`;
+                } else {
+                    actionsIcons = `
+                        <button class="icon-btn" onclick="editContact('${contact.id}', '${contact.titre}', '${safeNom}', '${safeTel}', '${safeRemarque}')" title="Modifier">✏️</button>
+                        <button class="icon-btn" onclick="archiveContact('${contact.id}', '${safeNom}')" title="Archiver">🗑️</button>
+                    `;
+                }
+
                 card.innerHTML = `
                     <div class="contact-header">
                         <div class="contact-icon">${icon}</div>
                         <div class="contact-info">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                                 <div>
-                                    <h4 class="contact-name">${contact.titre} ${contact.nom}</h4>
+                                    <h4 class="contact-name">${contact.titre} ${contact.nom} ${badgeArchive}</h4>
                                     <div style="color: var(--text-light); font-size: 0.9em; margin-top: 4px;">📞 ${contact.tel}</div>
                                 </div>
                                 <div class="action-icons">
-                                    <button class="icon-btn" onclick="editContact('${contact.id}', '${contact.titre}', '${safeNom}', '${safeTel}', '${safeRemarque}')" title="Modifier">✏️</button>
-                                    <button class="icon-btn" onclick="deleteContact('${contact.id}', '${safeNom}')" title="Supprimer">🗑️</button>
+                                    ${actionsIcons}
                                 </div>
                             </div>
                         </div>
@@ -196,24 +219,54 @@
                 grid.appendChild(card);
             });
 
-            // Réappliquer la recherche si une recherche était en cours pendant une mise à jour de la DB
-            if(typeof window.searchContacts === 'function') {
-                window.searchContacts();
-            }
+            // On filtre l'affichage après chaque mise à jour Firebase
+            window.filterContacts();
         });
 
-        // FONCTION DE RECHERCHE
-        window.searchContacts = function() {
+        // FONCTION DE BASCULE ARCHIVES/ACTIFS
+        window.toggleArchives = function() {
+            window.showingArchives = !window.showingArchives;
+            
+            const btnToggle = document.getElementById('btnArchiveToggle');
+            const btnAdd = document.getElementById('btnAddContact');
+            
+            if(window.showingArchives) {
+                btnToggle.innerHTML = '📞 Contacts Actifs';
+                btnToggle.style.background = '#cbd5e1';
+                btnAdd.style.display = 'none'; // On cache le bouton d'ajout dans la vue archive
+            } else {
+                btnToggle.innerHTML = '🗄️ Archives';
+                btnToggle.style.background = '#e2e8f0';
+                btnAdd.style.display = 'flex';
+            }
+            
+            // Efface la recherche lorsqu'on change d'onglet
+            document.getElementById('searchInput').value = '';
+            window.filterContacts();
+        };
+
+        // FONCTION DE FILTRAGE (Recherche + Onglets)
+        window.filterContacts = function() {
             const query = document.getElementById('searchInput').value.toLowerCase();
+            const isSearching = query.length > 0;
             const cards = document.querySelectorAll('.contact-card');
             
             cards.forEach(card => {
                 const nom = card.getAttribute('data-nom');
-                // Affiche la carte si le nom contient la recherche, sinon la cache
-                if (nom && nom.includes(query)) {
-                    card.style.display = 'flex';
+                const isArchived = card.getAttribute('data-archive') === 'true';
+                
+                const matchSearch = nom && nom.includes(query);
+
+                if (isSearching) {
+                    // Si on est en train de rechercher, on affiche le contact s'il correspond (qu'il soit archivé ou non)
+                    card.style.display = matchSearch ? 'flex' : 'none';
                 } else {
-                    card.style.display = 'none';
+                    // Si on ne recherche pas, on obéit à l'onglet sélectionné
+                    if (window.showingArchives) {
+                        card.style.display = isArchived ? 'flex' : 'none';
+                    } else {
+                        card.style.display = isArchived ? 'none' : 'flex';
+                    }
                 }
             });
         };
@@ -271,6 +324,7 @@
                 });
             } else {
                 contactData.dateAjout = new Date().toISOString();
+                contactData.archive = false; // Par défaut non archivé
                 push(contactsRef, contactData).then(() => {
                     closeModal();
                 }).catch(error => {
@@ -280,10 +334,20 @@
             }
         };
 
-        window.deleteContact = function(id, safeNom) {
+        // REMPLACE deleteContact (Archivage virtuel)
+        window.archiveContact = function(id, safeNom) {
             const nom = decodeURIComponent(safeNom);
-            if(confirm(`Êtes-vous sûr de vouloir supprimer le contact de ${nom} ?`)) {
-                remove(ref(db, `contacts_personnel/${id}`));
+            if(confirm(`Êtes-vous sûr de vouloir archiver le contact de ${nom} ? Il sera déplacé dans les archives.`)) {
+                // Au lieu de remove(), on met à jour la propriété archive
+                update(ref(db, `contacts_personnel/${id}`), { archive: true });
+            }
+        };
+
+        // NOUVEAU: Restaurer un contact
+        window.restoreContact = function(id, safeNom) {
+            const nom = decodeURIComponent(safeNom);
+            if(confirm(`Voulez-vous restaurer le contact de ${nom} dans le répertoire actif ?`)) {
+                update(ref(db, `contacts_personnel/${id}`), { archive: false });
             }
         };
     </script>
