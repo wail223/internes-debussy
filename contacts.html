@@ -175,7 +175,10 @@
                         <div class="contact-icon">${icon}</div>
                         <div class="contact-info">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                                <h4 class="contact-name">${contact.titre} ${contact.nom}</h4>
+                                <div>
+                                    <h4 class="contact-name">${contact.titre} ${contact.nom}</h4>
+                                    <div style="color: var(--text-light); font-size: 0.9em; margin-top: 4px;">📞 ${contact.tel}</div>
+                                </div>
                                 <div class="action-icons">
                                     <button class="icon-btn" onclick="editContact('${contact.id}', '${contact.titre}', '${safeNom}', '${safeTel}', '${safeRemarque}')" title="Modifier">✏️</button>
                                     <button class="icon-btn" onclick="deleteContact('${contact.id}', '${safeNom}')" title="Supprimer">🗑️</button>
