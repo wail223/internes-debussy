@@ -665,42 +665,72 @@
             return dateStr;
         }
 
+        // NOUVELLE FONCTION POUR GERER PLUSIEURS INTERVENTIONS
         function getInterventionDisplayDate(patient) {
-            let dateStr = patient.dateIntervention || "";
+            let foundOps = [];
             
-            if (!dateStr && patient.nom && programmesOperatoiresData) {
+            if (patient.nom && programmesOperatoiresData) {
                 const nomCherche = patient.nom.toLowerCase().trim();
-                let datePlusRecente = "";
-                
                 for (const dateKey in programmesOperatoiresData) {
                     const listeOps = programmesOperatoiresData[dateKey];
                     for (const index in listeOps) {
                         const op = listeOps[index];
                         const nomOp = (op.patientText || op.patient || op.nom || "").toLowerCase();
+                        
                         if (nomOp.includes(nomCherche) && nomCherche !== "") {
                             const statut = (op.status || op.statut || "").toLowerCase();
-                            if (!statut.includes("reprogramm")) {
-                                if (dateKey > datePlusRecente) {
-                                    datePlusRecente = dateKey;
-                                }
+                            // On vérifie que ce n'est ni annulé, ni reprogrammé
+                            if (!statut.includes("reprogramm") && !statut.includes("annul")) {
+                                foundOps.push({ 
+                                    date: dateKey, 
+                                    intervention: op.intervention || "Geste non précisé" 
+                                });
                             }
                         }
                     }
                 }
-                if (datePlusRecente) {
-                    dateStr = datePlusRecente;
+            }
+
+            // Filtrer les doublons éventuels pour le même jour (par sécurité)
+            const uniqueOps = [];
+            const seenDates = new Set();
+            for (const op of foundOps) {
+                if (!seenDates.has(op.date)) {
+                    seenDates.add(op.date);
+                    uniqueOps.push(op);
                 }
             }
 
-            if (!dateStr) return "-";
+            // Trier par ordre chronologique (du plus ancien au plus récent)
+            uniqueOps.sort((a, b) => a.date.localeCompare(b.date));
 
+            if (uniqueOps.length > 0) {
+                const firstOp = uniqueOps[0];
+                const diffDays1 = calculateDaysDiff(firstOp.date);
+                const formattedDate1 = formatDate(firstOp.date);
+                let result = (diffDays1 !== null) ? `(J${diffDays1}) ${formattedDate1}` : formattedDate1;
+
+                // S'il y a une deuxième intervention maintenue
+                if (uniqueOps.length >= 2) {
+                    const secondOp = uniqueOps[1];
+                    const diffDays2 = calculateDaysDiff(secondOp.date);
+                    const formattedDate2 = formatDate(secondOp.date);
+                    const jStr2 = diffDays2 !== null ? `(J${diffDays2}) ` : '';
+                    
+                    result += `<br><span style="color:var(--danger); font-size: 0.9em;">(2ème : ${jStr2}${formattedDate2} - ${secondOp.intervention})</span>`;
+                }
+                return result;
+            }
+
+            // Fallback (repli) si aucune opération trouvée dans le programme mais date insérée manuellement
+            let dateStr = patient.dateIntervention || "";
+            if (!dateStr) return "-";
+            
             const diffDays = calculateDaysDiff(dateStr);
             const formattedDate = formatDate(dateStr);
-
             if (diffDays !== null) {
                 return `(J${diffDays}) ${formattedDate}`;
             }
-
             return formattedDate;
         }
 
@@ -809,7 +839,8 @@
                 document.getElementById('vProtocoleSortie').textContent = p.protocoleSortie ? '✅ Prêt' : '❌ Non fait';
 
                 document.getElementById('vDateEntree').textContent = formatDate(p.dateEntree);
-                document.getElementById('vDateIntervention').textContent = getInterventionDisplayDate(p);
+                // Utilisation de .innerHTML car nous injectons du HTML en rouge avec une balise span
+                document.getElementById('vDateIntervention').innerHTML = getInterventionDisplayDate(p);
                 document.getElementById('vDateSortie').textContent = formatDate(p.dateSortie);
                 document.getElementById('vDiag').textContent = p.diag || '-';
                 document.getElementById('vDecRea').textContent = p.decRea || '-';
