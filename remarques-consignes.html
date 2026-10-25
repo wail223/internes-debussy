@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Consignes & Relève - CPMC Debussy</title>
+    <title>Remarques & Consignes - CPMC Debussy</title>
     <script>
     if (!localStorage.getItem('cpmc_user')) {
         window.location.href = "login.html";
@@ -45,12 +45,12 @@
         .patient-name { font-weight: 700; font-size: 1em; color: var(--text); }
         
         .consigne-body { padding: 15px; font-size: 0.95em; line-height: 1.5; white-space: pre-line; color: #334155; }
-        .no-data { padding: 15px; font-style: italic; color: var(--text-light); text-align: center; }
         
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
         .empty-state h3 { margin-bottom: 5px; color: var(--text); }
 
-        .timestamp { display: inline-block; color: #0369a1; font-weight: 600; margin-right: 5px; }
+        /* NOUVEAU STYLE : Horodatage type "badge" propre (fond gris, texte foncé) */
+        .timestamp { display: inline-block; color: #1e293b; font-weight: 700; background: #f1f5f9; border: 1px solid #e2e8f0; padding: 2px 6px; border-radius: 4px; margin-right: 6px; font-size: 0.85em; }
 
         @media (max-width: 640px) {
             .consigne-header { flex-direction: column; align-items: flex-start; gap: 6px; }
@@ -59,16 +59,22 @@
 </head>
 <body>
 
-   <div class="nav-links">
-    <a href="index.html" class="nav-btn">🏠 Accueil</a>
-    <a href="patients.html" class="nav-btn">🛏️ Lits / Hospitalisation</a>
-    <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
-    <a href="courbes.html" class="nav-btn">📈 Courbes de Suivi</a>
-    <a href="remarques-consignes.html" class="nav-btn active">📝 Remarques et Consignes</a>
-    <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
-    <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
-    <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
-</div>
+    <div class="header">
+        <div class="top-bar">
+            <h2 style="margin:0; color: var(--primary);">📝 Remarques & Consignes</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="patients.html" class="nav-btn">🛏️ Lits / Hospitalisation</a>
+            <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
+            <a href="courbes.html" class="nav-btn">📈 Courbes de Suivi</a>
+            <a href="remarques-consignes.html" class="nav-btn active">📝 Remarques et Consignes</a>
+            <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
+            <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
+            <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
+        </div>
+    </div>
+
     <div class="filters">
         <button class="filter-btn active" onclick="setFilter('all', this)">Tous les secteurs</button>
         <button class="filter-btn" onclick="setFilter('4', this)">4ème Étage</button>
@@ -100,13 +106,11 @@
         let allPatients = [];
         let currentFilter = 'all';
 
-        // Tri personnalisé : Réa d'abord, puis 4ème étage, puis 3ème étage
         function sortBeds(a, b) {
             const isReaA = a.bedId.startsWith('REA');
             const isReaB = b.bedId.startsWith('REA');
             if (isReaA && !isReaB) return -1;
             if (!isReaA && isReaB) return 1;
-            
             return a.bedId.localeCompare(b.bedId, undefined, {numeric: true});
         }
 
@@ -114,16 +118,18 @@
             const container = document.getElementById('consignesList');
             container.innerHTML = '';
 
+            // FILTRER SEULEMENT LES PATIENTS AYANT DES REMARQUES NON VIDES
             const filteredPatients = allPatients.filter(p => {
-                if (currentFilter === 'all') return true;
-                return p.bedId.startsWith(currentFilter);
+                if (currentFilter !== 'all' && !p.bedId.startsWith(currentFilter)) return false;
+                if (!p.remarques || p.remarques.trim() === "") return false;
+                return true;
             });
 
             if (filteredPatients.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <h3>Aucun patient</h3>
-                        <p>Il n'y a actuellement aucun patient dans ce secteur.</p>
+                        <h3>Aucune remarque</h3>
+                        <p>Il n'y a actuellement aucune consigne enregistrée pour les patients de ce secteur.</p>
                     </div>`;
                 return;
             }
@@ -132,16 +138,22 @@
                 const card = document.createElement('div');
                 card.className = `consigne-card status-${p.statut || 'normal'}`;
                 
-                // Formater les remarques (mettre en gras les horodatages "• Pseudo JJ/MM HH:MM :")
                 let remarquesFormatees = p.remarques || '';
-                if (remarquesFormatees) {
-                    // Échapper le HTML pour éviter les failles XSS
-                    remarquesFormatees = remarquesFormatees.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                    // Remplacer les tirets d'horodatage par du HTML stylisé
-                    remarquesFormatees = remarquesFormatees.replace(/(• [^:]+:)/g, '<span class="timestamp">$1</span>');
-                } else {
-                    remarquesFormatees = `<div class="no-data">Aucune remarque enregistrée pour ce patient.</div>`;
-                }
+                
+                // 1. Nettoyage des grands espaces vides (bug de la capture d'écran)
+                remarquesFormatees = remarquesFormatees
+                    .split('\n')
+                    .map(line => line.replace(/[ \t]+/g, ' ').trim()) // Transforme les grands espaces/tabs en 1 seul espace
+                    .filter(line => line !== '') // Enlève les lignes 100% vides
+                    .join('\n');
+
+                // 2. Échapper le HTML
+                remarquesFormatees = remarquesFormatees.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                
+                // 3. Mise en forme de l'horodatage stricte
+                // Le regex prend uniquement le point (•), suivi de 2 à 45 caractères maximum, puis un (:)
+                // Ceci empêche de colorer les phrases entières si l'utilisateur oublie un (:)
+                remarquesFormatees = remarquesFormatees.replace(/(• [^\n]{2,45}:)/g, '<span class="timestamp">$1</span>');
 
                 card.innerHTML = `
                     <div class="consigne-header" onclick="window.location.href='patients.html?bedId=${p.bedId}'" style="cursor:pointer;" title="Ouvrir le dossier">
