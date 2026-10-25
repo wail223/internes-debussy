@@ -146,21 +146,26 @@
     const aichaAnchorDate = Date.UTC(2026, 9, 16); 
     const finPenaliteNoussaiba = Date.UTC(2026, 9, 23); 
 
-    // Dictionnaire des dates de TD (chaque dimanche dès le 18/10/2026 avec échange Waël / Lylia)
+    // Liste des jours fériés (même comportement qu'un week-end : seule la garde est présente)
+    const joursFeries = [
+        "2026-11-01" // 1er Novembre (Fête de la Révolution)
+    ];
+
+    // Dictionnaire des dates de TD (chaque dimanche dès le 18/10/2026, en sautant le 01/11 férié)
     const tdSchedule = {
         "2026-10-18": "Waël",      // 1. KERMEZLI (remplacée par Waël)
         "2026-10-25": "Ikram",     // 2. YAZA
-        "2026-11-01": "Baya",      // 3. LARAS
-        "2026-11-08": "Lylia",     // 4. ALIOUET (remplacé par Lylia / Kermezli)
-        "2026-11-15": "Noussaiba", // 5. BOUNECHE
-        "2026-11-22": "Yassamine", // 6. NASRI
-        "2026-11-29": "Lylia",     // 7. KERMEZLI
-        "2026-12-06": "Ikram",     // 8. YAZA
-        "2026-12-13": "Baya",      // 9. LARAS
-        "2026-12-20": "Waël",      // 10. ALIOUET
-        "2026-12-27": "Noussaiba", // 11. BOUNECHE
-        "2027-01-03": "Yassamine", // 12. NASRI
-        "2027-01-10": "Lylia"      // 13. KERMEZLI
+        "2026-11-08": "Baya",      // 3. LARAS (décalé car 01/11 férié)
+        "2026-11-15": "Lylia",     // 4. ALIOUET (remplacé par Lylia / Kermezli)
+        "2026-11-22": "Noussaiba", // 5. BOUNECHE
+        "2026-11-29": "Yassamine", // 6. NASRI
+        "2026-12-06": "Lylia",     // 7. KERMEZLI
+        "2026-12-13": "Ikram",     // 8. YAZA
+        "2026-12-20": "Baya",      // 9. LARAS
+        "2026-12-27": "Waël",      // 10. ALIOUET
+        "2027-01-03": "Noussaiba", // 11. BOUNECHE
+        "2027-01-10": "Yassamine", // 12. NASRI
+        "2027-01-17": "Lylia"      // 13. KERMEZLI
     };
 
     let blocOverrides = {}; 
@@ -259,7 +264,8 @@
             let pgIdx = (gardeIdx - 1 + 6) % 6;
             
             let dayOfWeek = loopDate.getUTCDay();
-            let isWeekend = (dayOfWeek === 5 || dayOfWeek === 6);
+            let isFerie = joursFeries.includes(dateKey);
+            let isWeekend = (dayOfWeek === 5 || dayOfWeek === 6 || isFerie);
             let isTuesday = (dayOfWeek === 2);
             let isAicha = (((Math.floor(Math.floor((loopDate.getTime() - aichaAnchorDate)/86400000) / 2)) % 2) + 2) % 2 === 0;
             
@@ -371,7 +377,8 @@
                 `;
             };
 
-            let dateStr = `<strong>${joursSemaine[dayOfWeek]}</strong><br>${loopDate.getUTCDate().toString().padStart(2, '0')}/${(loopDate.getUTCMonth()+1).toString().padStart(2, '0')}`;
+            let feriesLabel = isFerie ? ' <span style="font-size:11px; color:#b91c1c; font-weight:bold;">(Férié)</span>' : '';
+            let dateStr = `<strong>${joursSemaine[dayOfWeek]}</strong>${feriesLabel}<br>${loopDate.getUTCDate().toString().padStart(2, '0')}/${(loopDate.getUTCMonth()+1).toString().padStart(2, '0')}`;
             let infirmiereStr = isAicha ? '<span class="inf-aicha">Aïcha</span>' : '<span class="inf-hakima">Hakima</span>';
             let gardeBadgeHtml = `<span class="badge-garde ${targetName && internes[gardeIdx] === targetName ? 'highlight-text' : ''}">${internes[gardeIdx]}</span>`;
 
