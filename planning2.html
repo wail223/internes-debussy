@@ -202,17 +202,26 @@
                     let int1 = row['Interne 1'] || row['interne 1'] || row['Int1'];
                     let int2 = row['Interne 2'] || row['interne 2'] || row['Int2'];
 
-                    if (dateVal && int1) {
-                        let isoDate = dateVal;
-                        if (dateVal.includes('/')) {
-                            let parts = dateVal.split('/');
+                    // Modification ici : On accepte les dates même si int1 est vide
+                    if (dateVal !== undefined && dateVal !== null) {
+                        let isoDate = String(dateVal).trim();
+                        if (isoDate.includes('/')) {
+                            let parts = isoDate.split('/');
                             if (parts.length === 3) {
                                 let y = parts[2].length === 2 ? "20" + parts[2] : parts[2];
                                 isoDate = `${y}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
                             }
                         }
-                        let prog = [int1.trim()];
-                        if (int2 && int2.trim() !== int1.trim()) prog.push(int2.trim());
+                        
+                        let prog = [];
+                        if (int1 && String(int1).trim() !== "") {
+                            prog.push(String(int1).trim());
+                        }
+                        if (int2 && String(int2).trim() !== "" && String(int2).trim() !== (int1 ? String(int1).trim() : "")) {
+                            prog.push(String(int2).trim());
+                        }
+                        
+                        // Si le fichier Excel spécifie une date avec 0 interne, prog sera [], ce qui est attendu
                         blocOverrides[isoDate] = prog;
                     }
                 });
@@ -276,7 +285,8 @@
             let isFromExcel = false;
 
             if (!isWeekend && !isTuesday) {
-                if (blocOverrides[dateKey]) {
+                // Si la date existe dans blocOverrides (même si la liste est vide [])
+                if (blocOverrides[dateKey] !== undefined) {
                     blocProgram = blocOverrides[dateKey];
                     isFromExcel = true;
                     blocProgram.forEach(n => { if(blocCounts[n] !== undefined) blocCounts[n]++; }); 
@@ -365,12 +375,20 @@
                 let liberesStr = liberesStrArr.join(', ');
                 let serviceStr = serviceStrArr.join(', ');
 
-                let blocFormatted = blocProgram.map(name => hl(name)).join(', ');
-                let badgeHtml = (isFromExcel && blocProgram.length > 0) ? `<span class="excel-bloc-badge">Excel</span>` : '';
+                // --- Modification de l'affichage du Bloc ---
+                let blocLineHtml = '';
+                if (isFromExcel && blocProgram.length === 0) {
+                    // Si Excel fournit une liste vide (0 interne) pour cette date
+                    blocLineHtml = `<div class="bloc-line" style="background-color: #f1f5f9; color: #475569; border: 1px dashed #cbd5e1;">🔪 Bloc : Aucun interne n'est programmé <span class="excel-bloc-badge" style="background:#64748b;">Excel</span></div>`;
+                } else if (blocProgram.length > 0) {
+                    let blocFormatted = blocProgram.map(name => hl(name)).join(', ');
+                    let badgeHtml = isFromExcel ? `<span class="excel-bloc-badge">Excel</span>` : '';
+                    blocLineHtml = `<div class="bloc-line">🔪 Bloc: ${blocFormatted}${badgeHtml}</div>`;
+                }
 
                 return `
                     <div class="plan-box">
-                        ${blocProgram.length > 0 ? `<div class="bloc-line">🔪 Bloc: ${blocFormatted}${badgeHtml}</div>` : ''}
+                        ${blocLineHtml}
                         ${liberesStrArr.length > 0 ? `<div class="repos-line">☕ Libérés: ${liberesStr}</div>` : ''}
                         <div class="service-line">🏥 Service: ${serviceStr}</div>
                     </div>
