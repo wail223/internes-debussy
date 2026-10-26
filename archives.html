@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Archives Patients - CPMC</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary: #0284c7; --primary-light: #e0f2fe; --success: #16a34a; --warning: #ca8a04; --danger: #dc2626;
@@ -14,20 +15,22 @@
         .nav-btn { background: #e2e8f0; color: #1e293b; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space:nowrap; }
         .nav-btn.active { background: var(--primary); color: white; }
         .container { background: white; padding: 15px; border-radius: 12px; border: 1px solid #cbd5e1; }
-        input[type="text"], select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 15px; font-size:15px;}
+        input[type="text"], input[type="date"], select, textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 15px; font-size:15px; font-family: inherit;}
         table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
         th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
         th { background: #f8fafc; color: var(--primary); }
         .patient-link { color: var(--primary); font-weight: bold; text-decoration: underline; cursor: pointer; }
+        
         .btn-action { margin: 2px; padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; color: white; font-size: 0.8em; font-weight:600;}
         .btn-remarque { background: var(--primary); }
         .btn-restore { background: var(--success); }
         .btn-delete { background: var(--danger); }
+        .btn-edit { background: var(--warning); color: #fff; }
         
-        /* Modal Style (Identique à patients.html) */
+        /* Modal Style */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); align-items: flex-end; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
         .modal.active { display: flex; }
-        .modal-content { background: var(--card); width: 100%; max-width: 650px; height: 92vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; box-sizing: border-box; }
+        .modal-content { background: var(--card); width: 100%; max-width: 800px; height: 92vh; border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto; box-sizing: border-box; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: white; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; z-index: 10; margin-bottom:15px;}
         .close-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2em; cursor: pointer; }
 
@@ -36,14 +39,17 @@
         .data-row { display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; font-size: 0.9em; }
         .data-label { color: var(--text-light); }
         .data-value { font-weight: 600; text-align: right; }
-        .data-text { font-size: 0.9em; line-height: 1.4; background: white; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 4px; }
+        .data-text { font-size: 0.9em; line-height: 1.4; background: white; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 4px; white-space: pre-wrap;}
         
         .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
         .gallery-img { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; }
 
-        /* Petit modal centré pour la reprise de lit */
         .small-modal-content { background: white; width: 90%; max-width: 400px; margin: auto; padding: 20px; border-radius: 12px; }
         .small-modal { align-items: center; }
+
+        .chart-container { position: relative; height: 350px; width: 100%; margin-top: 10px; background: white; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -83,9 +89,15 @@
     <!-- MODAL DOSSIER COMPLET -->
     <div id="patientModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle" style="margin:0; color:var(--primary);">Dossier Patient</h3>
-                <button class="close-btn" onclick="closeModal('patientModal')">✕</button>
+            <div class="modal-header" style="flex-direction: column; align-items: flex-start;">
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                    <h3 id="modalTitle" style="margin:0; color:var(--primary);">Dossier Patient</h3>
+                    <button class="close-btn" onclick="closeModal('patientModal')">✕</button>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-action btn-edit" onclick="openEditModal()">✏️ Modifier le dossier</button>
+                    <button class="btn-action btn-remarque" onclick="toggleCharts()">📈 Afficher/Masquer Courbes</button>
+                </div>
             </div>
             
             <div id="dossierView">
@@ -105,7 +117,7 @@
                     <div class="section-title">📅 Dates Clés</div>
                     <div class="data-row"><span class="data-label">Date d'entrée</span> <span class="data-value" id="vDateEntree">-</span></div>
                     <div class="data-row"><span class="data-label">Date d'intervention</span> <span class="data-value" id="vDateIntervention">-</span></div>
-                    <div class="data-row"><span class="data-label" style="color:var(--danger)">Date de sortie (Libéré le)</span> <span class="data-value" style="color:var(--danger)" id="vDateSortie">-</span></div>
+                    <div class="data-row"><span class="data-label" style="color:var(--danger)">Date de sortie</span> <span class="data-value" style="color:var(--danger)" id="vDateSortie">-</span></div>
                 </div>
 
                 <div class="section-card">
@@ -132,6 +144,55 @@
                     <div class="data-text" id="vRemarques">-</div>
                     <div id="photosContainer" class="gallery-grid" style="display:none; margin-top:10px;"></div>
                 </div>
+
+                <!-- SECTION COURBES (Masquée par défaut) -->
+                <div id="chartsSection" style="display:none;">
+                    <h4 style="color:var(--primary); margin-top:20px; border-bottom:1px solid #cbd5e1; padding-bottom:5px;">📈 Courbes de suivi du patient</h4>
+                    
+                    <div class="section-card">
+                        <div class="section-title">📅 Suivi Journalier (Post-Op)</div>
+                        <div class="chart-container"><canvas id="dailyChart"></canvas></div>
+                    </div>
+
+                    <div class="section-card">
+                        <div class="section-title">⏱️ Suivi Intrajournalier</div>
+                        <div class="chart-container"><canvas id="intradayChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL D'ÉDITION DES ARCHIVES -->
+    <div id="editArchiveModal" class="modal small-modal" style="align-items: center;">
+        <div class="modal-content" style="max-width: 600px; height: 85vh;">
+            <div class="modal-header">
+                <h3 style="margin:0; color:var(--warning);">✏️ Modifier le dossier</h3>
+                <button class="close-btn" onclick="closeModal('editArchiveModal')">✕</button>
+            </div>
+            <div>
+                <label>Nom & Prénom</label>
+                <input type="text" id="eNom">
+                
+                <label>Médecin Traitant</label>
+                <input type="text" id="eMedecin">
+                
+                <label>Diagnostic</label>
+                <textarea id="eDiag" rows="2"></textarea>
+                
+                <label>Antécédents</label>
+                <textarea id="eAtcd" rows="3"></textarea>
+                
+                <label>Bilan Complet</label>
+                <textarea id="eBilan" rows="2"></textarea>
+                
+                <label>Date de Sortie / Archivage</label>
+                <input type="date" id="eDateSortie">
+                
+                <label>Remarques Globales</label>
+                <textarea id="eRemarques" rows="3"></textarea>
+                
+                <button class="btn-action btn-restore" style="width:100%; padding:12px; font-size:1em; margin-top:10px;" onclick="saveArchiveEdit()">💾 Enregistrer les modifications</button>
             </div>
         </div>
     </div>
@@ -167,6 +228,10 @@
         
         let archivesData = {};
         let currentRestoreKey = null;
+        let currentViewKey = null; // Stocke la clé de l'archive actuellement ouverte
+        
+        let intradayChartInstance = null;
+        let dailyChartInstance = null;
 
         // Génération de la liste déroulante des lits
         function generateBedsList() {
@@ -185,6 +250,11 @@
         onValue(ref(db, 'archives_patients/'), (snapshot) => {
             archivesData = snapshot.val() || {};
             renderArchives();
+            
+            // Mettre à jour la vue modale si elle est ouverte et que les données ont changé
+            if (currentViewKey && document.getElementById('patientModal').classList.contains('active')) {
+                updateDossierView(currentViewKey);
+            }
         });
 
         function renderArchives() {
@@ -192,7 +262,6 @@
             const term = document.getElementById('searchArchived').value.toLowerCase();
             let html = '';
             
-            // Trier par date d'archivage (le plus récent en haut)
             const sortedKeys = Object.keys(archivesData).sort((a, b) => {
                 return (archivesData[b].timestampId || 0) - (archivesData[a].timestampId || 0);
             });
@@ -221,10 +290,17 @@
         window.filterArchives = renderArchives;
 
         window.viewDossier = function(key) {
+            currentViewKey = key;
+            document.getElementById('chartsSection').style.display = 'none'; // Masquer les courbes au début
+            updateDossierView(key);
+            document.getElementById('patientModal').classList.add('active');
+        };
+        
+        function updateDossierView(key) {
             const p = archivesData[key];
-            document.getElementById('modalTitle').innerText = "Dossier : " + p.nom;
+            if(!p) return;
             
-            // Remplissage du dossier
+            document.getElementById('modalTitle').innerText = "Dossier : " + p.nom;
             document.getElementById('vNumDossier').textContent = p.numDossier || '-';
             document.getElementById('vMedecinTraitant').textContent = p.medecinTraitant || '-';
             document.getElementById('vName').textContent = p.nom;
@@ -236,7 +312,6 @@
             
             document.getElementById('vDateEntree').textContent = p.dateEntree || '-';
             document.getElementById('vDateIntervention').textContent = p.dateIntervention || '-';
-            // Afficher la date de libération spécifique
             document.getElementById('vDateSortie').textContent = p.dateSortieArchive || p.dateSortie || p.dateArchivage?.split('T')[0] || '-';
             
             document.getElementById('vDiag').textContent = p.diag || '-';
@@ -251,7 +326,6 @@
             document.getElementById('vEndo').textContent = p.endo || '-';
             document.getElementById('vRemarques').textContent = p.remarques || '-';
 
-            // Photos
             const photosContainer = document.getElementById('photosContainer');
             if (p.photos && p.photos.length > 0) {
                 photosContainer.innerHTML = '';
@@ -266,16 +340,231 @@
             } else {
                 photosContainer.style.display = 'none';
             }
-
-            document.getElementById('patientModal').classList.add('active');
-        };
+        }
 
         window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
 
+        /* ============================
+           ÉDITION DE L'ARCHIVE
+           ============================ */
+        window.openEditModal = function() {
+            if(!currentViewKey) return;
+            const p = archivesData[currentViewKey];
+            
+            document.getElementById('eNom').value = p.nom || '';
+            document.getElementById('eMedecin').value = p.medecinTraitant || '';
+            document.getElementById('eDiag').value = p.diag || '';
+            document.getElementById('eAtcd').value = p.atcd || '';
+            document.getElementById('eBilan').value = p.bilanComplet || '';
+            document.getElementById('eDateSortie').value = p.dateSortieArchive || p.dateSortie || p.dateArchivage?.split('T')[0] || '';
+            document.getElementById('eRemarques').value = p.remarques || '';
+            
+            document.getElementById('editArchiveModal').classList.add('active');
+        };
+        
+        window.saveArchiveEdit = function() {
+            if(!currentViewKey) return;
+            
+            const updates = {
+                nom: document.getElementById('eNom').value.trim(),
+                medecinTraitant: document.getElementById('eMedecin').value.trim(),
+                diag: document.getElementById('eDiag').value.trim(),
+                atcd: document.getElementById('eAtcd').value.trim(),
+                bilanComplet: document.getElementById('eBilan').value.trim(),
+                dateSortieArchive: document.getElementById('eDateSortie').value,
+                remarques: document.getElementById('eRemarques').value.trim()
+            };
+            
+            update(ref(db, 'archives_patients/' + currentViewKey), updates).then(() => {
+                closeModal('editArchiveModal');
+                // La vue se mettra à jour automatiquement grâce à onValue
+            }).catch(e => alert("Erreur lors de la mise à jour: " + e.message));
+        };
+
+        /* ============================
+           GESTION DES COURBES
+           ============================ */
+        
+        // Plugin Chart.js pour afficher les valeurs au-dessus des points
+        const topLabelsPlugin = {
+            id: 'topLabels',
+            afterDatasetsDraw(chart, args, pluginOptions) {
+                const { ctx } = chart;
+                chart.data.datasets.forEach((dataset, i) => {
+                    const meta = chart.getDatasetMeta(i);
+                    if (meta.hidden) return;
+                    meta.data.forEach((element, index) => {
+                        const val = dataset.data[index];
+                        if (val !== null && val !== undefined && val !== '') {
+                            ctx.fillStyle = dataset.borderColor;
+                            ctx.font = 'bold 11px sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+                            ctx.fillText(val, element.x, element.y - 8);
+                        }
+                    });
+                });
+            }
+        };
+        Chart.register(topLabelsPlugin);
+
+        // Fonction pour recréer la clé patient utilisée dans suivi_courbes
+        function extractCleanName(rawNom) {
+            if (!rawNom) return "";
+            let clean = rawNom;
+            clean = clean.replace(/\(vide\)/gi, "");
+            clean = clean.replace(/\(\s*\(\s*rea\d*\s*:\s*/gi, "");
+            clean = clean.replace(/\(\s*rea\d*\s*:\s*/gi, "");
+            clean = clean.replace(/\)\s*\)/g, "");
+            clean = clean.replace(/\)/g, "");
+            clean = clean.replace(/\(/g, "");
+            return clean.trim();
+        }
+
+        function getChartPatientKey(p) {
+            if (p.numDossier && p.numDossier.trim()) {
+                return 'dos_' + p.numDossier.trim().replace(/[^a-zA-Z0-9]/g, '_');
+            }
+            const nomNettoye = extractCleanName(p.nom);
+            const nomClean = (nomNettoye || 'PATIENT').trim().toUpperCase().replace(/[^a-zA-Z0-9]/g, '_');
+            const dobClean = (p.dob || p.dateEntree || '0000').replace(/[^a-zA-Z0-9]/g, '');
+            return 'pat_' + nomClean + '_' + dobClean;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return "-";
+            const parts = dateStr.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            return dateStr;
+        }
+
+        window.toggleCharts = function() {
+            const chartsSection = document.getElementById('chartsSection');
+            if (chartsSection.style.display === 'none') {
+                chartsSection.style.display = 'block';
+                loadPatientCharts();
+                // Faire défiler vers les graphiques
+                chartsSection.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                chartsSection.style.display = 'none';
+            }
+        };
+
+        function loadPatientCharts() {
+            if(!currentViewKey) return;
+            const p = archivesData[currentViewKey];
+            const chartKey = getChartPatientKey(p);
+            
+            get(ref(db, `suivi_courbes/${chartKey}`)).then((snapshot) => {
+                const data = snapshot.val() || { intraday: {}, daily: {} };
+                renderDailyChartArchived(data.daily || {});
+                renderIntradayChartArchived(data.intraday || {});
+            }).catch(e => {
+                console.error("Erreur de récupération des courbes", e);
+            });
+        }
+
+        function renderDailyChartArchived(dataObj) {
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            const daysOrder = ['J0','J1','J2','J3','J4','J5','J6','J7','J8','J9','J10','J11','J12','J13','J14','J15'];
+            const labels = [], drains = [], crps = [], hbs = [], aspects = [];
+            
+            daysOrder.forEach(day => {
+                if(dataObj[day]) { 
+                    const labelStr = dataObj[day].dateDisplay ? `${day} (${dataObj[day].dateDisplay})` : day;
+                    labels.push(labelStr); 
+                    drains.push(dataObj[day].drain !== undefined ? dataObj[day].drain : null);
+                    crps.push(dataObj[day].crp !== undefined ? dataObj[day].crp : null);
+                    hbs.push(dataObj[day].hb !== undefined ? dataObj[day].hb : null);
+                    aspects.push(dataObj[day].aspect || '');
+                }
+            });
+
+            let datasets = [
+                { label: 'Drain (cc)', data: drains, borderColor: '#ca8a04', backgroundColor: 'rgba(202, 138, 4, 0.2)', fill: false, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#ca8a04', yAxisID: 'yPrimary' },
+                { label: 'CRP (mg/L)', data: crps, borderColor: '#dc2626', backgroundColor: '#dc2626', fill: false, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#dc2626', yAxisID: 'yPrimary' },
+                { label: 'Hb (g/dL)', data: hbs, borderColor: '#0284c7', backgroundColor: '#0284c7', fill: false, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#0284c7', yAxisID: 'yHb' }
+            ];
+
+            if(dailyChartInstance) dailyChartInstance.destroy();
+            dailyChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        topLabels: {},
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let l = `${context.dataset.label}: ${context.parsed.y}`;
+                                    if(context.dataset.label.includes('Drain') && aspects[context.dataIndex]) l += ` (${aspects[context.dataIndex]})`;
+                                    return l;
+                                }
+                            }
+                        }
+                    },
+                    scales: { 
+                        yPrimary: { type: 'linear', position: 'left', title: { display: true, text: 'Valeur (cc ou mg/L)' } },
+                        yHb: { type: 'linear', position: 'right', title: { display: true, text: 'Hémoglobine (g/dL)' }, grid: { drawOnChartArea: false }, min: 0, max: 20 }
+                    } 
+                }
+            });
+        }
+
+        function renderIntradayChartArchived(dataObj) {
+            const ctx = document.getElementById('intradayChart').getContext('2d');
+            const sortedKeys = Object.keys(dataObj).sort(); 
+            
+            const labels = sortedKeys.map(k => {
+                const d = dataObj[k];
+                return `${formatDate(d.date)} ${d.time}`;
+            });
+            const temps = sortedKeys.map(k => dataObj[k].temp);
+            const drains = sortedKeys.map(k => dataObj[k].drain);
+            const aspects = sortedKeys.map(k => dataObj[k].aspect || '');
+
+            if(intradayChartInstance) intradayChartInstance.destroy();
+            intradayChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Température (°C)', data: temps, borderColor: '#dc2626', backgroundColor: '#dc2626', yAxisID: 'yTemp', tension: 0.3, spanGaps: true },
+                        { label: 'Drain (cc)', data: drains, borderColor: '#0284c7', backgroundColor: '#0284c7', yAxisID: 'yDrain', tension: 0.3, spanGaps: true }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        topLabels: {},
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ' : ';
+                                    if (context.parsed.y !== null) label += context.parsed.y;
+                                    if (context.datasetIndex === 1 && aspects[context.dataIndex]) label += ' (' + aspects[context.dataIndex] + ')';
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        yTemp: { type: 'linear', position: 'left', title: { display: true, text: 'Température (°C)' }, min: 35, max: 42 },
+                        yDrain: { type: 'linear', position: 'right', title: { display: true, text: 'Quantité Drain (cc)' }, min: 0, max: 1000, ticks: { stepSize: 50 }, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        }
+
+        /* ============================
+           RESTAURATION ET SUPPRESSION
+           ============================ */
         window.openRestoreModal = function(key) {
             currentRestoreKey = key;
             document.getElementById('restorePatientName').innerText = archivesData[key].nom;
-            document.getElementById('restoreBedSelect').value = ""; // Reset du choix
+            document.getElementById('restoreBedSelect').value = "";
             document.getElementById('restoreModal').classList.add('active');
         };
 
@@ -287,16 +576,14 @@
             const newBedRef = ref(db, 'dossiers_patients/' + newBed);
 
             try {
-                // Vérifier si le lit est déjà occupé
                 const snapshot = await get(newBedRef);
                 if (snapshot.exists() && snapshot.val().nom) {
                     alert("⚠️ Ce lit est déjà occupé ! Veuillez en choisir un autre.");
                     return;
                 }
 
-                // Changer son lit et son statut vers normal
                 const restoreData = { ...data, bedId: newBed, statut: 'normal' };
-                delete restoreData.dateSortieArchive; // On enlève la date de sortie vu qu'il revient
+                delete restoreData.dateSortieArchive;
                 
                 await set(newBedRef, restoreData);
                 await remove(ref(db, 'archives_patients/' + currentRestoreKey));
