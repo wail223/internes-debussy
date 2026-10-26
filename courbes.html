@@ -309,11 +309,24 @@
             renderDailyChart(currentPatientData.daily || {});
         };
 
+        function extractCleanName(rawNom) {
+            if (!rawNom) return "";
+            let clean = rawNom;
+            clean = clean.replace(/\(vide\)/gi, "");
+            clean = clean.replace(/\(\s*\(\s*rea\d*\s*:\s*/gi, "");
+            clean = clean.replace(/\(\s*rea\d*\s*:\s*/gi, "");
+            clean = clean.replace(/\)\s*\)/g, "");
+            clean = clean.replace(/\)/g, "");
+            clean = clean.replace(/\(/g, "");
+            return clean.trim();
+        }
+
         function getPatientKey(p) {
             if (p.numDossier && p.numDossier.trim()) {
                 return 'dos_' + p.numDossier.trim().replace(/[^a-zA-Z0-9]/g, '_');
             }
-            const nomClean = (p.nom || 'PATIENT').trim().toUpperCase().replace(/[^a-zA-Z0-9]/g, '_');
+            const nomNettoye = extractCleanName(p.nom);
+            const nomClean = (nomNettoye || 'PATIENT').trim().toUpperCase().replace(/[^a-zA-Z0-9]/g, '_');
             const dobClean = (p.dob || p.dateEntree || '0000').replace(/[^a-zA-Z0-9]/g, '');
             return 'pat_' + nomClean + '_' + dobClean;
         }
@@ -328,8 +341,9 @@
         function detectInterventionDate(patient) {
             if (!patient) return "";
             let dateStr = patient.dateIntervention || "";
-            if (!dateStr && patient.nom && programmesOperatoiresData) {
-                const nomCherche = patient.nom.toLowerCase().trim();
+            const cleanNom = extractCleanName(patient.nom);
+            if (!dateStr && cleanNom && programmesOperatoiresData) {
+                const nomCherche = cleanNom.toLowerCase().trim();
                 let datePlusRecente = "";
                 for (const dateKey in programmesOperatoiresData) {
                     const listeOps = programmesOperatoiresData[dateKey];
@@ -400,7 +414,9 @@
 
             Object.keys(patientsDataMap).forEach(bedId => {
                 const p = patientsDataMap[bedId];
-                if(p && p.nom) {
+                
+                // Ne pas afficher les lits qui ne contiennent qu'une trace de réanimation
+                if(p && p.nom && !p.isTraceRea && !p.nom.includes("rea:")) {
                     const pKey = getPatientKey(p);
                     const interDate = detectInterventionDate(p);
                     
@@ -412,7 +428,7 @@
                         opIndicator = " ✅ (Opéré)";
                     }
 
-                    selector.innerHTML += `<option value="${pKey}" data-bed="${bedId}" ${highlightStyle}>Lit ${bedId} - ${p.nom}${opIndicator}</option>`;
+                    selector.innerHTML += `<option value="${pKey}" data-bed="${bedId}" ${highlightStyle}>Lit ${bedId} - ${extractCleanName(p.nom)}${opIndicator}</option>`;
                 }
             });
             if(currentVal) selector.value = currentVal;
@@ -471,7 +487,7 @@
             let currentBedId = "";
             Object.keys(patientsDataMap).forEach(bedId => {
                 const p = patientsDataMap[bedId];
-                if (p && getPatientKey(p) === currentPatientKey) {
+                if (p && !p.isTraceRea && getPatientKey(p) === currentPatientKey) {
                     patientObj = p;
                     currentBedId = bedId;
                 }
@@ -480,7 +496,7 @@
             if (patientObj) {
                 const interDate = detectInterventionDate(patientObj);
                 patientObj.detectedInterventionDate = interDate;
-                badge.innerHTML = `👤 <b>${patientObj.nom}</b> | Lit : <b>${currentBedId}</b> | Date Intervention : <b>${interDate ? formatDate(interDate) : 'Non renseignée'}</b>`;
+                badge.innerHTML = `👤 <b>${extractCleanName(patientObj.nom)}</b> | Lit : <b>${currentBedId}</b> | Date Intervention : <b>${interDate ? formatDate(interDate) : 'Non renseignée'}</b>`;
                 badge.style.display = 'inline-block';
 
                 updateDaySelectOptions(interDate);
@@ -640,8 +656,8 @@
                 if (currentPatientKey) {
                     Object.keys(patientsDataMap).forEach(bedId => {
                         const p = patientsDataMap[bedId];
-                        if (getPatientKey(p) === currentPatientKey) {
-                            pName = p.nom;
+                        if (!p.isTraceRea && getPatientKey(p) === currentPatientKey) {
+                            pName = extractCleanName(p.nom);
                             pBed = bedId;
                             interDate = detectInterventionDate(p);
                         }
