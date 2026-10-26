@@ -227,31 +227,22 @@
         const db = getDatabase(app);
         
         let archivesData = {};
+        let dossiersPatients = {}; // <-- Nouveau : Stocke l'état actuel des lits
         let currentRestoreKey = null;
-        let currentViewKey = null; // Stocke la clé de l'archive actuellement ouverte
+        let currentViewKey = null;
         
         let intradayChartInstance = null;
         let dailyChartInstance = null;
 
-        // Génération de la liste déroulante des lits
-        function generateBedsList() {
-            let options = '<option value="">-- Choisissez un lit ou une place --</option>';
-            options += '<optgroup label="4ème Étage">';
-            for(let i=401; i<=408; i++) options += `<option value="${i}P">${i}P (Porte)</option><option value="${i}F">${i}F (Fenêtre)</option>`;
-            options += '</optgroup><optgroup label="3ème Étage">';
-            for(let i=301; i<=308; i++) options += `<option value="${i}P">${i}P (Porte)</option><option value="${i}F">${i}F (Fenêtre)</option>`;
-            options += '</optgroup><optgroup label="Réanimation">';
-            for(let i=1; i<=6; i++) options += `<option value="REA${i}">Réa Lit ${i}</option>`;
-            options += '</optgroup>';
-            document.getElementById('restoreBedSelect').innerHTML = options;
-        }
-        generateBedsList();
+        // Écouter les dossiers actuels pour savoir quels lits sont vides
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+            dossiersPatients = snapshot.val() || {};
+        });
 
         onValue(ref(db, 'archives_patients/'), (snapshot) => {
             archivesData = snapshot.val() || {};
             renderArchives();
             
-            // Mettre à jour la vue modale si elle est ouverte et que les données ont changé
             if (currentViewKey && document.getElementById('patientModal').classList.contains('active')) {
                 updateDossierView(currentViewKey);
             }
@@ -291,7 +282,7 @@
 
         window.viewDossier = function(key) {
             currentViewKey = key;
-            document.getElementById('chartsSection').style.display = 'none'; // Masquer les courbes au début
+            document.getElementById('chartsSection').style.display = 'none'; 
             updateDossierView(key);
             document.getElementById('patientModal').classList.add('active');
         };
@@ -377,15 +368,12 @@
             
             update(ref(db, 'archives_patients/' + currentViewKey), updates).then(() => {
                 closeModal('editArchiveModal');
-                // La vue se mettra à jour automatiquement grâce à onValue
             }).catch(e => alert("Erreur lors de la mise à jour: " + e.message));
         };
 
         /* ============================
            GESTION DES COURBES
            ============================ */
-        
-        // Plugin Chart.js pour afficher les valeurs au-dessus des points
         const topLabelsPlugin = {
             id: 'topLabels',
             afterDatasetsDraw(chart, args, pluginOptions) {
@@ -408,7 +396,6 @@
         };
         Chart.register(topLabelsPlugin);
 
-        // Fonction pour recréer la clé patient utilisée dans suivi_courbes
         function extractCleanName(rawNom) {
             if (!rawNom) return "";
             let clean = rawNom;
@@ -443,7 +430,6 @@
             if (chartsSection.style.display === 'none') {
                 chartsSection.style.display = 'block';
                 loadPatientCharts();
-                // Faire défiler vers les graphiques
                 chartsSection.scrollIntoView({ behavior: 'smooth' });
             } else {
                 chartsSection.style.display = 'none';
@@ -561,10 +547,41 @@
         /* ============================
            RESTAURATION ET SUPPRESSION
            ============================ */
+        
+        // Fonction pour vérifier si un lit est vide
+        function isBedEmpty(bedId) {
+            const bed = dossiersPatients[bedId];
+            return !bed || !bed.nom || bed.nom.trim() === "";
+        }
+
         window.openRestoreModal = function(key) {
             currentRestoreKey = key;
             document.getElementById('restorePatientName').innerText = archivesData[key].nom;
-            document.getElementById('restoreBedSelect').value = "";
+            
+            // Génération de la liste en affichant UNIQUEMENT les lits vides
+            let options = '<option value="">-- Choisissez un lit vide --</option>';
+            
+            options += '<optgroup label="4ème Étage (Lits vides)">';
+            for(let i=401; i<=408; i++) {
+                if(isBedEmpty(i+'P')) options += `<option value="${i}P">${i}P (Porte)</option>`;
+                if(isBedEmpty(i+'F')) options += `<option value="${i}F">${i}F (Fenêtre)</option>`;
+            }
+            options += '</optgroup>';
+            
+            options += '<optgroup label="3ème Étage (Lits vides)">';
+            for(let i=301; i<=308; i++) {
+                if(isBedEmpty(i+'P')) options += `<option value="${i}P">${i}P (Porte)</option>`;
+                if(isBedEmpty(i+'F')) options += `<option value="${i}F">${i}F (Fenêtre)</option>`;
+            }
+            options += '</optgroup>';
+            
+            options += '<optgroup label="Réanimation (Lits vides)">';
+            for(let i=1; i<=6; i++) {
+                if(isBedEmpty('REA'+i)) options += `<option value="REA${i}">Réa Lit ${i}</option>`;
+            }
+            options += '</optgroup>';
+
+            document.getElementById('restoreBedSelect').innerHTML = options;
             document.getElementById('restoreModal').classList.add('active');
         };
 
@@ -576,9 +593,11 @@
             const newBedRef = ref(db, 'dossiers_patients/' + newBed);
 
             try {
+                // Ultime vérification de sécurité au moment de la sauvegarde
                 const snapshot = await get(newBedRef);
-                if (snapshot.exists() && snapshot.val().nom) {
-                    alert("⚠️ Ce lit est déjà occupé ! Veuillez en choisir un autre.");
+                if (snapshot.exists() && snapshot.val().nom && snapshot.val().nom.trim() !== "") {
+                    alert("⚠️ Ce lit a été occupé entre-temps ! Veuillez en choisir un autre.");
+                    openRestoreModal(currentRestoreKey); // Rafraîchir la liste
                     return;
                 }
 
