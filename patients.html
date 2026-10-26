@@ -650,6 +650,15 @@
                 
                 if(patientsDb[bedId] && patientsDb[bedId].nom) {
                     const patient = patientsDb[bedId];
+                    
+                    // --- MODIFICATION TRACE REA ---
+                    if (patient.isTraceRea) {
+                        // C'est juste une trace, on affiche le texte mais on garde le lit visuellement vide
+                        if(nameSpan) nameSpan.textContent = patient.nom;
+                        return; // On passe au lit suivant
+                    }
+                    // ------------------------------
+                    
                     btn.classList.add('occupied');
                     
                     const statut = patient.statut;
@@ -671,7 +680,6 @@
                     if(badgesDiv) {
                         const jHospi = calculateDaysDiff(patient.dateEntree);
                         
-                        // FIX: Utiliser la date du programme opératoire s'il n'y a pas de date manuelle
                         let dateChir = patient.dateIntervention;
                         const ops = getPatientInterventions(patient);
                         if (ops.length > 0) {
@@ -712,7 +720,6 @@
             return dateStr;
         }
 
-        // FONCTION MISE À JOUR POUR AFFICHER LES INTERVENTIONS (AVEC LE HELPER CENTRALISÉ)
         function getInterventionDisplayDate(patient) {
             const uniqueOps = getPatientInterventions(patient);
 
@@ -827,7 +834,8 @@
             document.getElementById('modalTitle').textContent = `Lit ${bedId}`;
             const p = patientsDb[bedId];
             
-            if(p && p.nom) {
+            // On vérifie si c'est un vrai patient (et pas juste une trace)
+            if(p && p.nom && !p.isTraceRea) {
                 document.getElementById('vNumDossier').textContent = p.numDossier || '-';
                 document.getElementById('vMedecinTraitant').textContent = p.medecinTraitant || '-';
                 
@@ -851,7 +859,6 @@
                 document.getElementById('vProtocoleSortie').textContent = p.protocoleSortie ? '✅ Prêt' : '❌ Non fait';
 
                 document.getElementById('vDateEntree').textContent = formatDate(p.dateEntree);
-                // Utilisation de .innerHTML car nous injectons du HTML en rouge avec une balise span
                 document.getElementById('vDateIntervention').innerHTML = getInterventionDisplayDate(p);
                 document.getElementById('vDateSortie').textContent = formatDate(p.dateSortie);
                 document.getElementById('vDiag').textContent = p.diag || '-';
@@ -879,6 +886,7 @@
 
                 switchToView();
             } else {
+                // Si c'est vide ou si c'est juste une trace, on ouvre le mode édition 
                 currentPhotos = [];
                 resetEditForm();
                 switchToEdit();
@@ -1083,7 +1091,16 @@
                 photos: currentPhotos
             };
 
-            if(!data.nom) return alert("Le nom est obligatoire !");
+            if(!data.nom) {
+                // Si on enregistre à vide un lit qui contenait une trace, on le nettoie complètement
+                if (patientsDb[bedId] && patientsDb[bedId].isTraceRea) {
+                    remove(ref(db, 'dossiers_patients/' + bedId));
+                    closeModal();
+                    return;
+                }
+                return alert("Le nom est obligatoire !");
+            }
+            
             set(ref(db, 'dossiers_patients/' + bedId), data);
             closeModal();
         };
@@ -1129,7 +1146,8 @@
             
             if (!patient || !patient.nom) return;
 
-            const emptyBeds = ALL_BEDS.filter(bedId => !patientsDb[bedId] || !patientsDb[bedId].nom);
+            // On considère les lits vides ou ceux qui ne contiennent qu'une trace
+            const emptyBeds = ALL_BEDS.filter(bedId => !patientsDb[bedId] || !patientsDb[bedId].nom || patientsDb[bedId].isTraceRea);
 
             if (emptyBeds.length === 0) {
                 alert("Aucun lit n'est actuellement disponible dans tout l'établissement !");
@@ -1172,14 +1190,32 @@
 
             try {
                 const newBedSnapshot = await get(newBedRef);
-                if (newBedSnapshot.exists() && newBedSnapshot.val().nom) {
+                // On s'assure que le lit cible n'est pas déjà occupé par un vrai patient
+                if (newBedSnapshot.exists() && newBedSnapshot.val().nom && !newBedSnapshot.val().isTraceRea) {
                     alert("Opération annulée : Le lit " + newBedId + " est déjà occupé !");
                     return;
                 }
 
                 const newPatientData = { ...patient, bedId: newBedId };
+                // Si le patient transféré est (par hasard) porteur de ce flag, on le nettoie
+                if (newPatientData.isTraceRea) {
+                    delete newPatientData.isTraceRea;
+                }
+                
                 await set(newBedRef, newPatientData);
-                await remove(ref(db, 'dossiers_patients/' + oldBedId));
+
+                // --- MODIFICATION POUR LAISSER LA TRACE ---
+                if (newBedId.startsWith('REA') && !oldBedId.startsWith('REA')) {
+                    // Transfert d'un lit normal vers un lit de réa : on laisse la trace
+                    await set(ref(db, 'dossiers_patients/' + oldBedId), {
+                        nom: `(vide) ( ${newBedId}: ${patient.nom} )`,
+                        isTraceRea: true
+                    });
+                } else {
+                    // Sinon, on libère le lit normalement
+                    await remove(ref(db, 'dossiers_patients/' + oldBedId));
+                }
+                // ------------------------------------------
 
                 alert(`Transfert réussi : ${patient.nom} a été déplacé du lit ${oldBedId} vers le lit ${newBedId}.`);
                 closeTransferModal();
