@@ -225,7 +225,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- Variables de date rendues globales (accessibles pour le nom du fichier PDF) ---
+        // Variables globales de date
         window.dateJour = new Date();
         window.dd = String(window.dateJour.getDate()).padStart(2, '0');
         window.mm = String(window.dateJour.getMonth() + 1).padStart(2, '0'); 
@@ -247,6 +247,19 @@
             const parts = dateString.split('-');
             if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
             return dateString;
+        }
+
+        // Fonction d'extraction du nom propre si c'est une trace Réa
+        function extractCleanName(rawNom) {
+            if (!rawNom) return "";
+            let clean = rawNom;
+            clean = clean.replace(/\(vide\)/gi, "");
+            clean = clean.replace(/\(\s*\(\s*rea\d*\s*:\s*/gi, "");
+            clean = clean.replace(/\(\s*rea\d*\s*:\s*/gi, "");
+            clean = clean.replace(/\)\s*\)/g, "");
+            clean = clean.replace(/\)/g, "");
+            clean = clean.replace(/\(/g, "");
+            return clean.trim();
         }
 
         function getInterventionPourPatient(nomPatient) {
@@ -276,7 +289,7 @@
 
             if (derniereIntervention) {
                 const statut = (derniereIntervention.status || derniereIntervention.statut || "").toLowerCase();
-                if (statut.includes("reprogrammée") || statut.includes("reprogrammee") || statut.includes("reprogrammee")) {
+                if (statut.includes("reprogrammée") || statut.includes("reprogrammee")) {
                     return "";
                 }
                 return derniereIntervention.intervention || "";
@@ -290,20 +303,40 @@
             tbody.innerHTML = ""; 
 
             lits4eme.forEach(litId => {
-                const patient = patientsData[litId];
+                let patient = patientsData[litId];
                 
                 if (patient && patient.nom && patient.nom.trim() !== "") {
-                    const interventionTrouvee = getInterventionPourPatient(patient.nom);
+                    let cleanNom = patient.nom;
+                    let targetPatientData = patient;
+
+                    // Si c'est une trace de réa, on nettoie le nom et on cherche son dossier complet en Réa
+                    if (patient.isTraceRea || patient.nom.includes("rea")) {
+                        cleanNom = extractCleanName(patient.nom);
+                        
+                        // Chercher le dossier actif en réanimation (REA1 à REA6)
+                        for (let i = 1; i <= 6; i++) {
+                            const reaBedData = patientsData[`REA${i}`];
+                            if (reaBedData && reaBedData.nom) {
+                                const reaNomClean = extractCleanName(reaBedData.nom);
+                                if (reaNomClean.toLowerCase().includes(cleanNom.toLowerCase()) || cleanNom.toLowerCase().includes(reaNomClean.toLowerCase())) {
+                                    targetPatientData = reaBedData; // Utiliser le dossier complet depuis la Réa
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    const interventionTrouvee = getInterventionPourPatient(cleanNom);
                     
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td contenteditable="true" style="text-align:center;">${litId}</td>
-                        <td contenteditable="true">${patient.nom || ""}</td>
-                        <td contenteditable="true" style="text-align:center;">${patient.age || ""}</td>
-                        <td contenteditable="true">${patient.diag || ""}</td>
-                        <td contenteditable="true" style="text-align:center;">${patient.grp || ""}</td>
+                        <td contenteditable="true">${cleanNom.toUpperCase()}</td>
+                        <td contenteditable="true" style="text-align:center;">${targetPatientData.age || ""}</td>
+                        <td contenteditable="true">${targetPatientData.diag || ""}</td>
+                        <td contenteditable="true" style="text-align:center;">${targetPatientData.grp || ""}</td>
                         <td contenteditable="true">${interventionTrouvee}</td>
-                        <td contenteditable="true" style="text-align:center;">${formatDate(patient.dateEntree) || ""}</td>
+                        <td contenteditable="true" style="text-align:center;">${formatDate(targetPatientData.dateEntree) || ""}</td>
                     `;
                     tbody.appendChild(tr);
                 }
@@ -375,7 +408,7 @@
                 }
             });
 
-            // --- Signature en bas à droite ---
+            // --- Signature ---
             let finalY = doc.lastAutoTable.finalY || 60;
             let signatureY = finalY + 20;
 
@@ -389,8 +422,6 @@
             doc.setFont("times", "normal");
             doc.text("Chef de Service", 250, signatureY + 6, { align: "center" });
 
-            // --- Sauvegarde avec la date dans le nom du fichier ---
-            // On utilise les variables globales window.dd, window.mm, window.yyyy créées plus haut
             const nomFichier = `Fiche_Mouvement_4eme_${window.dd}-${window.mm}-${window.yyyy}.pdf`;
             doc.save(nomFichier);
         }
