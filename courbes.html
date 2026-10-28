@@ -98,6 +98,7 @@
         <div style="display: flex; gap: 10px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px;">
             <button class="nav-btn active" id="tabDrain" onclick="setDailyTab('Drain')">🩸 Drain</button>
             <button class="nav-btn" id="tabCRP" onclick="setDailyTab('CRP')">🦠 CRP</button>
+            <button class="nav-btn" id="tabGB" onclick="setDailyTab('GB')">🧪 Globules Blancs</button>
             <button class="nav-btn" id="tabHb" onclick="setDailyTab('Hb')">💉 Hémoglobine</button>
             <button class="nav-btn" id="tabAll" onclick="setDailyTab('All')">📊 Toutes les courbes</button>
         </div>
@@ -132,6 +133,11 @@
                 <input type="number" id="dailyCrpInput" step="0.1" placeholder="Ex: 12.5">
             </div>
 
+            <div class="form-group input-gb" style="display:none;">
+                <label>Globules Blancs (10³/µL)</label>
+                <input type="number" id="dailyGbInput" step="0.1" placeholder="Ex: 9.8">
+            </div>
+
             <div class="form-group input-hb" style="display:none;">
                 <label>Hémoglobine (g/dL)</label>
                 <input type="number" id="dailyHbInput" step="0.1" placeholder="Ex: 13.2">
@@ -149,10 +155,10 @@
             <canvas id="dailyChart"></canvas>
         </div>
 
-        <!-- BARRE D'EXPORTATION ET PARTAGE -->
+        <!-- BARRE D'EXPORTATION ET PARTAGE DAILY -->
         <div class="export-bar">
-            <button class="btn-export" onclick="downloadJPG()">⬇️ Télécharger l'image</button>
-            <button class="btn-wa" onclick="shareChartNative()">📱 Partager la courbe</button>
+            <button class="btn-export" onclick="downloadDailyJPG()">⬇️ Télécharger l'image</button>
+            <button class="btn-wa" onclick="shareDailyChartNative()">📱 Partager la courbe</button>
         </div>
 
         <!-- Historique Journalier -->
@@ -160,7 +166,7 @@
             <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
             <table class="history-table" id="dailyTable" style="display:none;">
                 <thead>
-                    <tr><th>Jour</th><th>Date</th><th>Drain total</th><th>Aspect</th><th>CRP</th><th>Hb</th><th>Actions</th></tr>
+                    <tr><th>Jour</th><th>Date</th><th>Drain total</th><th>Aspect</th><th>CRP</th><th>GB</th><th>Hb</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="dailyTableBody"></tbody>
             </table>
@@ -169,7 +175,7 @@
 
     <!-- 2. COURBE HORAIRE/DEMI-HORAIRE -->
     <div class="section-card" id="sectionIntraday" style="display:none;">
-        <div class="section-title">⏱️ Suivi Intrajournalier (Température & Drain)</div>
+        <div class="section-title">⏱️ Suivi Intrajournalier (Température, Drain & Lame)</div>
         
         <div class="grid-6" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e1; align-items: end;">
             <div class="form-group">
@@ -196,8 +202,26 @@
                 <input type="number" id="drainInput" step="10" placeholder="Ex: 150">
             </div>
             <div class="form-group">
-                <label>Aspect</label>
+                <label>Aspect Drain</label>
                 <select id="aspectSelect">
+                    <option value="">-- Aspect --</option>
+                    <option value="Hémorragique">Hémorragique</option>
+                    <option value="Séreux">Séreux</option>
+                    <option value="Séro-hématique">Séro-hématique</option>
+                    <option value="Clair">Clair</option>
+                    <option value="Purulent">Purulent</option>
+                    <option value="Chyleux">Chyleux</option>
+                    <option value="Biliaire">Biliaire</option>
+                    <option value="Urinaire">Urinaire</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Lame (cc)</label>
+                <input type="number" id="lameInput" step="10" placeholder="Ex: 50">
+            </div>
+            <div class="form-group">
+                <label>Aspect Lame</label>
+                <select id="aspectLameSelect">
                     <option value="">-- Aspect --</option>
                     <option value="Hémorragique">Hémorragique</option>
                     <option value="Séreux">Séreux</option>
@@ -216,12 +240,18 @@
             <canvas id="intradayChart"></canvas>
         </div>
 
+        <!-- BARRE D'EXPORTATION ET PARTAGE INTRADAY -->
+        <div class="export-bar">
+            <button class="btn-export" onclick="downloadIntradayJPG()">⬇️ Télécharger l'image</button>
+            <button class="btn-wa" onclick="shareIntradayChartNative()">📱 Partager la courbe</button>
+        </div>
+
         <!-- Historique Intraday -->
         <div style="overflow-x:auto;">
             <h4 style="margin:0 0 10px 0; font-size:0.9em; color:var(--text-light);">📋 Historique des saisies :</h4>
             <table class="history-table" id="intradayTable" style="display:none;">
                 <thead>
-                    <tr><th>Date</th><th>Heure</th><th>Température</th><th>Drain</th><th>Aspect</th><th>Actions</th></tr>
+                    <tr><th>Date</th><th>Heure</th><th>Température</th><th>Drain</th><th>Aspect Drain</th><th>Lame</th><th>Aspect Lame</th><th>Actions</th></tr>
                 </thead>
                 <tbody id="intradayTableBody"></tbody>
             </table>
@@ -283,12 +313,14 @@
             
             document.getElementById('tabDrain').classList.remove('active');
             document.getElementById('tabCRP').classList.remove('active');
+            document.getElementById('tabGB').classList.remove('active');
             document.getElementById('tabHb').classList.remove('active');
             document.getElementById('tabAll').classList.remove('active');
             document.getElementById('tab' + tab).classList.add('active');
             
             document.querySelectorAll('.input-drain').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.input-crp').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.input-gb').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.input-hb').forEach(el => el.style.display = 'none');
             
             const dailyForm = document.getElementById('dailyForm');
@@ -303,6 +335,7 @@
                 
                 if(tab === 'Drain') document.querySelectorAll('.input-drain').forEach(el => el.style.display = 'flex');
                 if(tab === 'CRP') document.querySelectorAll('.input-crp').forEach(el => el.style.display = 'flex');
+                if(tab === 'GB') document.querySelectorAll('.input-gb').forEach(el => el.style.display = 'flex');
                 if(tab === 'Hb') document.querySelectorAll('.input-hb').forEach(el => el.style.display = 'flex');
             }
             
@@ -415,7 +448,6 @@
             Object.keys(patientsDataMap).forEach(bedId => {
                 const p = patientsDataMap[bedId];
                 
-                // Ne pas afficher les lits qui ne contiennent qu'une trace de réanimation
                 if(p && p.nom && !p.isTraceRea && !p.nom.includes("rea:")) {
                     const pKey = getPatientKey(p);
                     const interDate = detectInterventionDate(p);
@@ -523,12 +555,16 @@
             const time = document.getElementById('timeSelect').value;
             const tempVal = document.getElementById('tempInput').value.trim();
             const drainVal = document.getElementById('drainInput').value.trim();
+            const aspect = document.getElementById('aspectSelect').value;
+            const lameVal = document.getElementById('lameInput').value.trim();
+            const aspectLame = document.getElementById('aspectLameSelect').value;
+
             const temp = tempVal !== "" ? parseFloat(tempVal) : null;
             const drain = drainVal !== "" ? parseFloat(drainVal) : null;
-            const aspect = document.getElementById('aspectSelect').value;
+            const lame = lameVal !== "" ? parseFloat(lameVal) : null;
 
             if(!date) return alert("Veuillez choisir une date.");
-            if(temp === null && drain === null) return alert("Veuillez saisir au moins une valeur (Température ou Drain).");
+            if(temp === null && drain === null && lame === null) return alert("Veuillez saisir au moins une valeur (Température, Drain ou Lame).");
 
             const key = `${date}_${time.replace(':', '')}`;
 
@@ -537,11 +573,15 @@
                 time: time,
                 temp: temp,
                 drain: drain,
-                aspect: aspect || null
+                aspect: aspect || null,
+                lame: lame,
+                aspectLame: aspectLame || null
             }).then(() => {
                 document.getElementById('tempInput').value = '';
                 document.getElementById('drainInput').value = '';
                 document.getElementById('aspectSelect').value = '';
+                document.getElementById('lameInput').value = '';
+                document.getElementById('aspectLameSelect').value = '';
             }).catch(err => alert("Erreur lors de l'enregistrement : " + err.message));
         };
 
@@ -554,14 +594,17 @@
             const drainVal = document.getElementById('dailyDrainInput').value.trim();
             const aspect = document.getElementById('dailyAspectSelect').value;
             const crpVal = document.getElementById('dailyCrpInput').value.trim();
+            const gbVal = document.getElementById('dailyGbInput').value.trim();
             const hbVal = document.getElementById('dailyHbInput').value.trim();
 
             const drain = drainVal !== "" ? parseFloat(drainVal) : null;
             const crp = crpVal !== "" ? parseFloat(crpVal) : null;
+            const gb = gbVal !== "" ? parseFloat(gbVal) : null;
             const hb = hbVal !== "" ? parseFloat(hbVal) : null;
 
             if(currentDailyTab === 'Drain' && drain === null) return alert("Veuillez saisir la quantité du drain.");
             if(currentDailyTab === 'CRP' && crp === null) return alert("Veuillez saisir la valeur de la CRP.");
+            if(currentDailyTab === 'GB' && gb === null) return alert("Veuillez saisir la valeur des Globules Blancs.");
             if(currentDailyTab === 'Hb' && hb === null) return alert("Veuillez saisir la valeur de l'Hémoglobine.");
 
             const selectElem = document.getElementById('daySelect');
@@ -579,6 +622,7 @@
                 drain: currentDailyTab === 'Drain' ? drain : (existingData.drain !== undefined ? existingData.drain : null),
                 aspect: currentDailyTab === 'Drain' ? (aspect || null) : (existingData.aspect || null),
                 crp: currentDailyTab === 'CRP' ? crp : (existingData.crp !== undefined ? existingData.crp : null),
+                gb: currentDailyTab === 'GB' ? gb : (existingData.gb !== undefined ? existingData.gb : null),
                 hb: currentDailyTab === 'Hb' ? hb : (existingData.hb !== undefined ? existingData.hb : null)
             };
 
@@ -588,6 +632,8 @@
                     document.getElementById('dailyAspectSelect').value = '';
                 } else if (currentDailyTab === 'CRP') { 
                     document.getElementById('dailyCrpInput').value = ''; 
+                } else if (currentDailyTab === 'GB') { 
+                    document.getElementById('dailyGbInput').value = ''; 
                 } else if (currentDailyTab === 'Hb') { 
                     document.getElementById('dailyHbInput').value = ''; 
                 }
@@ -608,6 +654,8 @@
             document.getElementById('tempInput').value = (data.temp !== null && data.temp !== undefined) ? data.temp : '';
             document.getElementById('drainInput').value = (data.drain !== null && data.drain !== undefined) ? data.drain : '';
             document.getElementById('aspectSelect').value = data.aspect || '';
+            document.getElementById('lameInput').value = (data.lame !== null && data.lame !== undefined) ? data.lame : '';
+            document.getElementById('aspectLameSelect').value = data.aspectLame || '';
             
             document.getElementById('sectionIntraday').scrollIntoView({ behavior: 'smooth' });
         };
@@ -627,6 +675,7 @@
             if(data.drain !== undefined && data.drain !== null) document.getElementById('dailyDrainInput').value = data.drain;
             if(data.aspect) document.getElementById('dailyAspectSelect').value = data.aspect;
             if(data.crp !== undefined && data.crp !== null) document.getElementById('dailyCrpInput').value = data.crp;
+            if(data.gb !== undefined && data.gb !== null) document.getElementById('dailyGbInput').value = data.gb;
             if(data.hb !== undefined && data.hb !== null) document.getElementById('dailyHbInput').value = data.hb;
             
             document.getElementById('sectionDaily').scrollIntoView({ behavior: 'smooth' });
@@ -638,10 +687,10 @@
             }
         };
 
-        // --- EXPORTATION ET PARTAGE ---
-        function getChartImageBlob() {
+        // --- EXPORTATION ET PARTAGE GÉNÉRIQUE ---
+        function getChartImageBlob(chartCanvasId, prefixTitle) {
             return new Promise((resolve) => {
-                const chartCanvas = document.getElementById('dailyChart');
+                const chartCanvas = document.getElementById(chartCanvasId);
                 const destCanvas = document.createElement('canvas');
                 
                 const headerHeight = 70;
@@ -684,11 +733,11 @@
                 }
                 
                 ctx.fillStyle = '#0369a1';
-                const fontSize = Math.max(20, Math.floor(destCanvas.width * 0.025));
+                const fontSize = Math.max(18, Math.floor(destCanvas.width * 0.022));
                 ctx.font = `bold ${fontSize}px sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(`Lit ${pBed} | Patient : ${pName} | ${jStr}`, destCanvas.width / 2, headerHeight / 2);
+                ctx.fillText(`${prefixTitle} | Lit ${pBed} | Patient : ${pName} | ${jStr}`, destCanvas.width / 2, headerHeight / 2);
                 
                 ctx.drawImage(chartCanvas, 0, headerHeight);
                 
@@ -696,36 +745,53 @@
                     resolve({
                         blob: blob,
                         dataUrl: destCanvas.toDataURL('image/jpeg', 1.0),
-                        fileName: `Courbe_${pName.replace(/\s+/g, '_')}_${jStr}.jpg`
+                        fileName: `Courbe_${prefixTitle.replace(/\s+/g, '_')}_${pName.replace(/\s+/g, '_')}_${jStr}.jpg`
                     });
                 }, 'image/jpeg', 1.0);
             });
         }
 
-        window.downloadJPG = async function() {
-            const { dataUrl, fileName } = await getChartImageBlob();
+        // --- EXPORT DAILY ---
+        window.downloadDailyJPG = async function() {
+            const { dataUrl, fileName } = await getChartImageBlob('dailyChart', 'Suivi_Journalier');
             const link = document.createElement('a');
             link.download = fileName;
             link.href = dataUrl;
             link.click();
         };
 
-        window.shareChartNative = async function() {
-            const { blob, fileName } = await getChartImageBlob();
+        window.shareDailyChartNative = async function() {
+            const { blob, fileName } = await getChartImageBlob('dailyChart', 'Suivi_Journalier');
             const file = new File([blob], fileName, { type: 'image/jpeg' });
-            
             try {
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        title: 'Courbes de suivi',
-                        files: [file]
-                    });
-                } else {
-                    throw new Error("Partage non supporté");
-                }
+                    await navigator.share({ title: 'Courbes de suivi journalier', files: [file] });
+                } else { throw new Error("Partage non supporté"); }
             } catch (error) {
                 alert("Le partage direct n'est pas supporté. Téléchargement en cours...");
-                window.downloadJPG();
+                window.downloadDailyJPG();
+            }
+        };
+
+        // --- EXPORT INTRADAY ---
+        window.downloadIntradayJPG = async function() {
+            const { dataUrl, fileName } = await getChartImageBlob('intradayChart', 'Suivi_Intrajournalier');
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = dataUrl;
+            link.click();
+        };
+
+        window.shareIntradayChartNative = async function() {
+            const { blob, fileName } = await getChartImageBlob('intradayChart', 'Suivi_Intrajournalier');
+            const file = new File([blob], fileName, { type: 'image/jpeg' });
+            try {
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ title: 'Courbes de suivi intrajournalier', files: [file] });
+                } else { throw new Error("Partage non supporté"); }
+            } catch (error) {
+                alert("Le partage direct n'est pas supporté. Téléchargement en cours...");
+                window.downloadIntradayJPG();
             }
         };
 
@@ -741,6 +807,8 @@
             const temps = sortedKeys.map(k => dataObj[k].temp);
             const drains = sortedKeys.map(k => dataObj[k].drain);
             const aspects = sortedKeys.map(k => dataObj[k].aspect || '');
+            const lames = sortedKeys.map(k => dataObj[k].lame);
+            const aspectsLame = sortedKeys.map(k => dataObj[k].aspectLame || '');
 
             if(intradayChartInstance) intradayChartInstance.destroy();
             intradayChartInstance = new Chart(ctx, {
@@ -749,7 +817,8 @@
                     labels: labels,
                     datasets: [
                         { label: 'Température (°C)', data: temps, borderColor: '#dc2626', backgroundColor: '#dc2626', yAxisID: 'yTemp', tension: 0.3, spanGaps: true },
-                        { label: 'Drain (cc)', data: drains, borderColor: '#0284c7', backgroundColor: '#0284c7', yAxisID: 'yDrain', tension: 0.3, spanGaps: true }
+                        { label: 'Drain (cc)', data: drains, borderColor: '#0284c7', backgroundColor: '#0284c7', yAxisID: 'yDrain', tension: 0.3, spanGaps: true },
+                        { label: 'Lame (cc)', data: lames, borderColor: '#16a34a', backgroundColor: '#16a34a', yAxisID: 'yDrain', tension: 0.3, spanGaps: true }
                     ]
                 },
                 options: {
@@ -763,6 +832,7 @@
                                     if (label) label += ' : ';
                                     if (context.parsed.y !== null) label += context.parsed.y;
                                     if (context.datasetIndex === 1 && aspects[context.dataIndex]) label += ' (' + aspects[context.dataIndex] + ')';
+                                    if (context.datasetIndex === 2 && aspectsLame[context.dataIndex]) label += ' (' + aspectsLame[context.dataIndex] + ')';
                                     return label;
                                 }
                             }
@@ -770,7 +840,7 @@
                     },
                     scales: {
                         yTemp: { type: 'linear', position: 'left', title: { display: true, text: 'Température (°C)' }, min: 35, max: 42 },
-                        yDrain: { type: 'linear', position: 'right', title: { display: true, text: 'Quantité Drain (cc)' }, min: 0, max: 1000, ticks: { stepSize: 50 }, grid: { drawOnChartArea: false } }
+                        yDrain: { type: 'linear', position: 'right', title: { display: true, text: 'Quantité Drain / Lame (cc)' }, min: 0, max: 1000, ticks: { stepSize: 50 }, grid: { drawOnChartArea: false } }
                     }
                 },
                 plugins: [topLabelsPlugin]
@@ -790,6 +860,8 @@
                         <td>${d.temp !== null && d.temp !== undefined ? d.temp + ' °C' : '-'}</td>
                         <td>${d.drain !== null && d.drain !== undefined ? d.drain + ' cc' : '-'}</td>
                         <td>${d.aspect || '-'}</td>
+                        <td>${d.lame !== null && d.lame !== undefined ? d.lame + ' cc' : '-'}</td>
+                        <td>${d.aspectLame || '-'}</td>
                         <td style="text-align:center;">
                             <button class="action-btn" onclick="editIntraday('${k}')" title="Modifier">✏️</button>
                             <button class="action-btn" onclick="deleteIntraday('${k}')" title="Supprimer">🗑️</button>
@@ -803,7 +875,7 @@
         function renderDailyChart(dataObj) {
             const ctx = document.getElementById('dailyChart').getContext('2d');
             const daysOrder = ['J0','J1','J2','J3','J4','J5','J6','J7','J8','J9','J10','J11','J12','J13','J14','J15'];
-            const labels = [], drains = [], crps = [], hbs = [], aspects = [];
+            const labels = [], drains = [], crps = [], gbs = [], hbs = [], aspects = [];
             
             daysOrder.forEach(day => {
                 if(dataObj[day]) { 
@@ -811,6 +883,7 @@
                     labels.push(labelStr); 
                     drains.push(dataObj[day].drain !== undefined ? dataObj[day].drain : null);
                     crps.push(dataObj[day].crp !== undefined ? dataObj[day].crp : null);
+                    gbs.push(dataObj[day].gb !== undefined ? dataObj[day].gb : null);
                     hbs.push(dataObj[day].hb !== undefined ? dataObj[day].hb : null);
                     aspects.push(dataObj[day].aspect || '');
                 }
@@ -822,6 +895,9 @@
             }
             if(currentDailyTab === 'CRP' || currentDailyTab === 'All') {
                 datasets.push({ label: 'CRP (mg/L)', data: crps, borderColor: '#dc2626', backgroundColor: '#dc2626', fill: false, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#dc2626', yAxisID: 'yPrimary' });
+            }
+            if(currentDailyTab === 'GB' || currentDailyTab === 'All') {
+                datasets.push({ label: 'GB (10³/µL)', data: gbs, borderColor: '#16a34a', backgroundColor: '#16a34a', fill: false, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#16a34a', yAxisID: 'yPrimary' });
             }
             if(currentDailyTab === 'Hb' || currentDailyTab === 'All') {
                 datasets.push({ label: 'Hb (g/dL)', data: hbs, borderColor: '#0284c7', backgroundColor: '#0284c7', fill: false, tension: 0.3, pointRadius: 6, pointBackgroundColor: '#0284c7', yAxisID: 'yHb' });
@@ -849,7 +925,7 @@
                         }
                     },
                     scales: { 
-                        yPrimary: { type: 'linear', position: 'left', title: { display: true, text: 'Valeur (cc ou mg/L)' } },
+                        yPrimary: { type: 'linear', position: 'left', title: { display: true, text: 'Valeur (cc, mg/L ou 10³/µL)' } },
                         yHb: { type: 'linear', position: 'right', title: { display: true, text: 'Hémoglobine (g/dL)' }, grid: { drawOnChartArea: false }, min: 0, max: 20 }
                     } 
                 },
@@ -872,6 +948,7 @@
                         <td>${d.drain !== null && d.drain !== undefined ? d.drain + ' cc' : '-'}</td>
                         <td>${d.aspect || '-'}</td>
                         <td>${d.crp !== null && d.crp !== undefined ? d.crp : '-'}</td>
+                        <td>${d.gb !== null && d.gb !== undefined ? d.gb : '-'}</td>
                         <td>${d.hb !== null && d.hb !== undefined ? d.hb : '-'}</td>
                         <td style="text-align:center; width:100px;">
                             <button class="action-btn" onclick="editDaily('${day}')" title="Modifier">✏️</button>
