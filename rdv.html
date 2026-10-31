@@ -4,121 +4,533 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculateur RDV - CPMC</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: -apple-system, sans-serif; padding: 20px; max-width: 400px; margin: auto; background: #f4f4f9; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        
-        .btn-home {
-            display: block;
-            text-align: center;
-            background: #e2e8f0;
-            color: #1e293b;
-            padding: 10px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 0.9em;
-            margin-bottom: 15px;
-            transition: background 0.2s;
+        :root {
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --radius: 20px;
         }
-        .btn-home:hover { background: #cbd5e1; }
 
-        select, input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
-        button { background: #007aff; color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        #resultat { margin-top: 15px; font-weight: bold; font-size: 18px; color: #333; text-align: center; }
-        .rdv-date { color: #007aff; margin-top: 5px; text-transform: capitalize; }
-        .rdv-count { color: #dc2626; font-size: 0.9em; margin-top: 8px; font-weight: bold; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 550px;
+            border-radius: var(--radius);
+            padding: 40px 30px;
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .header-icon {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            background: #eef2ff;
+            width: 80px;
+            height: 80px;
+            line-height: 80px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .header h2 {
+            margin: 0;
+            color: var(--text-main);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            margin: 8px 0 0 0;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* --- SÉLECTEUR DE MODE --- */
+        .mode-selector {
+            display: flex;
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .mode-btn {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        .mode-btn.active {
+            color: var(--primary);
+            background: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-group.hidden {
+            display: none;
+        }
+
+        label {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            background: #f8fafc;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        select {
+            white-space: normal;
+            height: auto;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 44px;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            pointer-events: none;
+        }
+
+        .quick-chips {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .chip {
+            background: #f1f5f9;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chip:hover, .chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
+        }
+
+        /* --- ZONE DE RÉSULTAT --- */
+        .result-container {
+            margin-top: 30px;
+            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+            transform: scale(0.95);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: none;
+        }
+
+        .result-container.show {
+            display: block;
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .result-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .result-date {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin: 0;
+            text-transform: capitalize;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .result-countdown {
+            font-size: 1rem;
+            margin-top: 8px;
+            opacity: 0.9;
+            background: rgba(255,255,255,0.2);
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        /* --- DATES ALTERNATIVES --- */
+        .alt-dates-container {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .alt-date-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+        
+        .alt-date-row span:first-child {
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        
+        .alt-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-home {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: white;
+            color: var(--text-muted);
+            border: none;
+            padding: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 45px;
+            height: 45px;
+        }
+
+        .btn-home:hover {
+            color: var(--primary);
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <a href="index.html" class="btn-home">🏠 Retour à l'accueil</a>
+    <a href="index.html" class="btn-home" title="Retour à l'accueil">
+        <i class="fa-solid fa-arrow-left"></i>
+    </a>
 
-    <h3 style="margin-top: 0;">📅 Calculateur de RDV</h3>
-    
-    <label>Jour de consultation du médecin :</label>
-    <select id="jourMedecin">
-        <option value="0">Dimanche (Dr Merad, Dr. Alim et Dr Boudabia + Belaz)</option>
-        <option value="1">Lundi (Pr. Chekman + Dr Benouaret, Dr. Gouaref foutia et guehria...)</option>
-        <option value="3">Mercredi (Pr. AZZOUZ, Dr. AKNOUN, Dr. KHELIF, Dr. BOUHIDER, Dr. HACHELAF, Dr. ACHACHA...)</option>
-        <option value="4">Jeudi (Pr. DJELALI, Dr. BOUZID, Dr. AKBAL, Dr. TIFAOUI, Dr. SAADAOUI, Dr, HAMMACHE)</option>
-    </select>
+    <div class="glass-card">
+        <div class="header">
+            <div class="header-icon">
+                <i class="fa-regular fa-calendar-check"></i>
+            </div>
+            <h2>Calculateur de RDV</h2>
+            <p>Trouvez la date de consultation exacte</p>
+        </div>
 
-    <label>Délai demandé (en jours) :</label>
-    <input type="number" id="delai" placeholder="ex: 15" value="15" min="1">
+        <div class="mode-selector">
+            <div class="mode-btn active" id="btnModeJour" onclick="changerMode('jour')">Par Jour</div>
+            <div class="mode-btn" id="btnModeMedecin" onclick="changerMode('medecin')">Par Médecin</div>
+        </div>
 
-    <button onclick="calculerRDV()">Calculer la date</button>
+        <!-- MENU 1 : Choix par Jour -->
+        <div class="form-group" id="groupeJour">
+            <label>Jour de consultation :</label>
+            <i class="fa-solid fa-calendar-day input-icon"></i>
+            <select id="choixJour" onchange="calculerRDV()">
+                <!-- Rempli automatiquement -->
+            </select>
+        </div>
 
-    <div id="resultat"></div>
-</div>
+        <!-- MENU 2 : Choix par Médecin -->
+        <div class="form-group hidden" id="groupeMedecin">
+            <label>Nom du chirurgien :</label>
+            <i class="fa-solid fa-user-doctor input-icon"></i>
+            <select id="choixMedecin" onchange="calculerRDV()">
+                <!-- Rempli automatiquement (Uniquement Chirurgiens) -->
+            </select>
+        </div>
 
-<script>
-    function calculerRDV() {
-        let targetDay = parseInt(document.getElementById('jourMedecin').value);
-        let delai = parseInt(document.getElementById('delai').value);
-        
-        if (isNaN(delai) || delai < 1) {
-            document.getElementById('resultat').innerHTML = "<span style='color:#dc2626; font-size:0.85em;'>Veuillez entrer un délai valide.</span>";
-            return;
+        <div class="form-group">
+            <label>Délai demandé (en jours) :</label>
+            <i class="fa-solid fa-stopwatch input-icon"></i>
+            <input type="number" id="delai" placeholder="ex: 15" value="15" min="1" oninput="updateChips(this.value); calculerRDV()">
+            
+            <div class="quick-chips">
+                <button class="chip" onclick="setDelai(7, this)">7 Jours</button>
+                <button class="chip active" onclick="setDelai(15, this)">15 Jours</button>
+                <button class="chip" onclick="setDelai(30, this)">1 Mois</button>
+                <button class="chip" onclick="setDelai(90, this)">3 Mois</button>
+                <button class="chip" onclick="setDelai(180, this)">6 Mois</button>
+            </div>
+        </div>
+
+        <div id="resultBox" class="result-container">
+            <div class="result-label">Prochain RDV optimal :</div>
+            <div id="dateResult" class="result-date">--</div>
+            <div id="countResult" class="result-countdown">--</div>
+            
+            <!-- Zone pour les dates alternatives (semaine avant / semaine après) -->
+            <div id="altDatesBox" class="alt-dates-container">
+                <!-- Rempli par JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const planning = {
+            0: { nom: "Dimanche", chirurgiens: ["Dr. MERAD", "Dr. BENMOUSSA", "Dr. ZEGANE"], residents: ["Dr. BELAZ", "Dr. BOUDABIA"] },
+            1: { nom: "Lundi",    chirurgiens: ["Pr. CHEKMAN", "Dr. BENOUARET", "Dr. GOUAREF"], residents: ["Dr. FOUTIA", "Dr. GUEHRIA"] },
+            3: { nom: "Mercredi", chirurgiens: ["Pr. AZZOUZ", "Pr. JNIED", "Dr. KHELIF"], residents: ["Dr. AKNOUN", "Dr. SAADAOUI", "Dr. BOUHIDER"] },
+            4: { nom: "Jeudi",    chirurgiens: ["Pr. DJELALI", "Dr. BOUZID", "Dr. AKBAL"], residents: ["Dr. TIFAOUI", "Dr. ACHACHA", "Dr. HAMMACHE"] }
+        };
+
+        let modeActuel = 'jour'; 
+
+        function initialiserListes() {
+            const selectJour = document.getElementById('choixJour');
+            const selectMedecin = document.getElementById('choixMedecin');
+            
+            selectJour.innerHTML = "";
+            selectMedecin.innerHTML = "";
+
+            let listeChirurgiens = [];
+
+            for (const [numeroJour, data] of Object.entries(planning)) {
+                // Pour la liste des jours : on combine chirurgiens et résidents
+                let tousLesNoms = data.chirurgiens.concat(data.residents);
+                let optionJour = document.createElement("option");
+                optionJour.value = numeroJour;
+                optionJour.text = `${data.nom} (${tousLesNoms.join(', ')})`;
+                selectJour.appendChild(optionJour);
+
+                // Pour la liste des médecins : UNIQUEMENT les chirurgiens
+                data.chirurgiens.forEach(med => {
+                    listeChirurgiens.push({ nom: med, jour: numeroJour, nomJour: data.nom });
+                });
+            }
+
+            listeChirurgiens.sort((a, b) => a.nom.localeCompare(b.nom));
+
+            listeChirurgiens.forEach(med => {
+                let option = document.createElement("option");
+                option.value = med.jour; 
+                option.text = `${med.nom} (Consulte le ${med.nomJour})`;
+                selectMedecin.appendChild(option);
+            });
         }
 
-        let today = new Date();
-        today.setHours(0, 0, 0, 0); // Réinitialiser l'heure pour un calcul exact des jours
-
-        // Date exacte après le nombre de jours demandés
-        let targetDate = new Date(today);
-        targetDate.setDate(targetDate.getDate() + delai);
-
-        // 1. Trouver l'option APRES ou EGAL à la date cible
-        let dateAfter = new Date(targetDate);
-        while (dateAfter.getDay() !== targetDay) {
-            dateAfter.setDate(dateAfter.getDate() + 1);
+        function changerMode(mode) {
+            modeActuel = mode;
+            
+            document.getElementById('btnModeJour').classList.remove('active');
+            document.getElementById('btnModeMedecin').classList.remove('active');
+            
+            if(mode === 'jour') {
+                document.getElementById('btnModeJour').classList.add('active');
+                document.getElementById('groupeJour').classList.remove('hidden');
+                document.getElementById('groupeMedecin').classList.add('hidden');
+            } else {
+                document.getElementById('btnModeMedecin').classList.add('active');
+                document.getElementById('groupeMedecin').classList.remove('hidden');
+                document.getElementById('groupeJour').classList.add('hidden');
+            }
+            
+            calculerRDV();
         }
 
-        // 2. Trouver l'option AVANT ou EGAL à la date cible
-        let dateBefore = new Date(targetDate);
-        while (dateBefore.getDay() !== targetDay) {
-            dateBefore.setDate(dateBefore.getDate() - 1);
+        function setDelai(jours, btn) {
+            document.getElementById('delai').value = jours;
+            updateChips(jours);
+            calculerRDV();
         }
 
-        // Calcul du nombre total de jours depuis aujourd'hui
-        let daysBefore = Math.round((dateBefore - today) / (1000 * 60 * 60 * 24));
-        let daysAfter = Math.round((dateAfter - today) / (1000 * 60 * 60 * 24));
+        function updateChips(valeur) {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            let val = parseInt(valeur);
+            let chip = Array.from(document.querySelectorAll('.chip')).find(c => 
+                c.innerText.includes(val) || 
+                (val === 30 && c.innerText.includes("1 Mois")) || 
+                (val === 90 && c.innerText.includes("3 Mois")) || 
+                (val === 180 && c.innerText.includes("6 Mois"))
+            );
+            if(chip) chip.classList.add('active');
+        }
 
-        let selectedDate;
-        let finalDaysCount;
+        function calculerRDV() {
+            let targetDay;
+            if(modeActuel === 'jour') {
+                targetDay = parseInt(document.getElementById('choixJour').value);
+            } else {
+                targetDay = parseInt(document.getElementById('choixMedecin').value);
+            }
 
-        // Vérifier si l'option "Avant" est bien dans le futur (> 0 jours depuis aujourd'hui)
-        if (daysBefore > 0) {
-            let gapBefore = Math.abs(daysBefore - delai);
-            let gapAfter = Math.abs(daysAfter - delai);
+            let delai = parseInt(document.getElementById('delai').value);
+            let resultBox = document.getElementById('resultBox');
+            
+            if (isNaN(delai) || delai < 1) {
+                resultBox.classList.remove('show');
+                setTimeout(() => resultBox.style.display = 'none', 300);
+                return;
+            }
 
-            // Choisir la date dont l'écart avec le délai est le plus petit
-            if (gapBefore <= gapAfter) {
-                selectedDate = dateBefore;
-                finalDaysCount = daysBefore;
+            resultBox.style.display = 'block';
+            setTimeout(() => resultBox.classList.add('show'), 10);
+
+            let today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Cible idéale
+            let targetDate = new Date(today);
+            targetDate.setDate(targetDate.getDate() + delai);
+
+            // Recherche du jour correspondant juste après
+            let dateAfter = new Date(targetDate);
+            while (dateAfter.getDay() !== targetDay) {
+                dateAfter.setDate(dateAfter.getDate() + 1);
+            }
+
+            // Recherche du jour correspondant juste avant
+            let dateBefore = new Date(targetDate);
+            while (dateBefore.getDay() !== targetDay) {
+                dateBefore.setDate(dateBefore.getDate() - 1);
+            }
+
+            let daysBefore = Math.round((dateBefore - today) / (1000 * 60 * 60 * 24));
+            let daysAfter = Math.round((dateAfter - today) / (1000 * 60 * 60 * 24));
+
+            let selectedDate;
+            let finalDaysCount;
+
+            // Choix de la date la plus proche du délai demandé
+            if (daysBefore > 0) {
+                let gapBefore = Math.abs(daysBefore - delai);
+                let gapAfter = Math.abs(daysAfter - delai);
+
+                if (gapBefore <= gapAfter) {
+                    selectedDate = dateBefore;
+                    finalDaysCount = daysBefore;
+                } else {
+                    selectedDate = dateAfter;
+                    finalDaysCount = daysAfter;
+                }
             } else {
                 selectedDate = dateAfter;
                 finalDaysCount = daysAfter;
             }
-        } else {
-            // Si la date "Avant" est aujourd'hui ou dans le passé, prendre obligatoirement l'option "Après"
-            selectedDate = dateAfter;
-            finalDaysCount = daysAfter;
+
+            let options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let optionsCourtes = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' }; // Format jj/mm/aaaa
+            
+            // Affichage principal
+            document.getElementById('dateResult').innerText = selectedDate.toLocaleDateString('fr-FR', options);
+            document.getElementById('countResult').innerText = `(RDV dans ${finalDaysCount} jour${finalDaysCount > 1 ? 's' : ''})`;
+
+            // --- CALCUL DES DATES ALTERNATIVES (1 semaine avant / 1 semaine après) ---
+            let altDatesContainer = document.getElementById('altDatesBox');
+            altDatesContainer.innerHTML = ''; // On vide les anciennes données
+
+            // Semaine avant
+            let prevWeekDate = new Date(selectedDate);
+            prevWeekDate.setDate(selectedDate.getDate() - 7);
+            let prevDaysCount = Math.round((prevWeekDate - today) / (1000 * 60 * 60 * 24));
+
+            if (prevDaysCount > 0) {
+                let divPrev = document.createElement('div');
+                divPrev.className = 'alt-date-row';
+                divPrev.innerHTML = `
+                    <span><i class="fa-solid fa-angle-left" style="margin-right: 8px;"></i>${prevWeekDate.toLocaleDateString('fr-FR', optionsCourtes)}</span>
+                    <span class="alt-badge">dans ${prevDaysCount}j</span>
+                `;
+                altDatesContainer.appendChild(divPrev);
+            }
+
+            // Semaine après
+            let nextWeekDate = new Date(selectedDate);
+            nextWeekDate.setDate(selectedDate.getDate() + 7);
+            let nextDaysCount = Math.round((nextWeekDate - today) / (1000 * 60 * 60 * 24));
+
+            let divNext = document.createElement('div');
+            divNext.className = 'alt-date-row';
+            divNext.innerHTML = `
+                <span><i class="fa-solid fa-angle-right" style="margin-right: 8px;"></i>${nextWeekDate.toLocaleDateString('fr-FR', optionsCourtes)}</span>
+                <span class="alt-badge">dans ${nextDaysCount}j</span>
+            `;
+            altDatesContainer.appendChild(divNext);
         }
 
-        let options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        let dateFormatee = selectedDate.toLocaleDateString('fr-FR', options);
-
-        document.getElementById('resultat').innerHTML = `
-            <div>Prochain RDV :</div>
-            <div class="rdv-date">${dateFormatee}</div>
-            <div class="rdv-count">(rdv dans ${finalDaysCount} jour${finalDaysCount > 1 ? 's' : ''})</div>
-        `;
-    }
-</script>
-
+        window.onload = function() {
+            initialiserListes();
+            calculerRDV();
+        };
+    </script>
 </body>
 </html>
