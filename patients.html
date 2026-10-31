@@ -10,538 +10,477 @@
     }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Palette moderne */
             --primary: #0284c7;
-            --primary-hover: #0369a1;
             --primary-light: #e0f2fe;
-            --success: #10b981;
-            --success-light: #d1fae5;
-            --warning: #f59e0b;
-            --warning-light: #fef3c7;
-            --danger: #ef4444;
-            --danger-light: #fee2e2;
-            --purple: #8b5cf6;
-            --purple-light: #ede9fe;
-            
-            --bg: #f8fafc;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --danger: #dc2626;
+            --bg: #f1f5f9;
             --card: #ffffff;
-            --text: #0f172a;
+            --text: #1e293b;
             --text-light: #64748b;
-            --border: #e2e8f0;
-            
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 120px; }
         
-        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 140px; -webkit-font-smoothing: antialiased; }
         body.modal-open { overflow: hidden; }
 
-        /* HEADER & NAVIGATION */
-        .header { display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 12px 20px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
-        .nav-links { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
-        .nav-links::-webkit-scrollbar { display: none; }
-        .nav-btn { background: var(--card); color: var(--text-light); padding: 10px 16px; border-radius: var(--radius-md); text-decoration: none; font-size: 0.85em; font-weight: 600; white-space: nowrap; border: 1px solid var(--border); transition: all 0.2s; }
-        .nav-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .nav-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25); }
+        .header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; }
+        .nav-links { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+        .nav-btn { background: #e2e8f0; color: var(--text); padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space: nowrap; }
+        .nav-btn.active { background: var(--primary); color: white; }
         
-        /* SEARCH BAR */
-        .search-container { position: relative; margin-bottom: 20px; }
-        .search-input-wrapper { position: relative; display: flex; align-items: center; }
-        .search-icon { position: absolute; left: 16px; font-size: 1.1em; opacity: 0.5; }
-        #patientSearch { width: 100%; padding: 14px 16px 14px 45px; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: 16px; font-family: inherit; background: var(--card); box-shadow: var(--shadow-sm); transition: all 0.2s; outline: none; }
-        #patientSearch:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
-        #searchResults { display: none; position: absolute; width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-md); max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: var(--shadow-lg); margin-top: 8px; }
+        .floor-selector { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 15px; }
+        .floor-btn { background: white; border: 1px solid #cbd5e1; padding: 8px 14px; border-radius: 20px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .floor-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* FLOOR SELECTOR */
-        .floor-selector { display: flex; background: #e2e8f0; padding: 4px; border-radius: var(--radius-lg); overflow-x: auto; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
-        .floor-btn { flex: 1; background: transparent; border: none; padding: 12px 20px; border-radius: var(--radius-md); font-weight: 600; font-size: 0.9em; color: var(--text-light); cursor: pointer; white-space: nowrap; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .floor-btn.active { background: var(--card); color: var(--primary); box-shadow: var(--shadow-sm); }
-
-        /* GRID & ROOMS */
-        .floor { display: none; animation: fadeIn 0.3s ease; }
+        .floor { display: none; }
         .floor.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
-        
-        .room-card { background: transparent; }
-        .room-title { margin: 0 0 10px 0; font-size: 0.85em; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-        .room-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-        .beds { display: flex; flex-direction: column; gap: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+        .room-card { background: var(--card); padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .room-title { margin: 0 0 10px 0; font-size: 0.9em; color: var(--text-light); text-align: center; font-weight: 700; }
+        .beds { display: flex; flex-direction: column; gap: 8px; }
         
         .bed-btn {
-            background-color: var(--card); color: var(--text-light);
-            border: 2px dashed #cbd5e1; padding: 14px; border-radius: var(--radius-md);
-            display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left;
+            background-color: #f8fafc; color: var(--text-light);
+            border: 2px dashed #cbd5e1; padding: 10px; border-radius: 8px;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
             cursor: pointer; width: 100%; box-sizing: border-box;
-            transition: all 0.2s ease; box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
         }
-        .bed-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-        .bed-btn.occupied { background-color: var(--card); color: var(--text); border: 2px solid var(--border); border-left-width: 6px; border-left-color: var(--text-light); }
+        .bed-btn.occupied {
+            background-color: var(--primary-light); color: #0369a1;
+            border: 2px solid var(--primary); font-weight: 600;
+        }
 
-        /* STATUS COLORS */
-        .bed-btn.status-garde { border-left-color: var(--purple) !important; background-color: var(--card) !important; }
-        .bed-btn.status-surveiller { border-left-color: var(--danger) !important; background-color: var(--danger-light) !important; }
-        .bed-btn.status-bloc { border-left-color: var(--warning) !important; background-color: var(--warning-light) !important; }
-        .bed-btn.status-postop { border-left-color: var(--success) !important; background-color: var(--success-light) !important; }
+        /* STATUT GARDE MALADE */
+        .bed-btn.status-garde { 
+            background-color: #f3e8ff !important; 
+            border: 2px solid #a855f7 !important; 
+            color: #6b21a8 !important; 
+        }
+
+        /* CODES COULEURS POUR LES LITS */
+        .bed-btn.status-surveiller { background-color: #fef2f2 !important; border: 2px solid #ef4444 !important; color: #991b1b !important; }
+        .bed-btn.status-bloc { background-color: #fefce8 !important; border: 2px solid #eab308 !important; color: #854d0e !important; }
+        .bed-btn.status-postop { background-color: #f0fdf4 !important; border: 2px solid #16a34a !important; color: #15803d !important; }
 
         .bed-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         .bed-badges { display: flex; gap: 4px; flex-wrap: wrap; }
-        .badge { font-size: 0.7em; padding: 3px 6px; border-radius: 6px; font-weight: 700; color: white; line-height: 1.2; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .badge-hospi { background: var(--primary); }
-        .badge-postop { background: var(--success); }
-        .badge-garde { background: var(--purple); }
+        .badge { font-size: 0.7em; padding: 2px 5px; border-radius: 4px; font-weight: 700; color: white; line-height: 1.2; }
+        .badge-hospi { background: #0284c7; }
+        .badge-postop { background: #16a34a; }
+        .badge-garde { background: #9333ea; }
 
-        .bed-code { font-size: 0.8em; font-weight: 600; color: var(--text-light); }
-        .bed-patient-name { font-size: 1.05em; font-weight: 700; word-break: break-word; width: 100%; }
+        .bed-code { font-size: 0.8em; opacity: 0.8; text-transform: uppercase; }
+        .bed-patient-name { font-size: 0.95em; font-weight: bold; word-break: break-word; width: 100%; }
 
-        /* MODAL */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); align-items: flex-end; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
-        .modal.active { display: flex; animation: fadeModal 0.3s ease; }
-        @keyframes fadeModal { from { opacity: 0; } to { opacity: 1; } }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); align-items: flex-end; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal.active { display: flex; }
         
         .modal-content { 
-            background: var(--bg); width: 100%; max-width: 700px; height: 92vh; 
-            border-radius: 24px 24px 0 0; padding: 0; 
-            display: flex; flex-direction: column;
-            box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
+            background: var(--card); width: 100%; max-width: 650px; height: 92vh; 
+            border-radius: 20px 20px 0 0; 
+            padding: 0 20px 20px 20px; 
+            overflow-y: auto; overflow-x: hidden; 
+            box-sizing: border-box; 
+            -webkit-overflow-scrolling: touch; 
         }
         
         .modal-header { 
             display: flex; justify-content: space-between; align-items: center; 
-            background: var(--card); padding: 16px 24px; 
-            border-radius: 24px 24px 0 0;
-            border-bottom: 1px solid var(--border); 
-            z-index: 100; flex-shrink: 0;
+            position: sticky; top: 0; 
+            background: white; 
+            padding: 20px 0 10px 0; 
+            border-bottom: 1px solid #e2e8f0; 
+            z-index: 100; 
         }
         
-        .modal-body { padding: 20px 24px; overflow-y: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
+        .close-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.2em; cursor: pointer; }
+
+        .top-actions { display: flex; gap: 8px; margin: 12px 0; }
+        .top-action-btn { flex: 1; padding: 8px; border-radius: 8px; border: none; font-weight: 700; font-size: 1.1em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+        #transferModal { align-items: center; }
+        #transferModal .modal-content { height: auto; max-width: 480px; border-radius: 20px; padding: 0 20px 20px 20px; }
+
+        .section-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+        .section-title { font-size: 0.85em; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 4px; font-size: 0.9em; }
+        .data-label { color: var(--text-light); }
+        .data-value { font-weight: 600; text-align: right; }
+        .data-text { font-size: 0.9em; line-height: 1.4; background: white; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 4px; white-space: pre-line; }
         
-        .close-btn { background: var(--bg); border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2em; cursor: pointer; color: var(--text-light); transition: all 0.2s; }
-        .close-btn:hover { background: #e2e8f0; color: var(--text); }
-
-        /* STICKY ACTIONS BAR IN MODAL */
-        .sticky-actions { position: sticky; top: -20px; background: rgba(248, 250, 252, 0.9); backdrop-filter: blur(8px); padding: 15px 0; z-index: 10; margin-top: -20px; border-bottom: 1px solid var(--border); margin-bottom: 15px; display: flex; gap: 10px; }
-        .top-action-btn { flex: 1; padding: 12px; border-radius: var(--radius-md); border: none; font-weight: 600; font-size: 0.95em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; font-family: inherit; box-shadow: var(--shadow-sm); }
-        .top-action-btn:active { transform: scale(0.98); }
-
-        /* SECTION CARDS */
-        .section-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
-        .section-title { font-size: 0.85em; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        
-        /* DATA DISPLAY (VIEW MODE) */
-        .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 20px; }
-        .data-item { display: flex; flex-direction: column; gap: 4px; border-bottom: 1px solid var(--bg); padding-bottom: 8px; }
-        .data-item.full-width { grid-column: 1 / -1; }
-        .data-label { color: var(--text-light); font-size: 0.85em; font-weight: 500; }
-        .data-value { font-weight: 600; font-size: 0.95em; color: var(--text); }
-        .data-text { font-size: 0.95em; line-height: 1.5; background: var(--bg); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border); margin-top: 6px; white-space: pre-line; }
-
-        /* FORMULAIRE ÉDITION */
-        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
         .form-group label { font-size: 0.85em; font-weight: 600; color: var(--text); }
+        
         .form-group input, .form-group textarea, .form-group select { 
-            padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); 
-            font-size: 16px; font-family: inherit; background: var(--bg); 
-            width: 100%; box-sizing: border-box; transition: all 0.2s; outline: none;
+            padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; 
+            font-size: 16px; background: #f8fafc; 
+            width: 100%; box-sizing: border-box;
         }
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--primary); background: var(--card); box-shadow: 0 0 0 3px var(--primary-light); }
         
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .grid-dates { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
         
-        .btn-main { background: var(--primary); color: white; padding: 14px; border-radius: var(--radius-md); border: none; font-weight: 600; width: 100%; cursor: pointer; text-align: center; font-size: 1em; box-shadow: var(--shadow-sm); font-family: inherit; transition: background 0.2s; }
-        .btn-main:hover { background: var(--primary-hover); }
-        .btn-warning { background: var(--warning); color: #78350f; }
+        .btn-main { background: var(--primary); color: white; padding: 12px; border-radius: 8px; border: none; font-weight: 600; width: 100%; cursor: pointer; text-align: center; }
+        .btn-warning { background: var(--warning); color: white; }
         .btn-danger { background: var(--danger); color: white; }
         
-        .btn-today { padding: 6px 12px; font-size: 0.8em; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-light); transition: all 0.2s; }
-        .btn-today:hover { background: #e2e8f0; color: var(--text); }
+        .btn-today { padding: 4px 8px; font-size: 0.75em; background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-today:hover { background: #cbd5e1; }
 
-        .checkbox-group { display: flex; flex-direction: column; gap: 12px; margin-top: 5px; }
-        .checkbox-item { display: flex; align-items: center; gap: 10px; font-size: 0.95em; font-weight: 500; cursor: pointer; background: var(--bg); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--border); transition: all 0.2s; }
-        .checkbox-item:hover { background: var(--primary-light); border-color: var(--primary); }
-        .checkbox-item input { width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer; }
+        .checkbox-group { display: flex; flex-direction: column; gap: 8px; margin-top: 5px; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 0.9em; font-weight: 500; cursor: pointer; }
+        .checkbox-item input { width: 18px; height: 18px; cursor: pointer; }
 
-        /* GALLERY */
-        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; margin-top: 10px; }
-        .gallery-img { width: 100%; height: 110px; object-fit: cover; border-radius: var(--radius-md); border: 1px solid var(--border); cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.2s; }
-        .gallery-img:hover { transform: scale(1.05); }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
+        .gallery-img { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; }
 
-        /* DETAILS (Collapsibles) */
-        details.section-card summary { cursor: pointer; user-select: none; list-style: none; outline: none; }
+        details.section-card summary { cursor: pointer; user-select: none; list-style: none; }
         details.section-card summary::-webkit-details-marker { display: none; }
-        
-        /* BOXES FLOTTANTES */
-        .floating-panels-container { position: fixed; bottom: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; align-items: flex-end; z-index: 990; pointer-events: none; gap: 10px; }
-        
-        .surveillance-box, .legend-box { pointer-events: auto; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
-        
-        .surveillance-box { border: 1px solid #fca5a5; padding: 12px 16px; width: 260px; max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scrollbar-width: thin; }
-        .surveillance-title { font-weight: 700; color: #991b1b; font-size: 0.9em; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed #fca5a5; padding-bottom: 6px; margin-bottom: 4px; }
-        .surveillance-list { display: flex; flex-direction: column; gap: 6px; }
-        .surveillance-item { background: var(--card); border: 1px solid #fecaca; padding: 8px 10px; border-radius: 8px; color: #991b1b; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: space-between; gap: 8px; box-shadow: var(--shadow-sm); }
-        .surveillance-item:hover { background: #fef2f2; transform: translateX(2px); }
-        .surveillance-bed { font-size: 0.75em; font-weight: 700; background: #fca5a5; color: #7f1d1d; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
-        .surveillance-name { font-weight: 700; font-size: 0.85em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
-        .surveillance-empty { color: var(--text-light); font-style: italic; font-size: 0.85em; text-align: center; padding: 10px 0; }
 
-        .legend-box { border: 1px solid var(--border); padding: 10px 16px; font-size: 0.85em; max-width: 200px; }
-        .legend-title { font-weight: 700; color: var(--text); font-size: 0.95em; cursor: pointer; list-style: none; outline: none; user-select: none; display: flex; justify-content: space-between; align-items: center; }
+        .legend-box { position: fixed; bottom: 12px; right: 12px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 8px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 990; font-size: 0.8em; }
+        .legend-title { font-weight: 700; color: var(--text); font-size: 0.85em; cursor: pointer; list-style: none; outline: none; user-select: none; }
         .legend-title::-webkit-details-marker { display: none; }
-        .legend-content { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; padding-top: 8px; border-top: 1px dashed var(--border); }
-        .legend-item { display: flex; align-items: center; gap: 8px; font-weight: 500; }
-        .legend-color { width: 14px; height: 14px; border-radius: 4px; display: inline-block; flex-shrink: 0; box-shadow: var(--shadow-sm); }
-        
-        #transferModal { align-items: center; }
-        #transferModal .modal-content { height: auto; max-width: 480px; border-radius: var(--radius-lg); display: block; }
-        
-        #photoViewerModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        #photoViewerModal.active { display: flex; }
-        #photoViewerImg { max-width: 95vw; max-height: 95vh; border-radius: var(--radius-md); object-fit: contain; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
-        .close-photo-btn { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 1.5em; cursor: pointer; transition: background 0.2s; }
-        .close-photo-btn:hover { background: rgba(255,255,255,0.2); }
+        .legend-content { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .legend-color { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+        .legend-red { background-color: #fef2f2; border: 2px solid #ef4444; }
+        .legend-yellow { background-color: #fefce8; border: 2px solid #eab308; }
+        .legend-green { background-color: #f0fdf4; border: 2px solid #16a34a; }
+        .legend-purple { background-color: #f3e8ff; border: 2px solid #a855f7; }
+
+        .surveillance-box { position: fixed; bottom: 12px; left: 12px; background: #ffffff; border: 1px solid #fca5a5; border-radius: 12px; padding: 10px 12px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15); z-index: 990; font-size: 0.8em; width: 240px; max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+        .surveillance-title { font-weight: 700; color: #991b1b; font-size: 0.85em; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed #fca5a5; padding-bottom: 4px; }
+        .surveillance-list { display: flex; flex-direction: column; gap: 5px; }
+        .surveillance-item { background: #fef2f2; border: 1px solid #fecaca; padding: 6px 8px; border-radius: 6px; color: #991b1b; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .surveillance-bed { font-size: 0.8em; font-weight: 700; background: #fca5a5; color: #7f1d1d; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+        .surveillance-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+        .surveillance-empty { color: var(--text-light); font-style: italic; font-size: 0.85em; margin-top: 2px; }
 
         @media (max-width: 640px) {
-            .grid-2 { grid-template-columns: 1fr; gap: 12px; }
-            .grid-3 { grid-template-columns: 1fr; gap: 12px; }
-            .top-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .modal-content { border-radius: 16px 16px 0 0; }
-            .modal-header { padding: 14px 20px; border-radius: 16px 16px 0 0; }
-            .modal-body { padding: 15px; }
-            .floating-panels-container { flex-direction: column; align-items: stretch; gap: 10px; bottom: 10px; left: 10px; right: 10px; }
-            .surveillance-box, .legend-box { width: 100%; max-width: none; box-sizing: border-box; }
-            .surveillance-box { max-height: 160px; }
+            .grid-2 { gap: 6px; }
+            .grid-3 { gap: 6px; }
+            
+            .form-group input, .form-group textarea, .form-group select { padding: 8px 6px; font-size: 16px; }
+            .form-group label { font-size: 0.75em; } 
+            
+            .top-action-btn { font-size: 0.9em; padding: 10px 4px; }
+            .surveillance-box { bottom: 10px; left: 10px; width: calc(100vw - 145px); max-width: 220px; max-height: 150px; padding: 8px 10px; font-size: 0.75em; }
+            .surveillance-name { max-width: 100px; }
+            .legend-box { bottom: 10px; right: 10px; padding: 6px 10px; font-size: 0.75em; }
         }
+        
+        #photoViewerModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 2000; align-items: center; justify-content: center; }
+        #photoViewerModal.active { display: flex; }
+        #photoViewerImg { max-width: 95vw; max-height: 95vh; border-radius: 8px; object-fit: contain; }
+        .close-photo-btn { position: absolute; top: 20px; right: 20px; background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.5em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div class="top-bar">
-            <h2 style="margin:0; color: var(--primary); display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 1.2em;">🏥</span> CPMC Debussy
-            </h2>
-            <div style="font-size: 0.85em; font-weight: 600; color: var(--text-light); background: var(--bg); padding: 6px 12px; border-radius: 20px;">
-                Gestion des Lits
-            </div>
+            <h2 style="margin:0; color: var(--primary);">🏥 CPMC Debussy</h2>
         </div>
         <div class="nav-links">
             <a href="index.html" class="nav-btn">🏠 Accueil</a>
             <a href="patients.html" class="nav-btn active">🛏️ Lits / Hospitalisation</a>
-            <a href="interventions.html" class="nav-btn">📋 Prog. Opératoire</a>
-            <a href="courbes.html" class="nav-btn">📈 Courbes</a>
-            <a href="remarques-consignes.html" class="nav-btn">📝 Consignes</a>
-            <a href="archives.html" class="nav-btn">📦 Archive</a>
-            <a href="archive-interventions.html" class="nav-btn">🗄️ Archive Interventions</a>
-            <a href="fiche-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
+            <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
+            <a href="courbes.html" class="nav-btn">📈 Courbes de Suivi</a>
+            <a href="remarques-consignes.html" class="nav-btn">📝 Remarques et Consignes</a>
+            <a href="archives.html" class="nav-btn">📦 Archive Patients</a>
+            <a href="archives-interventions.html" class="nav-btn">🗂️ Archive Interventions</a>
+            <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
         </div>
     </div>
 
     <!-- BARRE DE RECHERCHE -->
-    <div class="search-container">
-        <div class="search-input-wrapper">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="patientSearch" placeholder="Rechercher un patient par nom..." oninput="searchPatient()">
-        </div>
-        <div id="searchResults"></div>
+    <div class="search-container" style="position: relative; margin-bottom: 15px;">
+        <input type="text" id="patientSearch" placeholder="🔍 Rechercher un patient par nom..." oninput="searchPatient()" style="width: 100%; padding: 10px 15px; border-radius: 8px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 16px; background-color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div id="searchResults" style="display: none; position: absolute; width: 100%; background: white; border: 1px solid #cbd5e1; border-radius: 8px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 4px;"></div>
     </div>
 
-    <!-- SÉLECTEUR D'ÉTAGE -->
     <div class="floor-selector">
         <button class="floor-btn active" onclick="switchFloor('floor-4', this)">4ème Étage</button>
         <button class="floor-btn" onclick="switchFloor('floor-3', this)">3ème Étage</button>
-        <button class="floor-btn" onclick="switchFloor('floor-rea', this)" style="color: var(--danger);">🚨 Réanimation</button>
+        <button class="floor-btn" onclick="switchFloor('floor-rea', this)">🚨 Réanimation</button>
     </div>
 
-    <!-- GRILLES DES CHAMBRES -->
     <div id="floor-4" class="floor active"><div class="grid" id="grid-4"></div></div>
     <div id="floor-3" class="floor"><div class="grid" id="grid-3"></div></div>
     <div id="floor-rea" class="floor"><div class="grid" id="grid-rea"></div></div>
 
-    <!-- PANNEAUX FLOTTANTS -->
-    <div class="floating-panels-container">
-        <div class="surveillance-box">
-            <div class="surveillance-title">
-                <span>🔴 À Surveiller d'urgence</span>
-                <span id="surveillanceCount" style="background:var(--danger); color:white; padding:2px 8px; border-radius:12px; font-size:0.85em;">0</span>
-            </div>
-            <div class="surveillance-list" id="surveillanceList">
-                <span class="surveillance-empty">Aucun patient à surveiller</span>
-            </div>
+    <div class="surveillance-box">
+        <div class="surveillance-title">
+            <span>🔴 À Surveiller</span>
+            <span id="surveillanceCount" style="background:#ef4444; color:white; padding:1px 6px; border-radius:10px; font-size:0.8em;">0</span>
         </div>
-
-        <details class="legend-box" id="legendDetails">
-            <summary class="legend-title">🎨 Légende <span>▾</span></summary>
-            <div class="legend-content">
-                <div class="legend-item"><span class="legend-color" style="background:#fef2f2; border: 2px solid #ef4444;"></span> À surveiller</div>
-                <div class="legend-item"><span class="legend-color" style="background:#fefce8; border: 2px solid #eab308;"></span> Au bloc</div>
-                <div class="legend-item"><span class="legend-color" style="background:#ecfdf5; border: 2px solid #10b981;"></span> Post-op stable</div>
-                <div class="legend-item"><span class="legend-color" style="background:#f5f3ff; border: 2px solid #8b5cf6;"></span> Garde-malade</div>
-            </div>
-        </details>
+        <div class="surveillance-list" id="surveillanceList">
+            <span class="surveillance-empty">Aucun patient</span>
+        </div>
     </div>
+
+    <details class="legend-box" open id="legendDetails">
+        <summary class="legend-title">🎨 Légende ▾</summary>
+        <div class="legend-content">
+            <div class="legend-item"><span class="legend-color legend-red"></span> Rouge : À surveiller</div>
+            <div class="legend-item"><span class="legend-color legend-yellow"></span> Jaune : Au bloc</div>
+            <div class="legend-item"><span class="legend-color legend-green"></span> Vert : Post-op stable</div>
+            <div class="legend-item"><span class="legend-color legend-purple"></span> Violet : Garde-malade</div>
+        </div>
+    </details>
 
     <!-- MODAL DOSSIER PATIENT -->
     <div id="patientModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modalTitle" style="margin:0; font-size: 1.2em; color: var(--text);">Lit --</h3>
+                <h3 id="modalTitle" style="margin:0;">Lit --</h3>
                 <button class="close-btn" onclick="closeModal()">✕</button>
             </div>
             
-            <div class="modal-body">
-                <input type="hidden" id="currentBedId">
+            <input type="hidden" id="currentBedId">
 
-                <!-- VUE LECTURE DOSSIER -->
-                <div id="dossierView">
-                    <div class="sticky-actions">
-                        <button class="top-action-btn btn-warning" onclick="switchToEdit()">✏️ Modifier</button>
-                        <button class="top-action-btn" style="background:var(--primary); color:white;" onclick="changerDeLit()">🔀 Lit</button>
-                        <button class="top-action-btn btn-danger" onclick="archiveAndFreePatient()">📦 Libérer</button>
-                    </div>
-
-                    <div class="section-card">
-                        <div class="section-title">👤 Identité & Informations</div>
-                        <div class="data-grid">
-                            <div class="data-item"><span class="data-label">Nom & Prénom</span> <span class="data-value" id="vName">-</span></div>
-                            <div class="data-item"><span class="data-label">État / Statut</span> <span class="data-value" id="vStatut">-</span></div>
-                            <div class="data-item"><span class="data-label">N° Dossier</span> <span class="data-value" id="vNumDossier">-</span></div>
-                            <div class="data-item"><span class="data-label">Médecin Traitant</span> <span class="data-value" id="vMedecinTraitant">-</span></div>
-                            <div class="data-item"><span class="data-label">Téléphone</span> <span class="data-value" id="vTel">-</span></div>
-                            <div class="data-item"><span class="data-label">Date Naissance</span> <span class="data-value" id="vDob">-</span></div>
-                            <div class="data-item"><span class="data-label">Âge & Groupe</span> <span class="data-value" id="vAgeGrp">-</span></div>
-                            <div class="data-item"><span class="data-label">Poids / Taille / BMI</span> <span class="data-value" id="vBmi">-</span></div>
-                            <div class="data-item full-width"><span class="data-label" style="color:var(--danger)">Allergies</span> <span class="data-value" style="color:var(--danger)" id="vAllergies">Aucune</span></div>
-                        </div>
-                    </div>
-
-                    <div class="section-card">
-                        <div class="section-title">📅 Parcours Hospitalier</div>
-                        <div class="data-grid">
-                            <div class="data-item"><span class="data-label">Date d'entrée</span> <span class="data-value" id="vDateEntree">-</span></div>
-                            <div class="data-item"><span class="data-label">Date d'intervention</span> <span class="data-value" id="vDateIntervention">-</span></div>
-                            <div class="data-item"><span class="data-label">Sortie prévue</span> <span class="data-value" id="vDateSortie">-</span></div>
-                        </div>
-                    </div>
-
-                    <div class="section-card">
-                        <div class="section-title">☑️ Tâches & Suivi</div>
-                        <div class="data-grid">
-                            <div class="data-item"><span class="data-label">Sang</span> <span class="data-value" id="vCmdSang">-</span></div>
-                            <div class="data-item"><span class="data-label">Médicaments</span> <span class="data-value" id="vCmdMed">-</span></div>
-                            <div class="data-item"><span class="data-label">Protocole Sortie</span> <span class="data-value" id="vProtocoleSortie">-</span></div>
-                        </div>
-                    </div>
-
-                    <div class="section-card">
-                        <div class="section-title">🩺 Médical</div>
-                        <div class="data-grid" style="grid-template-columns: 1fr;">
-                            <div class="data-item"><span class="data-label">Diagnostic</span> <span class="data-value" id="vDiag">-</span></div>
-                            <div class="data-item"><span class="data-label">Antécédents</span> <div class="data-text" id="vAtcd">-</div></div>
-                        </div>
-                    </div>
-
-                    <div class="section-card" style="border-left: 4px solid var(--primary); background: #f0f9ff;">
-                        <div class="section-title">📜 Journal d'Évolution</div>
-                        <div class="data-text" id="vRemarques" style="font-family: monospace; font-size:0.9em; background:white;">-</div>
-                        
-                        <div style="margin-top:12px;">
-                            <button id="btnTogglePhotos" class="btn-main" style="background:var(--text-light); font-size:0.9em; display:none; width:auto; padding:8px 16px;" onclick="togglePhotosView()">📸 Afficher les photos (<span id="photoCount">0</span>)</button>
-                            <div id="photosContainer" class="gallery-grid" style="display:none;"></div>
-                        </div>
-                    </div>
-
-                    <details class="section-card">
-                        <summary class="section-title" style="margin-bottom:0; justify-content: space-between;">
-                            <span>🔬 Bilans & Décisions (Dérouler)</span>
-                            <span>▼</span>
-                        </summary>
-                        <div style="margin-top: 16px; border-top: 1px dashed var(--border); padding-top: 12px;">
-                            <div class="data-grid">
-                                <div class="data-item"><span class="data-label">Décision Réa</span> <span class="data-value" id="vDecRea">-</span></div>
-                                <div class="data-item"><span class="data-label">Colloque</span> <span class="data-value" id="vDecColloque">-</span></div>
-                            </div>
-                            <div class="data-item full-width" style="margin-top: 12px;"><span class="data-label">Bilan Complet :</span><div class="data-text" id="vBilanComplet">-</div></div>
-                            <div class="data-grid" style="margin-top: 12px;">
-                                <div class="data-item"><span class="data-label">Échographie :</span><div class="data-value" id="vEcho">-</div></div>
-                                <div class="data-item"><span class="data-label">TDM TAP :</span><div class="data-value" id="vTdmTap">-</div></div>
-                                <div class="data-item"><span class="data-label">TDM :</span><div class="data-value" id="vTdm">-</div></div>
-                                <div class="data-item"><span class="data-label">IRM :</span><div class="data-value" id="vIrm">-</div></div>
-                                <div class="data-item full-width"><span class="data-label">Endoscopie :</span><div class="data-value" id="vEndo">-</div></div>
-                            </div>
-                        </div>
-                    </details>
+            <!-- VUE LECTURE DOSSIER -->
+            <div id="dossierView" style="margin-top: 10px;">
+                <div class="top-actions">
+                    <button class="top-action-btn btn-warning" onclick="switchToEdit()" title="Modifier le dossier">✏️ Modifier</button>
+                    <button class="top-action-btn" style="background:var(--primary); color:white;" onclick="changerDeLit()" title="Changer de lit">🔀 Lit</button>
+                    <button class="top-action-btn btn-danger" onclick="archiveAndFreePatient()" title="Libérer / Archiver">📦 Libérer</button>
                 </div>
 
-                <!-- VUE FORMULAIRE ÉDITION -->
-                <div id="formView" style="display:none;">
-                    <div class="sticky-actions">
-                        <button class="top-action-btn" onclick="savePatient()" style="background:var(--success); color:white;">💾 Enregistrer</button>
-                        <button class="top-action-btn" onclick="switchToView()" style="background:var(--card); color:var(--text); border: 1px solid var(--border);">❌ Annuler</button>
-                    </div>
+                <div class="section-card">
+                    <div class="section-title">👤 Identité & Dossier</div>
+                    <div class="data-row"><span class="data-label">N° Dossier</span> <span class="data-value" id="vNumDossier">-</span></div>
+                    <div class="data-row"><span class="data-label">Médecin Traitant</span> <span class="data-value" id="vMedecinTraitant">-</span></div>
+                    <div class="data-row"><span class="data-label">État / Statut</span> <span class="data-value" id="vStatut">-</span></div>
+                    <div class="data-row"><span class="data-label">Nom & Prénom</span> <span class="data-value" id="vName">-</span></div>
+                    <div class="data-row"><span class="data-label">Téléphone</span> <span class="data-value" id="vTel">-</span></div>
+                    <div class="data-row"><span class="data-label">Date de Naissance</span> <span class="data-value" id="vDob">-</span></div>
+                    <div class="data-row"><span class="data-label">Âge / Groupe</span> <span class="data-value" id="vAgeGrp">-</span></div>
+                    <div class="data-row"><span class="data-label">Poids / Taille / BMI</span> <span class="data-value" id="vBmi">-</span></div>
+                    <div class="data-row"><span class="data-label" style="color:var(--danger)">Allergies</span> <span class="data-value" style="color:var(--danger)" id="vAllergies">Aucune</span></div>
+                </div>
 
-                    <div class="section-card">
-                        <div class="section-title">👤 Identité & Code</div>
-                        <div class="form-group">
-                            <label>État / Code Couleur</label>
-                            <select id="eStatut">
-                                <option value="normal">⚪ Normal (Non opéré)</option>
-                                <option value="surveiller">🔴 À surveiller</option>
-                                <option value="bloc">🟡 Au bloc / En opération</option>
-                                <option value="postop">🟢 Post-opératoire stable</option>
-                                <option value="garde">🧳 Garde-malade</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Nom & Prénom</label>
-                            <input type="text" id="eName" placeholder="Ex: GUESMI NASSIMA">
-                        </div>
-                        <div class="grid-2">
-                            <div class="form-group"><label>N° Dossier</label><input type="text" id="eNumDossier" placeholder="Ex: DOS-2026"></div>
-                            <div class="form-group"><label>Médecin Traitant</label><input type="text" id="eMedecinTraitant" placeholder="Ex: Dr. Benali"></div>
-                            <div class="form-group"><label>Téléphone</label><input type="tel" id="eTel" placeholder="06XXXXXXXX"></div>
-                            <div class="form-group"><label>Groupe Sanguin</label>
-                                <select id="eGrp">
-                                    <option value="Indéterminé">Indéterminé</option>
-                                    <option value="A+">A+</option><option value="A-">A-</option>
-                                    <option value="B+">B+</option><option value="B-">B-</option>
-                                    <option value="AB+">AB+</option><option value="AB-">AB-</option>
-                                    <option value="O+">O+</option><option value="O-">O-</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                <div class="section-card">
+                    <div class="section-title">☑️ Procédures & Suivi</div>
+                    <div class="data-row"><span class="data-label">Commande de sang</span> <span class="data-value" id="vCmdSang">❌ Non faite</span></div>
+                    <div class="data-row"><span class="data-label">Commande de médicament</span> <span class="data-value" id="vCmdMed">❌ Non faite</span></div>
+                    <div class="data-row"><span class="data-label">Protocole de sortie</span> <span class="data-value" id="vProtocoleSortie">❌ Non fait</span></div>
+                </div>
 
-                    <div class="section-card">
-                        <div class="section-title">⚖️ Biométrie</div>
-                        <div class="grid-3">
-                            <div class="form-group"><label>Date Naiss.</label><input type="date" id="eDob" onchange="calcAgeFromDob()"></div>
-                            <div class="form-group"><label>Âge (ans)</label><input type="number" id="eAge"></div>
-                            <div class="form-group"><label>Poids (kg)</label><input type="number" id="ePoids" oninput="calcBMI()"></div>
-                            <div class="form-group"><label>Taille (cm)</label><input type="number" id="eTaille" oninput="calcBMI()"></div>
-                            <div class="form-group" style="grid-column: span 2;"><label>BMI (Auto)</label><input type="text" id="eBmi" readonly style="background:#e2e8f0;"></div>
-                        </div>
-                    </div>
+                <div class="section-card">
+                    <div class="section-title">📅 Dates Clés</div>
+                    <div class="data-row"><span class="data-label">Date d'entrée</span> <span class="data-value" id="vDateEntree">-</span></div>
+                    <div class="data-row"><span class="data-label">Date d'intervention</span> <span class="data-value" id="vDateIntervention">-</span></div>
+                    <div class="data-row"><span class="data-label">Date de sortie prévisionnelle</span> <span class="data-value" id="vDateSortie">-</span></div>
+                </div>
 
-                    <div class="section-card">
-                        <div class="section-title">☑ Check-list & Dates</div>
-                        <div class="checkbox-group" style="margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                            <label class="checkbox-item"><input type="checkbox" id="eCmdSang"> 🩸 Cmd sang</label>
-                            <label class="checkbox-item"><input type="checkbox" id="eCmdMed"> 💊 Cmd médic.</label>
-                            <label class="checkbox-item"><input type="checkbox" id="eProtocoleSortie"> 📄 Sortie prête</label>
-                            <label class="checkbox-item" style="border-color: var(--purple); background: var(--purple-light); color: var(--purple);"><input type="checkbox" id="eIsGardeMalade"> 🧳 Garde-malade</label>
-                        </div>
-                        <div class="grid-3">
-                            <div class="form-group">
-                                <label>Date Entrée</label>
-                                <div style="display:flex; gap:4px; flex-direction: column;">
-                                    <input type="date" id="eDateEntree">
-                                    <button type="button" class="btn-today" onclick="setToday('eDateEntree')">Aujourd'hui</button>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Date Intervention</label>
-                                <input type="date" id="eDateIntervention">
-                            </div>
-                            <div class="form-group">
-                                <label>Date Sortie</label>
-                                <div style="display:flex; gap:4px; flex-direction: column;">
-                                    <input type="date" id="eDateSortie">
-                                    <button type="button" class="btn-today" onclick="setToday('eDateSortie')">Aujourd'hui</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="section-card">
+                    <div class="section-title">🩺 Diagnostic & Antécédents</div>
+                    <div class="data-row"><span class="data-label">Diagnostic</span> <span class="data-value" id="vDiag">-</span></div>
+                    <div class="data-label" style="margin-top:6px;">Antécédents :</div>
+                    <div class="data-text" id="vAtcd">-</div>
+                </div>
 
-                    <div class="section-card">
-                        <div class="section-title">🩺 Médical & Journal</div>
-                        <div class="form-group"><label style="color:var(--danger)">Allergies</label><input type="text" id="eAllergies" style="border-color: var(--danger-light);"></div>
-                        <div class="form-group"><label>Diagnostic Main</label><input type="text" id="eDiag"></div>
-                        <div class="form-group"><label>Antécédents</label><textarea id="eAtcd" rows="2"></textarea></div>
-
-                        <div class="form-group" style="background: var(--primary-light); padding: 16px; border-radius: var(--radius-md); border: 1px solid #7dd3fc; margin-top: 16px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap: wrap; gap: 8px;">
-                                <label style="color:var(--primary-hover); font-size: 1em; margin:0;">📜 Journal d'Évolution</label>
-                                <button type="button" class="btn-today" onclick="appendTimestampedNote()" style="background:var(--primary); color:white; border:none; padding: 8px 14px;">⏱️ Ajouter une note horodatée</button>
-                            </div>
-                            <textarea id="eRemarques" rows="6" placeholder="Cliquez sur le bouton pour horodater..."></textarea>
-                        </div>
-
-                        <div class="form-group" style="margin-top: 16px;">
-                            <label>📸 Ajouter des Photos (Imagerie, Plaies...)</label>
-                            <input type="file" id="ePhotos" multiple accept="image/*,.heic,.HEIC" onchange="handlePhotoUpload(event)" style="background: white;">
-                            <div id="photosPreview" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;"></div>
-                        </div>
-                    </div>
-
-                    <details class="section-card">
-                        <summary class="section-title" style="margin-bottom:0; justify-content: space-between;">
-                            <span>🔬 Bilans & Décisions (Dérouler)</span>
-                            <span>▼</span>
-                        </summary>
-                        <div style="margin-top: 16px; border-top: 1px dashed var(--border); padding-top: 12px;">
-                            <div class="grid-2">
-                                <div class="form-group"><label>Décision Réa</label><input type="text" id="eDecRea"></div>
-                                <div class="form-group"><label>Décision Colloque</label><input type="text" id="eDecColloque"></div>
-                                <div class="form-group"><label>Date Colloque</label><input type="date" id="eDateColloque"></div>
-                            </div>
-                            <div class="form-group"><label>Bilans Complets (FNS, TP...)</label><textarea id="eBilanComplet" rows="3"></textarea></div>
-                            <div class="grid-2">
-                                <div class="form-group"><label>Échographie</label><input type="text" id="eEcho"></div>
-                                <div class="form-group"><label>TDM TAP</label><input type="text" id="eTdmTap"></div>
-                                <div class="form-group"><label>TDM</label><input type="text" id="eTdm"></div>
-                                <div class="form-group"><label>IRM</label><input type="text" id="eIrm"></div>
-                                <div class="form-group" style="grid-column: span 2;"><label>Endoscopie</label><input type="text" id="eEndo"></div>
-                            </div>
-                        </div>
-                    </details>
+                <div class="section-card" style="border-left: 4px solid var(--primary);">
+                    <div class="section-title">📜 Journal d'Évolution & Remarques</div>
+                    <div class="data-text" id="vRemarques" style="font-family: inherit;">-</div>
                     
-                    <div style="height: 30px;"></div> <!-- Spacer -->
+                    <div style="margin-top:10px;">
+                        <button id="btnTogglePhotos" class="btn-main" style="background:#64748b; font-size:0.85em; display:none;" onclick="togglePhotosView()">📸 Afficher les photos (<span id="photoCount">0</span>)</button>
+                        <div id="photosContainer" class="gallery-grid" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <div class="section-title">🏛️ Décisions Médicales</div>
+                    <div class="data-row"><span class="data-label">Décision Réa</span> <span class="data-value" id="vDecRea">-</span></div>
+                    <div class="data-row"><span class="data-label">Colloque</span> <span class="data-value" id="vDecColloque">-</span></div>
+                </div>
+
+                <details class="section-card">
+                    <summary class="section-title" style="margin-bottom:0;">
+                        <span>🔬 Bilans & Imagerie (Résultats)</span>
+                        <span style="font-size: 0.9em; color: var(--primary);">▼</span>
+                    </summary>
+                    <div style="margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+                        <div class="data-label">Bilan Complet :</div><div class="data-text" id="vBilanComplet">-</div>
+                        <div class="data-label" style="margin-top:6px;">Échographie :</div><div class="data-text" id="vEcho">-</div>
+                        <div class="data-label" style="margin-top:6px;">TDM TAP :</div><div class="data-text" id="vTdmTap">-</div>
+                        <div class="data-label" style="margin-top:6px;">TDM :</div><div class="data-text" id="vTdm">-</div>
+                        <div class="data-label" style="margin-top:6px;">IRM :</div><div class="data-text" id="vIrm">-</div>
+                        <div class="data-label" style="margin-top:6px;">Endoscopie :</div><div class="data-text" id="vEndo">-</div>
+                    </div>
+                </details>
+
+                <div class="top-actions" style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                    <button class="top-action-btn btn-warning" onclick="switchToEdit()" title="Modifier le dossier">✏️ Modifier</button>
+                    <button class="top-action-btn" style="background:var(--primary); color:white;" onclick="changerDeLit()" title="Changer de lit">🔀 Lit</button>
+                    <button class="top-action-btn btn-danger" onclick="archiveAndFreePatient()" title="Libérer / Archiver">📦 Libérer</button>
+                </div>
+            </div>
+
+            <!-- VUE FORMULAIRE ÉDITION -->
+            <div id="formView" style="display:none; margin-top: 10px;">
+                <div class="top-actions" style="margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">
+                    <button class="top-action-btn" onclick="savePatient()" style="background:var(--success); color:white;" title="Enregistrer">💾 Enregistrer</button>
+                    <button class="top-action-btn" onclick="switchToView()" style="background:#e2e8f0; color:var(--text);" title="Annuler">❌ Annuler</button>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group"><label>N° Dossier</label><input type="text" id="eNumDossier" placeholder="Ex: DOS-2026"></div>
+                    <div class="form-group"><label>Médecin Traitant</label><input type="text" id="eMedecinTraitant" placeholder="Ex: Dr. Benali"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>État / Code Couleur du Patient</label>
+                    <select id="eStatut">
+                        <option value="normal">⚪ Couleur de base (Non opéré encore)</option>
+                        <option value="surveiller">🔴 À surveiller (Rouge)</option>
+                        <option value="bloc">🟡 Au bloc / En train d'être opéré (Jaune)</option>
+                        <option value="postop">🟢 Post-opératoire stable (Vert)</option>
+                        <option value="garde">🧳 Lit occupé par un Garde-malade (Violet)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Nom & Prénom (ou Nom du patient accompagné)</label>
+                    <input type="text" id="eName" placeholder="Ex: GUESMI NASSIMA (ou Garde-malade de X)">
+                </div>
+                
+                <div class="grid-2">
+                    <div class="form-group"><label>N° Téléphone</label><input type="tel" id="eTel" placeholder="06XXXXXXXX"></div>
+                    <div class="form-group"><label>Groupe Sanguin</label>
+                        <select id="eGrp">
+                            <option value="Indéterminé">Indéterminé</option>
+                            <option value="A+">A+</option><option value="A-">A-</option>
+                            <option value="B+">B+</option><option value="B-">B-</option>
+                            <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                            <option value="O+">O+</option><option value="O-">O-</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 8px;">
+                    <div class="form-group"><label>Date Naissance</label><input type="date" id="eDob" onchange="calcAgeFromDob()"></div>
+                    <div class="form-group"><label>Âge (ans)</label><input type="number" id="eAge"></div>
+                    <div class="form-group"><label>Poids (kg)</label><input type="number" id="ePoids" oninput="calcBMI()"></div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group"><label>Taille (cm)</label><input type="number" id="eTaille" oninput="calcBMI()"></div>
+                    <div class="form-group"><label>BMI Calculated</label><input type="text" id="eBmi" readonly style="background:#e2e8f0;"></div>
+                </div>
+
+                <div class="section-card" style="background:#fff;">
+                    <div class="section-title">☑ Procédures & Suivi</div>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" id="eCmdSang"> Commande de sang faite</label>
+                        <label class="checkbox-item"><input type="checkbox" id="eCmdMed"> Commande de médicament faite</label>
+                        <label class="checkbox-item"><input type="checkbox" id="eProtocoleSortie"> Protocole de sortie prêt</label>
+                        <label class="checkbox-item" style="color: #9333ea; font-weight: bold;"><input type="checkbox" id="eIsGardeMalade"> Ce lit est occupé par un Garde-malade</label>
+                    </div>
+                </div>
+
+                <div class="grid-dates">
+                    <div class="form-group">
+                        <label>Date Entrée</label>
+                        <div style="display:flex; gap:4px;">
+                            <input type="date" id="eDateEntree" style="flex:1;">
+                            <button type="button" class="btn-today" onclick="setToday('eDateEntree')">Aujourd'hui</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Date Intervention</label>
+                        <input type="date" id="eDateIntervention">
+                    </div>
+                    <div class="form-group">
+                        <label>Date Sortie Prévue</label>
+                        <div style="display:flex; gap:4px;">
+                            <input type="date" id="eDateSortie" style="flex:1;">
+                            <button type="button" class="btn-today" onclick="setToday('eDateSortie')">Aujourd'hui</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group"><label>Allergies</label><input type="text" id="eAllergies"></div>
+                <div class="form-group"><label>Diagnostic Main</label><input type="text" id="eDiag"></div>
+                <div class="form-group"><label>Antécédents</label><textarea id="eAtcd" rows="2"></textarea></div>
+
+                <div class="form-group" style="background: #e0f2fe; padding: 10px; border-radius: 8px; border: 1px solid #7dd3fc;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <label style="color:#0369a1; font-weight:700;">📜 Journal d'Évolution</label>
+                        <button type="button" class="btn-today" onclick="appendTimestampedNote()" style="background:#0284c7; color:white; border:none;">⏱️ + Horodater</button>
+                    </div>
+                    <textarea id="eRemarques" rows="5" placeholder="Cliquez sur '+ Horodater' pour ajouter une note avec votre pseudo..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>📸 Ajouter des Photos</label>
+                    <input type="file" id="ePhotos" multiple accept="image/*,.heic,.HEIC" onchange="handlePhotoUpload(event)">
+                    <div id="photosPreview" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;"></div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group"><label>Décision Réa</label><input type="text" id="eDecRea" placeholder="Ex: Oui / Non"></div>
+                    <div class="form-group"><label>Décision Colloque</label><input type="text" id="eDecColloque" placeholder="Ex: Opérable"></div>
+                </div>
+                <div class="form-group"><label>Date Colloque</label><input type="date" id="eDateColloque"></div>
+
+                <div class="form-group"><label>🔬 Bilans Complets (FNS, TP, TCA...)</label><textarea id="eBilanComplet" rows="3"></textarea></div>
+                <div class="grid-2">
+                    <div class="form-group"><label>Échographie</label><input type="text" id="eEcho"></div>
+                    <div class="form-group"><label>TDM TAP</label><input type="text" id="eTdmTap"></div>
+                    <div class="form-group"><label>TDM</label><input type="text" id="eTdm"></div>
+                    <div class="form-group"><label>IRM</label><input type="text" id="eIrm"></div>
+                </div>
+                <div class="form-group"><label>Endoscopie</label><input type="text" id="eEndo"></div>
+
+                <div class="top-actions" style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                    <button class="top-action-btn" onclick="savePatient()" style="background:var(--success); color:white;" title="Enregistrer">💾 Enregistrer</button>
+                    <button class="top-action-btn" onclick="switchToView()" style="background:#e2e8f0; color:var(--text);" title="Annuler">❌ Annuler</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL TRANSFERT -->
+    <!-- MODAL POPUP SÉLECTION CHANGEMENT DE LIT -->
     <div id="transferModal" class="modal">
-        <div class="modal-content" style="padding: 24px;">
-            <div class="modal-header" style="padding: 0 0 16px 0; border: none;">
-                <h3 style="margin:0; color:var(--primary); display: flex; align-items: center; gap:8px;">🔀 Transfert de Lit</h3>
-                <button class="close-btn" onclick="closeTransferModal()" style="width: 32px; height: 32px;">✕</button>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin:0; color:var(--primary);">🔀 Transfert de Lit</h3>
+                <button class="close-btn" onclick="closeTransferModal()">✕</button>
             </div>
-            <div>
-                <p style="font-size:0.95em; color:var(--text); margin-bottom:20px; line-height:1.5; background: var(--bg); padding: 12px; border-radius: var(--radius-md);">
-                    Déplacer le patient <strong id="transferPatientName" style="color:var(--primary); font-size:1.1em; display:block; margin:4px 0;"></strong>
-                    <span style="font-size:0.85em; color:var(--text-light);">Depuis le lit : <b id="transferCurrentBed"></b></span>
+            <div style="margin-top: 15px;">
+                <p style="font-size:0.95em; color:var(--text); margin-bottom:15px; line-height:1.4;">
+                    Déplacer le patient <strong id="transferPatientName" style="color:var(--primary);"></strong><br>
+                    <span style="font-size:0.85em; color:var(--text-light);">Lit actuel : <b id="transferCurrentBed"></b></span>
                 </p>
                 
                 <div class="form-group">
-                    <label>Sélectionner le nouveau lit disponible :</label>
-                    <select id="selectNewBed" style="padding:14px; font-weight:600;"></select>
+                    <label style="font-size:0.85em; font-weight:bold; color:var(--text);">Sélectionner le nouveau lit disponible :</label>
+                    <select id="selectNewBed" style="padding:12px; font-size:16px; border-radius:8px; border:1px solid #cbd5e1; width:100%; margin-top:6px; background:#f8fafc; font-weight:600;">
+                    </select>
                 </div>
 
-                <div style="display:flex; flex-direction:column; gap:10px; margin-top:24px;">
+                <div style="display:flex; flex-direction:column; gap:8px; margin-top:20px;">
                     <button class="btn-main" onclick="confirmBedTransfer()" style="background:var(--success);">✅ Confirmer le transfert</button>
-                    <button class="btn-main" onclick="closeTransferModal()" style="background:var(--card); color:var(--text); border:1px solid var(--border);">Annuler</button>
+                    <button class="btn-main" onclick="closeTransferModal()" style="background:transparent; color:var(--text); border:1px solid #cbd5e1;">Annuler</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- VISIONNEUSE PHOTO -->
     <div id="photoViewerModal" onclick="closePhotoViewer()">
         <button class="close-photo-btn" onclick="closePhotoViewer()">✕</button>
         <img id="photoViewerImg" src="" alt="Aperçu de l'image">
     </div>
 
-    <!-- JAVASCRIPT ORIGINAL INTÉGRALEMENT CONSERVÉ -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, onValue, remove, push, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -568,24 +507,28 @@
         for(let i=1; i<=6; i++) { ALL_BEDS.push(`REA${i}`); }
 
         function getBedLabel(bedId) {
-            if (bedId.startsWith('REA')) return `🚨 Réa — Lit R${bedId.replace('REA','')}`;
+            if (bedId.startsWith('REA')) return `🚨 Réanimation — Lit R${bedId.replace('REA','')}`;
             const floor = bedId.startsWith('4') ? '4ème Étage' : '3ème Étage';
             const type = bedId.endsWith('P') ? 'Porte' : 'Fenêtre';
             const room = bedId.substring(0, 3);
-            return `Chambre ${room} (${type}) [Lit ${bedId}]`;
+            return `🛏️ ${floor} — Chambre ${room} (${type}) [Lit ${bedId}]`;
         }
 
         function calculateDaysDiff(dateStr) {
             if (!dateStr) return null;
             const parts = dateStr.split('-');
             if (parts.length !== 3) return null;
+            
             const year = parseInt(parts[0], 10);
             const month = parseInt(parts[1], 10) - 1;
             const day = parseInt(parts[2], 10);
+            
             const targetDate = new Date(year, month, day);
             targetDate.setHours(0, 0, 0, 0);
+
             const today = new Date();
             today.setHours(0, 0, 0, 0);
+
             const diffDays = Math.floor((today - targetDate) / (1000 * 60 * 60 * 24));
             return diffDays >= 0 ? diffDays : null;
         }
@@ -602,7 +545,7 @@
                 const room = document.createElement('div');
                 room.className = 'room-card';
                 room.style.gridColumn = "1 / -1";
-                let bedsHtml = '<div class="beds" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:16px;">';
+                let bedsHtml = '<div class="beds" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:10px;">';
                 for(let i=1; i<=6; i++) {
                     bedsHtml += `
                         <button id="btn-REA${i}" class="bed-btn" onclick="openModal('REA${i}')">
@@ -695,7 +638,9 @@
                     if (patient.isTraceRea) {
                         if(nameSpan) {
                             let text = patient.nom;
-                            if (text.includes('(vide)')) text = text.replace('(vide)', '').trim();
+                            if (text.includes('(vide)')) {
+                                text = text.replace('(vide)', '').trim();
+                            }
                             nameSpan.innerHTML = `(vide) <span style="color: var(--danger); font-weight: 700;">${text}</span>`;
                         }
                         return;
@@ -708,7 +653,7 @@
 
                     if (isGarde) {
                         btn.classList.add('status-garde');
-                        if(nameSpan) nameSpan.textContent = patient.nom.toUpperCase().includes('GARDE') ? patient.nom.toUpperCase() : `GARDE (${patient.nom.toUpperCase()})`;
+                        if(nameSpan) nameSpan.textContent = patient.nom.toUpperCase().includes('GARDE') ? patient.nom.toUpperCase() : `GARDE-MALADE (${patient.nom.toUpperCase()})`;
                         if(badgesDiv) badgesDiv.innerHTML = `<span class="badge badge-garde">🧳 Garde</span>`;
                         return;
                     }
@@ -730,9 +675,13 @@
 
                     if(badgesDiv) {
                         const jHospi = calculateDaysDiff(patient.dateEntree);
+                        
                         let dateChir = patient.dateIntervention;
                         const ops = getPatientInterventions(patient);
-                        if (ops.length > 0) dateChir = ops[0].date;
+                        if (ops.length > 0) {
+                            dateChir = ops[0].date;
+                        }
+
                         const jChir = calculateDaysDiff(dateChir);
 
                         let badgeHtml = '';
@@ -747,7 +696,7 @@
             });
 
             document.getElementById('surveillanceCount').textContent = countSurveillance;
-            document.getElementById('surveillanceList').innerHTML = surveillanceHtml || '<div class="surveillance-empty">Aucun patient à surveiller</div>';
+            document.getElementById('surveillanceList').innerHTML = surveillanceHtml || '<span class="surveillance-empty">Aucun patient</span>';
         }
 
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
@@ -769,26 +718,34 @@
 
         function getInterventionDisplayDate(patient) {
             const uniqueOps = getPatientInterventions(patient);
+
             if (uniqueOps.length > 0) {
                 const firstOp = uniqueOps[0];
                 const diffDays1 = calculateDaysDiff(firstOp.date);
                 const formattedDate1 = formatDate(firstOp.date);
+                
                 let result = (diffDays1 !== null) ? `(J${diffDays1}) ${formattedDate1}` : formattedDate1;
                 result += `<br><span style="color:var(--danger); font-size: 0.9em; font-weight: 600;">${firstOp.intervention}</span>`;
+
                 if (uniqueOps.length >= 2) {
                     const secondOp = uniqueOps[1];
                     const diffDays2 = calculateDaysDiff(secondOp.date);
                     const formattedDate2 = formatDate(secondOp.date);
                     const jStr2 = diffDays2 !== null ? `(J${diffDays2}) ` : '';
+                    
                     result += `<br><span style="color:var(--danger); font-size: 0.9em; font-weight: 600;">(2ème : ${jStr2}${formattedDate2} - ${secondOp.intervention})</span>`;
                 }
                 return result;
             }
+
             let dateStr = patient.dateIntervention || "";
             if (!dateStr) return "-";
+            
             const diffDays = calculateDaysDiff(dateStr);
             const formattedDate = formatDate(dateStr);
-            if (diffDays !== null) return `(J${diffDays}) ${formattedDate}`;
+            if (diffDays !== null) {
+                return `(J${diffDays}) ${formattedDate}`;
+            }
             return formattedDate;
         }
 
@@ -802,7 +759,9 @@
         window.calcBMI = function() {
             const p = parseFloat(document.getElementById('ePoids').value);
             const t = parseFloat(document.getElementById('eTaille').value) / 100;
-            if(p && t) document.getElementById('eBmi').value = (p / (t * t)).toFixed(1);
+            if(p && t) {
+                document.getElementById('eBmi').value = (p / (t * t)).toFixed(1);
+            }
         };
 
         window.calcAgeFromDob = function() {
@@ -812,12 +771,17 @@
             const today = new Date();
             let age = today.getFullYear() - dob.getFullYear();
             const m = today.getMonth() - dob.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-            if (age >= 0) document.getElementById('eAge').value = age;
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            if (age >= 0) {
+                document.getElementById('eAge').value = age;
+            }
         };
 
         window.setToday = function(inputId) {
-            document.getElementById(inputId).value = new Date().toISOString().split('T')[0];
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById(inputId).value = today;
         };
 
         window.appendTimestampedNote = function() {
@@ -830,26 +794,40 @@
                     pseudo = pseudo.charAt(0).toUpperCase() + pseudo.slice(1);
                 } catch(e) {}
             }
+
             const now = new Date();
             const day = String(now.getDate()).padStart(2, '0');
             const month = String(now.getMonth() + 1).padStart(2, '0');
+
             let hours = now.getHours();
             let minutes = now.getMinutes();
+
             const roundedMinutes = Math.round(minutes / 5) * 5;
-            if (roundedMinutes === 60) { hours = (hours + 1) % 24; minutes = 0; } else { minutes = roundedMinutes; }
+            if (roundedMinutes === 60) {
+                hours = (hours + 1) % 24;
+                minutes = 0;
+            } else {
+                minutes = roundedMinutes;
+            }
+
             const formattedHours = String(hours).padStart(2, '0');
             const formattedMinutes = String(minutes).padStart(2, '0');
+
             const timestampPrefix = `• ${pseudo} ${day}/${month} ${formattedHours}:${formattedMinutes} : `;
+
             const remarquesArea = document.getElementById('eRemarques');
-            if (remarquesArea.value.trim() !== "") remarquesArea.value += `\n${timestampPrefix}`;
-            else remarquesArea.value = `${timestampPrefix}`;
+            if (remarquesArea.value.trim() !== "") {
+                remarquesArea.value += `\n${timestampPrefix}`;
+            } else {
+                remarquesArea.value = `${timestampPrefix}`;
+            }
             remarquesArea.focus();
         };
 
         window.openModal = function(bedId) {
             document.body.classList.add('modal-open');
             document.getElementById('currentBedId').value = bedId;
-            document.getElementById('modalTitle').innerHTML = `🛏️ Lit ${bedId}`;
+            document.getElementById('modalTitle').textContent = `Lit ${bedId}`;
             const p = patientsDb[bedId];
             
             if(p && p.nom && !p.isTraceRea) {
@@ -861,18 +839,21 @@
                     'surveiller': '🔴 À surveiller',
                     'bloc': '🟡 Au bloc opératoire',
                     'postop': '🟢 Post-opératoire stable',
-                    'garde': '🧳 Garde-malade'
+                    'garde': '🧳 Lit occupé par un Garde-malade'
                 };
-                document.getElementById('vStatut').textContent = statutLabels[p.statut] || '⚪ Normal';
+                document.getElementById('vStatut').textContent = statutLabels[p.statut] || '⚪ Normal / Non opéré';
+                
                 document.getElementById('vName').textContent = p.nom;
                 document.getElementById('vTel').textContent = p.telephone || '-';
                 document.getElementById('vDob').textContent = p.dob ? formatDate(p.dob) : '-';
                 document.getElementById('vAgeGrp').textContent = `${p.age || '-'} ans (${p.grp || 'Indéterminé'})`;
-                document.getElementById('vBmi').textContent = `${p.poids || '-'}kg / ${p.taille || '-'}cm (BMI: ${p.bmi || '-'})`;
+                document.getElementById('vBmi').textContent = `${p.poids || '-'} kg / ${p.taille || '-'} cm (BMI: ${p.bmi || '-'})`;
                 document.getElementById('vAllergies').textContent = p.allergies || 'Aucune';
-                document.getElementById('vCmdSang').textContent = p.cmdSang ? '✅ Fait' : '❌ Non';
-                document.getElementById('vCmdMed').textContent = p.cmdMed ? '✅ Fait' : '❌ Non';
-                document.getElementById('vProtocoleSortie').textContent = p.protocoleSortie ? '✅ Prêt' : '❌ Non';
+                
+                document.getElementById('vCmdSang').textContent = p.cmdSang ? '✅ Fait' : '❌ Non faite';
+                document.getElementById('vCmdMed').textContent = p.cmdMed ? '✅ Fait' : '❌ Non faite';
+                document.getElementById('vProtocoleSortie').textContent = p.protocoleSortie ? '✅ Prêt' : '❌ Non fait';
+
                 document.getElementById('vDateEntree').textContent = formatDate(p.dateEntree);
                 document.getElementById('vDateIntervention').innerHTML = getInterventionDisplayDate(p);
                 document.getElementById('vDateSortie').textContent = formatDate(p.dateSortie);
@@ -880,7 +861,7 @@
                 document.getElementById('vDecRea').textContent = p.decRea || '-';
                 document.getElementById('vDecColloque').textContent = p.decColloque ? `${p.decColloque} (${formatDate(p.dateColloque)})` : '-';
                 document.getElementById('vAtcd').textContent = p.atcd || 'Aucun';
-                document.getElementById('vBilanComplet').textContent = p.bilanComplet || '-';
+                document.getElementById('vBilanComplet').textContent = p.bilanComplet || 'Non saisi';
                 document.getElementById('vEcho').textContent = p.echo || '-';
                 document.getElementById('vTdmTap').textContent = p.tdmTap || '-';
                 document.getElementById('vTdm').textContent = p.tdm || '-';
@@ -890,9 +871,10 @@
                 
                 currentPhotos = p.photos || [];
                 const photoBtn = document.getElementById('btnTogglePhotos');
+                const photoCount = document.getElementById('photoCount');
                 if (currentPhotos.length > 0) {
                     photoBtn.style.display = 'block';
-                    document.getElementById('photoCount').textContent = currentPhotos.length;
+                    photoCount.textContent = currentPhotos.length;
                 } else {
                     photoBtn.style.display = 'none';
                 }
@@ -913,7 +895,8 @@
                 container.innerHTML = '';
                 currentPhotos.forEach(src => {
                     const img = document.createElement('img');
-                    img.src = src; img.className = 'gallery-img';
+                    img.src = src;
+                    img.className = 'gallery-img';
                     img.onclick = () => openPhotoViewer(src); 
                     container.appendChild(img);
                 });
@@ -927,6 +910,7 @@
             document.getElementById('photoViewerImg').src = src;
             document.getElementById('photoViewerModal').classList.add('active');
         };
+        
         window.closePhotoViewer = function() {
             document.getElementById('photoViewerModal').classList.remove('active');
         };
@@ -953,10 +937,12 @@
             document.getElementById('ePoids').value = p.poids || '';
             document.getElementById('eTaille').value = p.taille || '';
             document.getElementById('eBmi').value = p.bmi || '';
+            
             document.getElementById('eCmdSang').checked = !!p.cmdSang;
             document.getElementById('eCmdMed').checked = !!p.cmdMed;
             document.getElementById('eProtocoleSortie').checked = !!p.protocoleSortie;
             document.getElementById('eIsGardeMalade').checked = !!p.isGardeMalade;
+
             document.getElementById('eDateEntree').value = p.dateEntree || '';
             document.getElementById('eDateIntervention').value = p.dateIntervention || '';
             document.getElementById('eDateSortie').value = p.dateSortie || '';
@@ -994,30 +980,47 @@
 
         window.handlePhotoUpload = async function(event) {
             const files = Array.from(event.target.files);
+            
             for (const file of files) {
                 let blobToRead = file;
                 const fileName = file.name.toLowerCase();
+                
                 if (fileName.endsWith('.heic') || file.type.includes('heic')) {
                     try {
                         if (window.heic2any) {
                             const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 });
                             blobToRead = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
                         }
-                    } catch (err) { console.error("Erreur de conversion HEIC :", err); }
+                    } catch (err) {
+                        console.error("Erreur lors de la conversion du fichier HEIC :", err);
+                    }
                 }
+
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const img = new Image();
                     img.onload = function() {
                         const canvas = document.createElement('canvas');
                         const maxDim = 800;
-                        let width = img.width; let height = img.height;
-                        if (width > height) { if (width > maxDim) { height *= maxDim / width; width = maxDim; } }
-                        else { if (height > maxDim) { width *= maxDim / height; height = maxDim; } }
-                        canvas.width = width; canvas.height = height;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height) {
+                            if (width > maxDim) {
+                                height *= maxDim / width;
+                                width = maxDim;
+                            }
+                        } else {
+                            if (height > maxDim) {
+                                width *= maxDim / height;
+                                height = maxDim;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        currentPhotos.push(canvas.toDataURL('image/jpeg', 0.7));
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        currentPhotos.push(dataUrl);
                         renderPhotoPreviews();
                     };
                     img.src = e.target.result;
@@ -1035,41 +1038,67 @@
                 container.style.position = 'relative';
                 container.style.display = 'inline-block';
                 container.innerHTML = `
-                    <img src="${src}" style="width:70px; height:70px; object-fit:cover; border-radius:8px; border:1px solid #cbd5e1; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-                    <button type="button" onclick="removePhoto(${index})" style="position:absolute; top:-6px; right:-6px; background:var(--danger); color:white; border:none; border-radius:50%; width:22px; height:22px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.2);">✕</button>
+                    <img src="${src}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;">
+                    <button type="button" onclick="removePhoto(${index})" style="position:absolute; top:-5px; right:-5px; background:var(--danger); color:white; border:none; border-radius:50%; width:18px; height:18px; font-size:10px; cursor:pointer;">✕</button>
                 `;
                 previewDiv.appendChild(container);
             });
         }
 
-        window.removePhoto = function(index) { currentPhotos.splice(index, 1); renderPhotoPreviews(); };
+        window.removePhoto = function(index) {
+            currentPhotos.splice(index, 1);
+            renderPhotoPreviews();
+        };
 
         window.savePatient = function() {
             const bedId = document.getElementById('currentBedId').value;
             const isGarde = document.getElementById('eIsGardeMalade').checked || document.getElementById('eStatut').value === 'garde';
+
             const data = {
-                bedId: bedId, numDossier: document.getElementById('eNumDossier').value.trim(),
+                bedId: bedId,
+                numDossier: document.getElementById('eNumDossier').value.trim(),
                 medecinTraitant: document.getElementById('eMedecinTraitant').value.trim(),
-                statut: document.getElementById('eStatut').value, nom: document.getElementById('eName').value.trim().toUpperCase(),
-                telephone: document.getElementById('eTel').value, grp: document.getElementById('eGrp').value,
-                dob: document.getElementById('eDob').value, age: document.getElementById('eAge').value,
-                poids: document.getElementById('ePoids').value, taille: document.getElementById('eTaille').value,
-                bmi: document.getElementById('eBmi').value, cmdSang: document.getElementById('eCmdSang').checked,
-                cmdMed: document.getElementById('eCmdMed').checked, protocoleSortie: document.getElementById('eProtocoleSortie').checked,
-                isGardeMalade: isGarde, dateEntree: document.getElementById('eDateEntree').value,
-                dateIntervention: document.getElementById('eDateIntervention').value, dateSortie: document.getElementById('eDateSortie').value,
-                allergies: document.getElementById('eAllergies').value, diag: document.getElementById('eDiag').value,
-                atcd: document.getElementById('eAtcd').value, decRea: document.getElementById('eDecRea').value,
-                decColloque: document.getElementById('eDecColloque').value, dateColloque: document.getElementById('eDateColloque').value,
-                bilanComplet: document.getElementById('eBilanComplet').value, echo: document.getElementById('eEcho').value,
-                tdmTap: document.getElementById('eTdmTap').value, tdm: document.getElementById('eTdm').value,
-                irm: document.getElementById('eIrm').value, endo: document.getElementById('eEndo').value,
-                remarques: document.getElementById('eRemarques').value, photos: currentPhotos
+                statut: document.getElementById('eStatut').value,
+                nom: document.getElementById('eName').value.trim().toUpperCase(),
+                telephone: document.getElementById('eTel').value,
+                grp: document.getElementById('eGrp').value,
+                dob: document.getElementById('eDob').value,
+                age: document.getElementById('eAge').value,
+                poids: document.getElementById('ePoids').value,
+                taille: document.getElementById('eTaille').value,
+                bmi: document.getElementById('eBmi').value,
+                cmdSang: document.getElementById('eCmdSang').checked,
+                cmdMed: document.getElementById('eCmdMed').checked,
+                protocoleSortie: document.getElementById('eProtocoleSortie').checked,
+                isGardeMalade: isGarde,
+                dateEntree: document.getElementById('eDateEntree').value,
+                dateIntervention: document.getElementById('eDateIntervention').value,
+                dateSortie: document.getElementById('eDateSortie').value,
+                allergies: document.getElementById('eAllergies').value,
+                diag: document.getElementById('eDiag').value,
+                atcd: document.getElementById('eAtcd').value,
+                decRea: document.getElementById('eDecRea').value,
+                decColloque: document.getElementById('eDecColloque').value,
+                dateColloque: document.getElementById('eDateColloque').value,
+                bilanComplet: document.getElementById('eBilanComplet').value,
+                echo: document.getElementById('eEcho').value,
+                tdmTap: document.getElementById('eTdmTap').value,
+                tdm: document.getElementById('eTdm').value,
+                irm: document.getElementById('eIrm').value,
+                endo: document.getElementById('eEndo').value,
+                remarques: document.getElementById('eRemarques').value,
+                photos: currentPhotos
             };
+
             if(!data.nom) {
-                if (patientsDb[bedId] && patientsDb[bedId].isTraceRea) { remove(ref(db, 'dossiers_patients/' + bedId)); closeModal(); return; }
-                return alert("Le nom du patient est obligatoire !");
+                if (patientsDb[bedId] && patientsDb[bedId].isTraceRea) {
+                    remove(ref(db, 'dossiers_patients/' + bedId));
+                    closeModal();
+                    return;
+                }
+                return alert("Le nom est obligatoire !");
             }
+            
             set(ref(db, 'dossiers_patients/' + bedId), data);
             closeModal();
         };
@@ -1078,135 +1107,220 @@
             const bedId = document.getElementById('currentBedId').value;
             const patient = patientsDb[bedId];
             if(!patient) return;
+
             const today = new Date().toISOString().split('T')[0];
             const defaultDate = patient.dateSortie || today;
-            const inputDate = prompt(`Date de sortie pour ${patient.nom} (Format: AAAA-MM-JJ) :`, defaultDate);
+
+            const inputDate = prompt(`Entrez ou confirmez la date de sortie de ${patient.nom} (Format: AAAA-MM-JJ) :`, defaultDate);
+
             if (inputDate === null) return;
+
             const dateSortieEffective = inputDate.trim() || today;
 
-            if(confirm(`Archiver le dossier de ${patient.nom} et libérer le lit ${bedId} ?`)) {
+            if(confirm(`Voulez-vous libérer le lit ${bedId} et archiver le dossier de ${patient.nom} avec la date de sortie du ${dateSortieEffective} ?`)) {
                 const archiveData = { 
-                    ...patient, dateSortie: dateSortieEffective, dateSortieReelle: dateSortieEffective,
-                    ancienLit: bedId, dateArchivage: new Date().toISOString(), timestampId: Date.now()
+                    ...patient, 
+                    dateSortie: dateSortieEffective,
+                    dateSortieReelle: dateSortieEffective,
+                    ancienLit: bedId,
+                    dateArchivage: new Date().toISOString(),
+                    timestampId: Date.now()
                 };
+
                 push(ref(db, 'archives_patients/'), archiveData).then(() => {
                     remove(ref(db, 'dossiers_patients/' + bedId));
+                    
                     for (const tBed in patientsDb) {
                         const tData = patientsDb[tBed];
-                        if (tData && tData.isTraceRea && tData.nom && tData.nom.includes(patient.nom)) remove(ref(db, 'dossiers_patients/' + tBed));
+                        if (tData && tData.isTraceRea && tData.nom && tData.nom.includes(patient.nom)) {
+                            remove(ref(db, 'dossiers_patients/' + tBed));
+                        }
                     }
+
                     closeModal();
-                }).catch(error => { console.error("Erreur :", error); alert("Erreur lors de l'archivage."); });
+                    alert(`Lit ${bedId} libéré et archivé avec succès !`);
+                }).catch(error => {
+                    console.error("Erreur d'archivage :", error);
+                    alert("Une erreur est survenue lors de l'archivage.");
+                });
             }
         };
 
         window.changerDeLit = function() {
             const currentBedId = document.getElementById('currentBedId').value;
             const patient = patientsDb[currentBedId];
+            
             if (!patient || !patient.nom) return;
+
+            // Filtrer les lits pour garder UNIQUEMENT ceux sans occupation ni garde-malade
             const emptyBeds = ALL_BEDS.filter(bedId => {
                 const p = patientsDb[bedId];
                 return !p || !p.nom || p.isTraceRea;
             });
-            if (emptyBeds.length === 0) return alert("Aucun lit n'est actuellement disponible !");
-            
+
+            if (emptyBeds.length === 0) {
+                alert("Aucun lit n'est actuellement disponible dans tout l'établissement !");
+                return;
+            }
+
             const select = document.getElementById('selectNewBed');
             select.innerHTML = '';
+            
             emptyBeds.forEach(bedId => {
                 const opt = document.createElement('option');
-                opt.value = bedId; opt.textContent = getBedLabel(bedId);
+                opt.value = bedId;
+                opt.textContent = getBedLabel(bedId);
                 select.appendChild(opt);
             });
+
             document.getElementById('transferPatientName').textContent = patient.nom;
             document.getElementById('transferCurrentBed').textContent = currentBedId;
+
             document.getElementById('transferModal').classList.add('active');
         };
 
-        window.closeTransferModal = function() { document.getElementById('transferModal').classList.remove('active'); };
+        window.closeTransferModal = function() {
+            document.getElementById('transferModal').classList.remove('active');
+        };
 
         window.confirmBedTransfer = async function() {
             const oldBedId = document.getElementById('currentBedId').value;
             const newBedId = document.getElementById('selectNewBed').value;
             const patient = patientsDb[oldBedId];
+
             if (!patient || !newBedId) return;
-            if (newBedId === oldBedId) return alert("Le patient est déjà dans ce lit !");
+
+            if (newBedId === oldBedId) {
+                alert("Le patient est déjà dans ce lit !");
+                return;
+            }
 
             const newBedRef = ref(db, 'dossiers_patients/' + newBedId);
+
             try {
                 const newBedSnapshot = await get(newBedRef);
                 if (newBedSnapshot.exists() && newBedSnapshot.val().nom && !newBedSnapshot.val().isTraceRea) {
-                    return alert("Le lit " + newBedId + " est déjà occupé !");
+                    alert("Opération annulée : Le lit " + newBedId + " est déjà occupé !");
+                    return;
                 }
+
                 const newPatientData = { ...patient, bedId: newBedId };
-                if (newPatientData.isTraceRea) delete newPatientData.isTraceRea;
+                if (newPatientData.isTraceRea) {
+                    delete newPatientData.isTraceRea;
+                }
+                
                 await set(newBedRef, newPatientData);
 
                 if (newBedId.startsWith('REA') && !oldBedId.startsWith('REA')) {
-                    await set(ref(db, 'dossiers_patients/' + oldBedId), { nom: `( ( ${newBedId.toLowerCase()}: ${patient.nom} ) )`, isTraceRea: true });
+                    await set(ref(db, 'dossiers_patients/' + oldBedId), {
+                        nom: `( ( ${newBedId.toLowerCase()}: ${patient.nom} ) )`,
+                        isTraceRea: true
+                    });
                 } else {
                     await remove(ref(db, 'dossiers_patients/' + oldBedId));
+                    
                     for (const tBed in patientsDb) {
                         const tData = patientsDb[tBed];
-                        if (tData && tData.isTraceRea && tData.nom && tData.nom.includes(patient.nom)) await remove(ref(db, 'dossiers_patients/' + tBed));
+                        if (tData && tData.isTraceRea && tData.nom && tData.nom.includes(patient.nom)) {
+                            await remove(ref(db, 'dossiers_patients/' + tBed));
+                        }
                     }
                 }
-                closeTransferModal(); closeModal();
-            } catch (error) { console.error("Erreur transfert :", error); alert("Erreur lors du transfert."); }
+
+                alert(`Transfert réussi : ${patient.nom} a été déplacé du lit ${oldBedId} vers le lit ${newBedId}.`);
+                closeTransferModal();
+                closeModal();
+
+            } catch (error) {
+                console.error("Erreur lors du changement de lit :", error);
+                alert("Une erreur s'est produite lors du transfert.");
+            }
         };
 
+        // --- FONCTIONNALITÉ DE RECHERCHE ---
         window.searchPatient = function() {
             const query = document.getElementById('patientSearch').value.toLowerCase().trim();
             const resultsContainer = document.getElementById('searchResults');
             resultsContainer.innerHTML = '';
-            if (query.length === 0) { resultsContainer.style.display = 'none'; return; }
+
+            if (query.length === 0) {
+                resultsContainer.style.display = 'none';
+                return;
+            }
 
             let matches = [];
+            // Parcourir la base de données locale des patients
             for (const bedId in patientsDb) {
                 const patient = patientsDb[bedId];
-                if (patient && patient.nom && !patient.isTraceRea && patient.nom.toLowerCase().includes(query)) matches.push({ bedId: bedId, nom: patient.nom });
+                // Ignorer les traces de lits gardés vides pour la réa, chercher uniquement le nom
+                if (patient && patient.nom && !patient.isTraceRea && patient.nom.toLowerCase().includes(query)) {
+                    matches.push({ bedId: bedId, nom: patient.nom });
+                }
             }
 
             if (matches.length > 0) {
                 matches.forEach(match => {
                     const div = document.createElement('div');
-                    div.style.padding = '12px 16px';
-                    div.style.borderBottom = '1px solid var(--border)';
+                    div.style.padding = '12px 15px';
+                    div.style.borderBottom = '1px solid #f1f5f9';
                     div.style.cursor = 'pointer';
                     div.style.display = 'flex';
                     div.style.flexDirection = 'column';
-                    div.innerHTML = `<strong style="color: var(--text);">${match.nom}</strong> <span style="font-size:0.8em; color: var(--primary); font-weight: 600;">${getBedLabel(match.bedId)}</span>`;
                     
-                    div.onmouseover = () => div.style.backgroundColor = 'var(--primary-light)';
-                    div.onmouseout = () => div.style.backgroundColor = 'var(--card)';
+                    div.innerHTML = `
+                        <strong style="color: var(--text);">${match.nom}</strong> 
+                        <span style="font-size:0.8em; color: var(--primary); font-weight: 600;">${getBedLabel(match.bedId)}</span>
+                    `;
+                    
+                    // Effet de survol
+                    div.onmouseover = () => div.style.backgroundColor = '#f8fafc';
+                    div.onmouseout = () => div.style.backgroundColor = 'white';
 
+                    // Au clic : ouvrir le dossier et changer d'étage si nécessaire
                     div.onclick = () => {
                         document.getElementById('patientSearch').value = '';
                         resultsContainer.style.display = 'none';
-                        if (match.bedId.startsWith('4')) document.querySelector('button[onclick="switchFloor(\'floor-4\', this)"]').click();
-                        else if (match.bedId.startsWith('3')) document.querySelector('button[onclick="switchFloor(\'floor-3\', this)"]').click();
-                        else if (match.bedId.startsWith('REA')) document.querySelector('button[onclick="switchFloor(\'floor-rea\', this)"]').click();
+                        
+                        // Basculer vers le bon onglet (étage)
+                        if (match.bedId.startsWith('4')) {
+                            document.querySelector('button[onclick="switchFloor(\'floor-4\', this)"]').click();
+                        } else if (match.bedId.startsWith('3')) {
+                            document.querySelector('button[onclick="switchFloor(\'floor-3\', this)"]').click();
+                        } else if (match.bedId.startsWith('REA')) {
+                            document.querySelector('button[onclick="switchFloor(\'floor-rea\', this)"]').click();
+                        }
+                        
+                        // Ouvrir la modal du patient
                         openModal(match.bedId);
                     };
                     resultsContainer.appendChild(div);
                 });
+                resultsContainer.style.display = 'block';
             } else {
                 const div = document.createElement('div');
-                div.style.padding = '12px 16px'; div.style.color = 'var(--text-light)';
-                div.style.fontStyle = 'italic'; div.textContent = 'Aucun patient trouvé...';
+                div.style.padding = '12px 15px';
+                div.style.color = '#64748b';
+                div.style.fontStyle = 'italic';
+                div.textContent = 'Aucun patient trouvé avec ce nom.';
                 resultsContainer.appendChild(div);
+                resultsContainer.style.display = 'block';
             }
-            resultsContainer.style.display = 'block';
         };
 
+        // Fermer le menu déroulant des résultats si on clique ailleurs sur la page
         document.addEventListener('click', function(e) {
             const searchInput = document.getElementById('patientSearch');
             const searchResults = document.getElementById('searchResults');
-            if (searchInput && searchResults && !searchInput.contains(e.target) && !searchResults.contains(e.target)) searchResults.style.display = 'none';
+            if (searchInput && searchResults && !searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
         });
 
         const urlParams = new URLSearchParams(window.location.search);
         const bedFromUrl = urlParams.get('bedId');
-        if(bedFromUrl) setTimeout(() => openModal(bedFromUrl), 500);
+        if(bedFromUrl) {
+            setTimeout(() => openModal(bedFromUrl), 500);
+        }
     </script>
 </body>
 </html>
