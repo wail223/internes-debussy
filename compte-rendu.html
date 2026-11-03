@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compte Rendu d'Hospitalisation - CPMC</title>
 
+    <!-- Bibliothèques pour la génération PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
         :root {
             --primary: #0284c7;
@@ -32,7 +36,7 @@
         .nav-btn { background: #e2e8f0; color: #1e293b; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space: nowrap; }
         .nav-btn.active { background: var(--primary); color: white; }
         
-        .controls-bar { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+        .controls-bar { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; justify-content: center; }
         .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px; }
         .form-group label { font-size: 0.85em; font-weight: 600; }
         .form-group select, .form-group input[type="number"] { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family:inherit;}
@@ -75,7 +79,6 @@
         ul.custom-list { margin: 3px 0 3px 20px; padding: 0; list-style: disc; }
         ul.custom-list li { margin-bottom: 3px; }
 
-        /* Champs ligne en pointillés simples */
         input.dotted {
             border: none;
             border-bottom: 2px dotted #000;
@@ -89,7 +92,6 @@
             height: 22px;
         }
 
-        /* Cases à cocher */
         input[type="checkbox"] {
             appearance: none;
             -webkit-appearance: none;
@@ -114,12 +116,11 @@
             color: #000;
         }
 
-        /* Zones de texte multilignes (SOLUTION "CADRE INVISIBLE À L'IMPRESSION") */
         textarea.t-area {
             width: 100%;
             line-height: 22px;
             background: transparent;
-            border: 1px dashed #94a3b8; /* Cadre gris visible SEULEMENT à l'écran */
+            border: 1px dashed #94a3b8; 
             border-radius: 4px;
             resize: none;
             outline: none;
@@ -132,52 +133,27 @@
             overflow: hidden;
         }
         textarea.t-area:focus {
-            border: 1px dashed var(--primary); /* S'illumine en bleu quand on clique dedans */
+            border: 1px dashed var(--primary); 
         }
         
         .h-1 { height: 26px; }
         .h-2 { height: 50px; }
         .h-3 { height: 75px; }
         .h-4 { height: 100px; }
-        .h-6 { height: 150px; } /* Grande zone pour les examens morpho */
+        .h-6 { height: 150px; } 
 
-        /* --- STYLES D'IMPRESSION STRICTS A4 --- */
         @media print {
-            @page { 
-                size: A4 portrait; 
-                margin: 0; 
-            }
-            html, body { 
-                margin: 0 !important; 
-                padding: 0 !important; 
-                background: #fff; 
-                height: 100%;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-            }
+            @page { size: A4 portrait; margin: 0; }
+            html, body { margin: 0 !important; padding: 0 !important; background: #fff; height: 100%; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none !important; }
             .page-container { gap: 0; display: block; }
-            .a4-page { 
-                margin: 0 auto !important; 
-                box-shadow: none !important; 
-                border: none !important; 
-                width: 210mm !important;
-                height: 297mm !important;
-                max-height: 297mm !important;
-                page-break-after: always;
-                page-break-inside: avoid;
-            }
-            /* Disparition des cadres pointillés à l'impression */
-            textarea.t-area {
-                border: none !important;
-                padding: 0 !important;
-            }
+            .a4-page { margin: 0 auto !important; box-shadow: none !important; border: none !important; width: 210mm !important; height: 297mm !important; max-height: 297mm !important; page-break-after: always; page-break-inside: avoid; }
+            textarea.t-area { border: none !important; padding: 0 !important; }
         }
     </style>
 </head>
 <body>
 
-    <!-- BARRE DE COMMANDE -->
     <div class="no-print">
         <div class="nav-links">
             <a href="index.html" class="nav-btn">🏠 Accueil</a>
@@ -193,12 +169,11 @@
                     <option value="">-- Choisir un patient --</option>
                 </select>
             </div>
-            <!-- NOUVEAU SELECTEUR DE SEXE -->
             <div class="form-group" style="min-width: 90px;">
                 <label>Sexe :</label>
                 <select id="sexeSelect" onchange="updateResume()">
+                    <option value="Femme" selected>Femme</option>
                     <option value="Homme">Homme</option>
-                    <option value="Femme">Femme</option>
                 </select>
             </div>
             <div class="form-group">
@@ -220,13 +195,12 @@
                 <label>Délai RDV :</label>
                 <input type="number" id="delaiInput" value="15" min="1" oninput="updateConsultation()">
             </div>
-            <button class="btn btn-pdf" onclick="saveAsPDF()">💾 Enregistrer PDF</button>
+            <button class="btn btn-pdf" onclick="generatePDF()">💾 Enregistrer PDF</button>
             <button class="btn btn-print" onclick="window.print()">🖨️ Imprimer</button>
             <button class="btn btn-clear" onclick="clearForm()">🗑️ Effacer</button>
         </div>
     </div>
 
-    <!-- DOCUMENT VUE ÉCRAN / IMPRESSION -->
     <div class="page-container" id="documentRender">
         
         <!-- PAGE 1 -->
@@ -237,7 +211,6 @@
                 <h3>Compte rendu d'hospitalisation</h3>
             </div>
 
-            <!-- Espace vide ajouté sous Dossier et Organe -->
             <div class="row" style="margin-bottom: 25px;">
                 <span>Dossier : N°</span> <input type="text" id="dossierNum" class="dotted" style="width: 150px; margin-left:5px;">
                 <span style="margin-left: 30px;">Organe :</span> <input type="text" id="organe" class="dotted flex-grow" style="margin-left:5px;">
@@ -247,7 +220,7 @@
                 <li class="row">
                     <span>Nom :</span> <input type="text" id="nomP1" class="dotted flex-grow" style="margin: 0 10px;">
                     <span>Prénom :</span> <input type="text" id="prenomP1" class="dotted flex-grow" style="margin: 0 10px;">
-                    <span>Age :</span> <input type="text" id="ageP1" class="dotted" style="width: 50px; margin-left: 5px;">
+                    <span>Age :</span> <input type="text" id="ageP1" class="dotted" style="width: 50px; margin-left: 5px;" oninput="updateResume()">
                 </li>
                 <li class="row">
                     <span>Adresse :</span> <input type="text" id="adresse" class="dotted flex-grow" style="margin-left: 5px;">
@@ -308,13 +281,11 @@
 
             <div style="margin-top: 10px;">
                 <span class="u-b-i">Résumé clinique :</span>
-                <!-- Ce champ va se pré-remplir automatiquement -->
                 <textarea id="resumeClinique" class="t-area h-3"></textarea>
             </div>
 
             <div style="margin-top: 10px;">
                 <span class="u-b-i">Examens morphologiques</span> <span>(Conclusions des examens radiologiques) :</span>
-                <!-- Une grande zone cliquable et modifiable à volonté -->
                 <textarea id="examensMorpho" class="t-area h-6"></textarea>
             </div>
         </div>
@@ -410,7 +381,6 @@
                 <textarea id="sortieDetails" class="t-area h-2"></textarea>
             </div>
 
-            <!-- BLOC RÉSUMÉ DE FIN -->
             <div style="margin-top: 10px;">
                 <div class="row">
                     <span class="u-b-i">Au total,</span> <span>&nbsp;il s'agit de</span>
@@ -441,7 +411,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT FIREBASE -->
+    <!-- SCRIPT FIREBASE & PDF -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -491,7 +461,6 @@
             allInterventions.sort((a, b) => new Date(b.date) - new Date(a.date));
         });
 
-        // NOUVELLE FONCTION POUR GÉNÉRER LE RÉSUMÉ CLINIQUE
         window.updateResume = function() {
             let sexe = document.getElementById('sexeSelect').value;
             let age = document.getElementById('ageP1').value || "...";
@@ -499,8 +468,9 @@
             
             let genrePatient = (sexe === "Femme") ? "de la patiente" : "du patient";
             let genreOp = (sexe === "Femme") ? "opérée" : "opéré";
+            let genreAge = (sexe === "Femme") ? "âgée" : "âgé";
             
-            let phrase = `Il s'agit ${genrePatient} âgé(e) de ${age} ans, ${genreOp} pour : ${diag}, révélé par `;
+            let phrase = `Il s'agit ${genrePatient} ${genreAge} de ${age} ans, ${genreOp} pour : ${diag}, révélé par `;
             document.getElementById('resumeClinique').value = phrase;
         };
 
@@ -549,11 +519,8 @@
                 document.getElementById('sumAge').value = p.age || "";
                 document.getElementById('sumAtcd').value = atcdText.substring(0, 80); 
                 
-                let diagAvecBmi = diagnosticTxt;
-                if (p.bmi && p.bmi !== "") {
-                    diagAvecBmi += ` (BMI : ${p.bmi})`;
-                }
-                document.getElementById('sumDiag').value = diagAvecBmi;
+                // Le BMI est retiré d'ici
+                document.getElementById('sumDiag').value = diagnosticTxt;
 
                 document.getElementById('sumGeste').value = interventionTexte;
                 
@@ -566,9 +533,7 @@
                 let endoText = (p.endo || "").replace(/IHC/gi, '').trim();
                 document.getElementById('examensEndo').value = endoText;
                 
-                // Mettre à jour le résumé clinique avec les infos chargées
                 window.updateResume();
-                
                 window.updateConsultation();
                 
             } else {
@@ -632,12 +597,39 @@
         document.getElementById('suitesComp').addEventListener('change', (e) => {
             if(e.target.checked) document.getElementById('sumSuites').value = "Compliquées";
         });
+    </script>
+    
+    <script>
+        // Génération propre via jsPDF et html2canvas pour respecter la structure A4
+        window.generatePDF = async function() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            const page1 = document.getElementById('page1');
+            const page2 = document.getElementById('page2');
+            const textareas = document.querySelectorAll('textarea.t-area');
 
-        window.saveAsPDF = function() {
-            alert("Astuce : Pour garantir un PDF de haute qualité (avec texte copiable), choisissez 'Enregistrer au format PDF' dans la fenêtre d'impression qui va s'ouvrir.");
-            setTimeout(() => {
-                window.print();
-            }, 500);
+            // Cacher temporairement les bordures pointillées des textareas pour un rendu PDF parfait
+            textareas.forEach(ta => ta.style.border = 'none');
+
+            // Capture Page 1
+            const canvas1 = await html2canvas(page1, { scale: 2 });
+            const imgData1 = canvas1.toDataURL('image/jpeg', 1.0);
+            doc.addImage(imgData1, 'JPEG', 0, 0, 210, 297);
+            
+            doc.addPage();
+            
+            // Capture Page 2
+            const canvas2 = await html2canvas(page2, { scale: 2 });
+            const imgData2 = canvas2.toDataURL('image/jpeg', 1.0);
+            doc.addImage(imgData2, 'JPEG', 0, 0, 210, 297);
+
+            // Remettre les bordures pour l'affichage écran
+            textareas.forEach(ta => ta.style.border = '1px dashed #94a3b8');
+
+            let nom = document.getElementById('nomP1').value || "Patient";
+            let prenom = document.getElementById('prenomP1').value || "";
+            doc.save(`CRH_${nom}_${prenom}.pdf`);
         };
     </script>
 </body>
