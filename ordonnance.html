@@ -103,16 +103,31 @@
             outline: none;
         }
 
-        /* CORRECTIONS D'ALIGNEMENT (+2cm à droite pour l'en-tête, +4cm en bas pour le corps) */
-        #dateField { top: 12.5%; left: calc(60% + 2cm); width: 35%; font-style: italic; }
-        #nameField { top: 22%; left: calc(15% + 2cm); width: 45%; font-weight: bold; }
-        #ageField { top: 22%; left: calc(75% + 2cm); width: 20%; font-weight: bold; }
+        /* ALIGNEMENT (+1cm à droite conservé) */
+        #dateField { top: 12.5%; left: calc(60% + 1cm); width: 35%; font-style: italic; }
+        #nameField { top: 22%; left: calc(15% + 1cm); width: 45%; font-weight: bold; }
+        #ageField { top: 22%; left: calc(75% + 1cm); width: 20%; font-weight: bold; }
         
+        /* TITRE SPÉCIAL (Prière de faire) */
+        #specialTitle {
+            top: calc(32% + 0.5cm);
+            left: 8%;
+            width: 84%;
+            font-weight: bold;
+            font-size: 19px;
+            text-align: center;
+            text-decoration: underline;
+            background-color: #fef08a; /* Surlignage jaune */
+            border: none;
+            display: none; /* Masqué par défaut */
+        }
+
+        /* CORPS DE L'ORDONNANCE (Rehaussé) */
         #prescriptionBody {
-            top: calc(32% + 4cm); /* Décalage de 4cm vers le bas */
+            top: calc(32% + 0.5cm); 
             left: 8%; 
             width: 84%; 
-            height: calc(50% - 4cm); /* Réduction de la hauteur pour ne pas déborder en bas */
+            height: calc(50% - 0.5cm); 
             resize: none;
             font-family: Arial, sans-serif;
             font-size: 15px;
@@ -131,6 +146,7 @@
                 -webkit-print-color-adjust: exact; print-color-adjust: exact; 
             }
             .field { border: none !important; background: transparent !important; }
+            #specialTitle { -webkit-print-color-adjust: exact; print-color-adjust: exact; } /* Garde le jaune à l'impression */
             textarea { overflow: hidden; }
         }
     </style>
@@ -197,18 +213,13 @@
     </div>
 
     <!-- BASES DE DONNÉES (Listes déroulantes) -->
-    
-    <!-- Liste des Médicaments -->
     <datalist id="dzMeds">
-        <!-- Hormones / Thyroïde -->
         <option value="Levothyrox 25 µg">
         <option value="Levothyrox 50 µg">
         <option value="Levothyrox 75 µg">
         <option value="Levothyrox 100 µg">
         <option value="Levothyrox 150 µg">
-        <!-- Dérivés Sanguins / Solutés -->
         <option value="Albumine 20%">
-        <!-- Antalgiques / AINS -->
         <option value="Paracétamol 1g">
         <option value="Paracétamol 500mg">
         <option value="Tramadol 50mg">
@@ -216,7 +227,6 @@
         <option value="Ibuprofène 400mg">
         <option value="Ketoprofène (Profenid) 100mg">
         <option value="Diclofenac (Voltarene) 50mg">
-        <!-- Antibiotiques -->
         <option value="Amoxicilline + Ac. Clav (Augmentin) 1g">
         <option value="Amoxicilline 1g">
         <option value="Cefalexine (Keforal) 1g">
@@ -224,24 +234,20 @@
         <option value="Ciprofloxacine 500mg">
         <option value="Metronidazole (Flagyl) 500mg">
         <option value="Pristinamycine (Pyostacine) 500mg">
-        <!-- Anticoagulants -->
         <option value="Enoxaparine (Lovenox) 0.4 UI">
         <option value="Enoxaparine (Lovenox) 0.6 UI">
         <option value="Tinzaparine (Innohep) 0.45">
         <option value="Acenocoumarol (Sintrom) 4mg">
-        <!-- Gastro / Antiémétiques -->
         <option value="Omeprazole 20mg">
         <option value="Esomeprazole (Inexium) 40mg">
         <option value="Pantoprazole 40mg">
         <option value="Metoclopramide (Primperan) 10mg">
         <option value="Domperidone (Motilium) 10mg">
         <option value="Phloroglucinol (Spasfon) 80mg">
-        <!-- Corticoïdes -->
         <option value="Prednisolone (Solupred) 20mg">
         <option value="Prednisone (Cortancyl) 20mg">
     </datalist>
 
-    <!-- Liste des Posologies -->
     <datalist id="dzPosologies">
         <option value="1cp / jour">
         <option value="1cp 02x / jour">
@@ -253,7 +259,6 @@
         <option value="1 sachet 03x / jour">
     </datalist>
 
-    <!-- Liste des Quantités (QSP / Boîtes) -->
     <datalist id="dzQsp">
         <option value="QSP">
         <option value="QSP 7j">
@@ -273,6 +278,10 @@
             <input type="text" id="dateField" class="field">
             <input type="text" id="nameField" class="field">
             <input type="text" id="ageField" class="field">
+            
+            <!-- Titre "Prière de faire" masqué par défaut -->
+            <input type="text" id="specialTitle" class="field" value="PRIÈRE DE FAIRE :" readonly>
+            
             <textarea id="prescriptionBody" class="field" spellcheck="false"></textarea>
         </div>
     </div>
@@ -335,8 +344,12 @@
         window.fillTreatmentData = function() {
             const choix = document.getElementById('treatmentSelect').value;
             const body = document.getElementById('prescriptionBody');
+            const specialTitle = document.getElementById('specialTitle');
 
             if (choix === 'standard') {
+                specialTitle.style.display = 'none';
+                body.style.top = 'calc(32% + 0.5cm)';
+                body.style.height = 'calc(50% - 0.5cm)';
                 body.value = 
 `- Lovenox 0.4UI ................................. QSP
   1 inj / jour à heure fixe
@@ -348,14 +361,18 @@
   1cp/6H Si Douleur`;
 
             } else if (choix === 'pansement') {
-                // Ajout de "Prière de faire :"
+                // Affiche le titre et descend légèrement le texte
+                specialTitle.style.display = 'block';
+                body.style.top = 'calc(32% + 1.5cm)';
+                body.style.height = 'calc(50% - 1.5cm)';
                 body.value = 
-`Prière de faire :
-
-- Changement de Pansement 1j/2
+`- Changement de Pansement 1j/2
 + Ablation de fil à la cicatrisation`;
             
             } else if (choix === 'vierge') {
+                specialTitle.style.display = 'none';
+                body.style.top = 'calc(32% + 0.5cm)';
+                body.style.height = 'calc(50% - 0.5cm)';
                 body.value = '';
             }
         };
@@ -382,7 +399,6 @@
 
             body.value = body.value + newEntry;
 
-            // Vider les champs
             document.getElementById('customDrug').value = '';
             document.getElementById('customPosology').value = '';
             document.getElementById('customQsp').value = '';
@@ -394,6 +410,8 @@
             document.getElementById('nameField').value = '';
             document.getElementById('ageField').value = '';
             document.getElementById('prescriptionBody').value = '';
+            document.getElementById('specialTitle').style.display = 'none';
+            document.getElementById('prescriptionBody').style.top = 'calc(32% + 0.5cm)';
             setTodayDate();
         };
     </script>
