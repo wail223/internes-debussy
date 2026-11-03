@@ -102,10 +102,11 @@
             outline: none;
         }
 
-        /* NOUVEAUX EMPLACEMENTS RÉAJUSTÉS */
-        #dateField { top: 12.8%; left: 52%; width: 35%; font-style: italic; }
-        #nameField { top: 19.5%; left: 20%; width: 70%; font-weight: bold; }
-        #ageField { top: 25.5%; left: 16%; width: 30%; font-weight: bold; }
+        /* EMPLACEMENTS RÉAJUSTÉS */
+        /* Date décalée de ~1cm vers le haut et ~3cm vers la droite */
+        #dateField { top: 8%; left: 72%; width: 25%; font-style: italic; }
+        #nameField { top: 19.5%; left: 18%; width: 55%; font-weight: bold; }
+        #ageField { top: 19.5%; left: 75%; width: 20%; font-weight: bold; }
         
         #specialTitle {
             top: 33%;
@@ -121,7 +122,7 @@
         }
 
         #prescriptionBody {
-            top: 36%; /* Descendu pour éviter d'écrire sur le mot "ORDONNANCE" */
+            top: 36%;
             left: 8%; 
             width: 84%; 
             height: 55%; 
@@ -357,7 +358,6 @@
                 specialTitle.style.display = 'none';
                 body.style.top = '36%';
                 body.style.height = '55%';
-                // Points réduits pour éviter que la quantité parte à la ligne
                 body.value = 
 `- Lovenox 0.4UI .................. QSP
   1 inj / jour à heure fixe
@@ -395,7 +395,6 @@
             }
 
             const body = document.getElementById('prescriptionBody');
-            // Points réduits drastiquement pour ne pas dépasser la marge
             let dots = " .................. "; 
             
             let newEntry = `- ${drug}${dots}${qsp}`;
@@ -452,18 +451,19 @@
 
             ctx.fillStyle = '#000000';
 
-            // Coordonnées pour le PDF synchronisées avec les % CSS
+            // Coordonnées pour le PDF
+            // Date décalée (h * 0.097 au lieu de 0.145, et w * 0.72 au lieu de 0.52)
             ctx.font = 'italic 30px "Times New Roman", serif';
             const dateVal = document.getElementById('dateField').value || '';
-            ctx.fillText(dateVal, w * 0.52, h * 0.145);
+            ctx.fillText(dateVal, w * 0.72, h * 0.097);
 
             ctx.font = 'bold 32px "Times New Roman", serif';
             const nameVal = document.getElementById('nameField').value || '';
-            ctx.fillText(nameVal, w * 0.20, h * 0.215);
+            ctx.fillText(nameVal, w * 0.18, h * 0.215);
 
             ctx.font = 'bold 32px "Times New Roman", serif';
             const ageVal = document.getElementById('ageField').value || '';
-            ctx.fillText(ageVal, w * 0.16, h * 0.275);
+            ctx.fillText(ageVal, w * 0.75, h * 0.215);
 
             const specialTitle = document.getElementById('specialTitle');
             let startY = h * 0.38;
