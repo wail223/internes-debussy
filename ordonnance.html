@@ -384,14 +384,7 @@
             if (bedId && patientsDb[bedId]) {
                 const p = patientsDb[bedId];
                 document.getElementById('nameField').value = p.nom.toUpperCase();
-                const ageText = p.age ? `${p.age} ans` : '';
-                const ddnText = p.dateNaissance || p.ddn || '00/00/0000';
-                
-                if(ageText) {
-                    document.getElementById('ageField').value = `${ageText} (${ddnText})`;
-                } else {
-                    document.getElementById('ageField').value = `Né(e) le: ${ddnText}`;
-                }
+                document.getElementById('ageField').value = p.age ? `${p.age} ans` : '';
             } else {
                 document.getElementById('nameField').value = '';
                 document.getElementById('ageField').value = '';
@@ -451,29 +444,48 @@
             }
         };
 
-        // --- NOUVELLE FONCTION POUR AJOUTER / RETIRER ---
         window.toggleBilan = function(btnElement, testArray) {
             const body = document.getElementById('prescriptionBody');
             let text = body.value;
             
             const isActive = btnElement.classList.contains('active-bilan');
             
+            // Récupérer la date de naissance pour la Procalcitonine
+            let ddn = "00/00/0000";
+            const bedId = document.getElementById('patientSelect').value;
+            if (bedId && patientsDb[bedId]) {
+                ddn = patientsDb[bedId].dateNaissance || patientsDb[bedId].ddn || "00/00/0000";
+            }
+            
             if (isActive) {
                 // Désélection : Retire les tests
                 btnElement.classList.remove('active-bilan');
                 testArray.forEach(test => {
-                    const regex = new RegExp(`- ${test.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n?`, 'g');
-                    text = text.replace(regex, '');
+                    if (test === 'Procalcitonine') {
+                        // Supprime la ligne Procalcitonine quelle que soit la date écrite
+                        text = text.replace(/- Procalcitonine.*\n?/g, '');
+                    } else {
+                        const regex = new RegExp(`- ${test.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n?`, 'g');
+                        text = text.replace(regex, '');
+                    }
                 });
             } else {
                 // Sélection : Ajoute les tests
                 btnElement.classList.add('active-bilan');
                 testArray.forEach(test => {
-                    if (!text.includes(`- ${test}`)) {
+                    let testLine = test;
+                    
+                    // Ajout spécifique pour la Procalcitonine
+                    if (test === 'Procalcitonine') {
+                        testLine = `Procalcitonine ( date de naissance : ${ddn} )`;
+                    }
+                    
+                    // On vérifie que la ligne n'est pas déjà présente
+                    if (!text.includes(`- ${testLine}`) && (test !== 'Procalcitonine' || !text.includes('- Procalcitonine'))) {
                         if (text.length > 0 && !text.endsWith('\n')) {
                             text += '\n';
                         }
-                        text += `- ${test}\n`;
+                        text += `- ${testLine}\n`;
                     }
                 });
             }
