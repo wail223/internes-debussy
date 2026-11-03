@@ -12,6 +12,27 @@
     <style>
         :root {
             --primary: #0284c7;
+            --successVoici le code complet mis à jour. 
+
+J'ai modifié la fonction du résumé clinique pour qu'elle récupère et affiche automatiquement le Nom et le Prénom juste après "Il s'agit du patient / de la patiente". J'ai également fait en sorte que si vous modifiez le nom ou le prénom à la main, cela se mette à jour en temps réel dans le résumé.
+
+Voici le code complet à copier-coller :
+
+```html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compte Rendu d'Hospitalisation - CPMC</title>
+
+    <!-- Bibliothèques pour la génération PDF -->
+    <script src="[https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js](https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js)"></script>
+    <script src="[https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js](https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js)"></script>
+
+    <style>
+        :root {
+            --primary: #0284c7;
             --success: #16a34a;
             --bg: #f1f5f9;
             --text: #1e293b;
@@ -218,8 +239,9 @@
 
             <ul class="custom-list">
                 <li class="row">
-                    <span>Nom :</span> <input type="text" id="nomP1" class="dotted flex-grow" style="margin: 0 10px;">
-                    <span>Prénom :</span> <input type="text" id="prenomP1" class="dotted flex-grow" style="margin: 0 10px;">
+                    <!-- Ajout de oninput pour mettre à jour le résumé si on tape le nom manuellement -->
+                    <span>Nom :</span> <input type="text" id="nomP1" class="dotted flex-grow" style="margin: 0 10px;" oninput="updateResume()">
+                    <span>Prénom :</span> <input type="text" id="prenomP1" class="dotted flex-grow" style="margin: 0 10px;" oninput="updateResume()">
                     <span>Age :</span> <input type="text" id="ageP1" class="dotted" style="width: 50px; margin-left: 5px;" oninput="updateResume()">
                 </li>
                 <li class="row">
@@ -413,13 +435,13 @@
 
     <!-- SCRIPT FIREBASE & PDF -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { initializeApp } from "[https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js)";
+        import { getDatabase, ref, onValue } from "[https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js)";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
             authDomain: "internes-debussy.firebaseapp.com",
-            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+            databaseURL: "[https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app](https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app)",
             projectId: "internes-debussy",
             storageBucket: "internes-debussy.firebasestorage.app",
             messagingSenderId: "614550756274",
@@ -448,6 +470,28 @@
             }
         });
 
+        window.updateResume = function() {
+            let sexe = document.getElementById('sexeSelect').value;
+            let age = document.getElementById('ageP1').value || "...";
+            let diag = document.getElementById('diagnostic').value || "...";
+            let nom = document.getElementById('nomP1').value || "";
+            let prenom = document.getElementById('prenomP1').value || "";
+            
+            // On gère l'affichage du nom et prénom s'ils sont renseignés
+            let fullName = (nom + " " + prenom).trim();
+            if (fullName === "") {
+                fullName = "...";
+            }
+            
+            let genrePatient = (sexe === "Femme") ? "de la patiente" : "du patient";
+            let genreOp = (sexe === "Femme") ? "opérée" : "opéré";
+            let genreAge = (sexe === "Femme") ? "âgée" : "âgé";
+            
+            // Le texte mis à jour
+            let phrase = `Il s'agit ${genrePatient} ${fullName}, ${genreAge} de ${age} ans, ${genreOp} pour : ${diag}, révélé par `;
+            document.getElementById('resumeClinique').value = phrase;
+        };
+
         onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
             const data = snapshot.val() || {};
             allInterventions = [];
@@ -460,19 +504,6 @@
             });
             allInterventions.sort((a, b) => new Date(b.date) - new Date(a.date));
         });
-
-        window.updateResume = function() {
-            let sexe = document.getElementById('sexeSelect').value;
-            let age = document.getElementById('ageP1').value || "...";
-            let diag = document.getElementById('diagnostic').value || "...";
-            
-            let genrePatient = (sexe === "Femme") ? "de la patiente" : "du patient";
-            let genreOp = (sexe === "Femme") ? "opérée" : "opéré";
-            let genreAge = (sexe === "Femme") ? "âgée" : "âgé";
-            
-            let phrase = `Il s'agit ${genrePatient} ${genreAge} de ${age} ans, ${genreOp} pour : ${diag}, révélé par `;
-            document.getElementById('resumeClinique').value = phrase;
-        };
 
         window.fillPatientData = function() {
             const bedId = document.getElementById('patientSelect').value;
@@ -515,11 +546,10 @@
                 if(dateIntervention) texteInterventionP2 += " le " + dateIntervention.split('-').reverse().join('/');
                 document.getElementById('interventionP2').value = texteInterventionP2;
 
-                document.getElementById('sumNom').value = nomPatient.toUpperCase();
+                document.getElementById('sumNom').value = (nomPatient + " " + prenomPatient).trim().toUpperCase();
                 document.getElementById('sumAge').value = p.age || "";
                 document.getElementById('sumAtcd').value = atcdText.substring(0, 80); 
                 
-                // Le BMI est retiré d'ici
                 document.getElementById('sumDiag').value = diagnosticTxt;
 
                 document.getElementById('sumGeste').value = interventionTexte;
@@ -600,7 +630,6 @@
     </script>
     
     <script>
-        // Génération propre via jsPDF et html2canvas pour respecter la structure A4
         window.generatePDF = async function() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4');
@@ -609,22 +638,18 @@
             const page2 = document.getElementById('page2');
             const textareas = document.querySelectorAll('textarea.t-area');
 
-            // Cacher temporairement les bordures pointillées des textareas pour un rendu PDF parfait
             textareas.forEach(ta => ta.style.border = 'none');
 
-            // Capture Page 1
             const canvas1 = await html2canvas(page1, { scale: 2 });
             const imgData1 = canvas1.toDataURL('image/jpeg', 1.0);
             doc.addImage(imgData1, 'JPEG', 0, 0, 210, 297);
             
             doc.addPage();
             
-            // Capture Page 2
             const canvas2 = await html2canvas(page2, { scale: 2 });
             const imgData2 = canvas2.toDataURL('image/jpeg', 1.0);
             doc.addImage(imgData2, 'JPEG', 0, 0, 210, 297);
 
-            // Remettre les bordures pour l'affichage écran
             textareas.forEach(ta => ta.style.border = '1px dashed #94a3b8');
 
             let nom = document.getElementById('nomP1').value || "Patient";
