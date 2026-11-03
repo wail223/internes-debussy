@@ -137,14 +137,29 @@
 
         /* --- STYLES D'IMPRESSION --- */
         @media print {
-            @page { size: A5 portrait; margin: 0; }
-            body { background: none; padding: 0; }
+            /* On envoie un format A4 à l'imprimante pour satisfaire l'appli Canon */
+            @page { size: A4 portrait; margin: 0; }
+            body { background: none; padding: 0; margin: 0; }
             .header, .controls-bar { display: none !important; }
-            .ordonnance-container { margin: 0; justify-content: flex-start; }
+            
+            /* On centre l'ordonnance en haut de la page A4 */
+            .ordonnance-container { 
+                margin: 0; 
+                display: flex; 
+                justify-content: center; /* Centre horizontalement */
+                align-items: flex-start; /* Place tout en haut */
+                height: 100vh;
+                width: 100%;
+            }
+            
             .a5-paper { 
-                box-shadow: none; width: 148mm; height: 209mm;
+                box-shadow: none; 
+                width: 148mm; 
+                height: 210mm; /* Garde sa taille A5 d'origine */
+                margin: 0 auto; /* Force le centrage */
                 -webkit-print-color-adjust: exact; print-color-adjust: exact; 
             }
+            
             .field { border: none !important; background: transparent !important; }
             #specialTitle { -webkit-print-color-adjust: exact; print-color-adjust: exact; } /* Garde le jaune à l'impression */
             textarea { overflow: hidden; }
