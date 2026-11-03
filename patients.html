@@ -638,12 +638,9 @@
                     const patient = patientsDb[bedId];
                     
                     if (patient.isTraceRea) {
+                        // FIX: Affiche (vide) puis le texte de la trace en rouge
                         if(nameSpan) {
-                            let text = patient.nom;
-                            if (text.includes('(vide)')) {
-                                text = text.replace('(vide)', '').trim();
-                            }
-                            nameSpan.innerHTML = `(vide) <span style="color: var(--danger); font-weight: 700;">${text}</span>`;
+                            nameSpan.innerHTML = `(vide) <span style="color: var(--danger); font-weight: bold; display: block;">${patient.nom}</span>`;
                         }
                         return;
                     }
