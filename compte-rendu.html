@@ -5,120 +5,163 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compte Rendu d'Hospitalisation - CPMC</title>
     
+    <!-- Librairie pour générer le PDF vectoriel/canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
         :root {
             --primary: #0284c7;
+            --success: #16a34a;
             --bg: #f1f5f9;
             --text: #1e293b;
         }
         body { 
             font-family: Arial, sans-serif; 
             background-color: var(--bg); 
-            color: var(--text); 
             margin: 0; 
             padding: 20px; 
+            color: black;
+            font-size: 14px;
         }
 
-        /* --- BARRE DE NAVIGATION ET CONTRÔLES (Masqués à l'impression) --- */
-        .no-print-area { margin-bottom: 20px; }
+        /* --- BARRE DE NAVIGATION ET CONTRÔLES --- */
+        .no-print { margin-bottom: 20px; }
         .nav-links { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; }
-        .nav-btn { background: #e2e8f0; color: var(--text); padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; }
+        .nav-btn { background: #e2e8f0; color: #1e293b; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space: nowrap; }
         .nav-btn.active { background: var(--primary); color: white; }
         
-        .controls-bar {
-            background: white; padding: 15px; border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; gap: 15px; align-items: flex-end;
-        }
-        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .controls-bar { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 220px; }
         .form-group label { font-size: 0.85em; font-weight: 600; }
-        .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; min-width: 250px; }
+        .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
         
-        .btn { padding: 10px 15px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; color: white; }
-        .btn-print { background-color: #16a34a; }
+        .btn { padding: 10px 15px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; color: white; display: flex; align-items: center; gap: 5px; }
+        .btn-pdf { background-color: var(--success); }
+        .btn-print { background-color: var(--primary); }
         .btn-clear { background-color: #64748b; }
 
         /* --- STYLES DES PAGES A4 --- */
-        .page-container { display: flex; flex-direction: column; align-items: center; gap: 30px; }
+        .page-container { display: flex; flex-direction: column; align-items: center; gap: 25px; }
         
         .a4-page {
             width: 210mm;
             min-height: 297mm;
             background: white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
             padding: 15mm 20mm;
             box-sizing: border-box;
             position: relative;
-            font-size: 14px;
-            line-height: 1.5;
-            color: black;
+            line-height: 26px;
         }
 
-        .header-titles { text-align: center; margin-bottom: 30px; }
-        .header-titles h4 { margin: 5px 0; font-weight: normal; font-size: 14px; }
-        .header-titles h3 { margin: 15px 0 25px 0; font-size: 18px; text-decoration: underline; }
+        .header-titles { text-align: center; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif; }
+        .header-titles h4 { margin: 0; font-weight: normal; font-size: 14px; line-height: 1.3; }
+        .header-titles h4.bold { font-weight: bold; margin-top: 4px; }
+        .header-titles h3 { margin: 15px 0 20px 0; font-size: 18px; text-decoration: underline; font-weight: bold; }
 
-        /* Composants de formulaire "papier" */
-        input[type="text"], input[type="number"], textarea {
+        .row { display: flex; flex-direction: row; align-items: center; width: 100%; }
+        .row-top { align-items: flex-start; }
+        .flex-grow { flex-grow: 1; }
+        .gap-5 { gap: 5px; }
+        .gap-30 { gap: 30px; }
+        
+        .u-i { text-decoration: underline; font-style: italic; }
+        .u-b-i { text-decoration: underline; font-weight: bold; font-style: italic; }
+        ul.custom-list { margin: 5px 0 5px 25px; padding: 0; list-style: disc; }
+        ul.custom-list li { margin-bottom: 5px; }
+
+        /* Champs ligne en pointillés */
+        input.dotted {
             border: none;
-            border-bottom: 1px dotted #000;
+            border-bottom: 2px dotted #000;
             background: transparent;
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 15px;
+            font-family: inherit;
+            font-size: 14px;
             font-weight: bold;
-            color: #1a1a1a;
-            padding: 2px 5px;
+            color: #000;
+            padding: 0 5px;
+            outline: none;
+            height: 24px;
         }
-        input[type="text"]:focus, textarea:focus { outline: none; background-color: #f8fafc; }
-        
-        textarea { width: 100%; resize: none; overflow: hidden; line-height: 1.5; }
-        
-        .row { display: flex; align-items: center; margin-bottom: 8px; width: 100%; gap: 5px; flex-wrap: wrap; }
-        .row label { white-space: nowrap; }
-        .flex-fill { flex-grow: 1; }
 
-        .checkbox-group { display: flex; align-items: center; gap: 15px; margin: 10px 0; font-size: 13px; }
-        .checkbox-item { display: flex; align-items: center; gap: 4px; }
-        .checkbox-item input { margin: 0; }
+        /* Cases à cocher */
+        input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border: 1px solid #000;
+            background-color: transparent;
+            display: inline-block;
+            position: relative;
+            vertical-align: middle;
+            margin: 0 4px;
+            cursor: pointer;
+        }
+        input[type="checkbox"]:checked::after {
+            content: 'X';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            font-weight: bold;
+            color: #000;
+        }
 
-        ul.custom-list { list-style-type: disc; margin: 10px 0 10px 20px; padding: 0; }
-        ul.custom-list li { margin-bottom: 8px; display: flex; align-items: center; gap: 5px; width: 100%; }
+        /* Zones de texte multilignes à grilles d'impression */
+        .grid-textarea {
+            display: grid;
+            width: 100%;
+            margin-top: 2px;
+            margin-bottom: 5px;
+        }
+        .grid-textarea > div, .grid-textarea > textarea { grid-column: 1; grid-row: 1; }
+        .lines-container { display: flex; flex-direction: column; pointer-events: none; }
+        .lines-container .line { width: 100%; height: 26px; border-bottom: 2px dotted #000; box-sizing: border-box; }
         
-        .section-title { text-decoration: underline; font-style: italic; font-weight: bold; margin: 15px 0 5px 0; display: inline-block;}
+        textarea.t-area {
+            width: 100%;
+            background: transparent;
+            border: none;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 26px;
+            padding: 0;
+            margin: 0;
+            color: #000;
+            overflow: hidden;
+        }
         
-        /* Auto-resizing textareas */
-        .area-large { height: 100px; }
-        .area-medium { height: 50px; }
+        .h-1 { height: 26px; }
+        .h-2 { height: 52px; }
+        .h-3 { height: 78px; }
+        .h-4 { height: 104px; }
+        .h-6 { height: 156px; }
 
-        /* --- STYLES D'IMPRESSION --- */
         @media print {
             @page { size: A4 portrait; margin: 0; }
-            body { background: none; padding: 0; margin: 0; }
-            .no-print-area { display: none !important; }
+            body { margin: 0; padding: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print { display: none !important; }
             .page-container { gap: 0; display: block; }
-            .a4-page { 
-                box-shadow: none; 
-                margin: 0; 
-                padding: 15mm 20mm; 
-                page-break-after: always;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
-            }
-            input[type="text"], textarea { background: transparent !important; }
+            .a4-page { margin: 0; box-shadow: none; border: none; page-break-after: always; }
         }
     </style>
 </head>
 <body>
 
-    <!-- ZONE NON IMPRIMABLE : NAVIGATION & CONTRÔLES -->
-    <div class="no-print-area">
+    <!-- BARRE DE COMMANDE -->
+    <div class="no-print">
         <div class="nav-links">
             <a href="index.html" class="nav-btn">🏠 Accueil</a>
-            <a href="patients.html" class="nav-btn">🛏️ Lits / Hospitalisation</a>
-            <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
+            <a href="patients.html" class="nav-btn">🛏️ Lits / Hospit</a>
+            <a href="interventions.html" class="nav-btn">📋 Bloc</a>
             <a href="ordonnance.html" class="nav-btn">💊 Ordonnance</a>
             <a href="compte-rendu.html" class="nav-btn active">📄 Compte Rendu</a>
         </div>
-
         <div class="controls-bar">
             <div class="form-group">
                 <label>Sélectionner un patient :</label>
@@ -126,212 +169,261 @@
                     <option value="">-- Choisir un patient --</option>
                 </select>
             </div>
-            <button class="btn btn-print" onclick="window.print()">🖨️ Imprimer le Compte Rendu</button>
+            <button class="btn btn-pdf" onclick="saveAsPDF()">💾 Enregistrer PDF</button>
+            <button class="btn btn-print" onclick="window.print()">🖨️ Imprimer</button>
             <button class="btn btn-clear" onclick="clearForm()">🗑️ Effacer</button>
         </div>
     </div>
 
-    <!-- ZONE IMPRIMABLE : PAGES A4 -->
-    <div class="page-container">
+    <!-- DOCUMENT VUE ÉCRAN / IMPRESSION -->
+    <div class="page-container" id="documentRender">
         
         <!-- PAGE 1 -->
-        <div class="a4-page">
+        <div class="a4-page" id="page1">
             <div class="header-titles">
                 <h4>Etablissement hospitalier spécialisé en cancérologie Pierre et Marie Curie</h4>
-                <h4>CLINIQUE DEBUSSY SERVICE DE CHIRURGIE « C »</h4>
+                <h4 class="bold">CLINIQUE DEBUSSY SERVICE DE CHIRURGIE « C »</h4>
                 <h3>Compte rendu d'hospitalisation</h3>
             </div>
 
             <div class="row">
-                <label>Dossier : N°</label>
-                <input type="text" id="dossierNum" style="width: 150px;">
-                <label style="margin-left: 20px;">Organe :</label>
-                <input type="text" id="organe" class="flex-fill">
+                <span>Dossier : N°</span> <input type="text" id="dossierNum" class="dotted" style="width: 150px; margin-left:5px;">
+                <span style="margin-left: 30px;">Organe :</span> <input type="text" id="organe" class="dotted flex-grow" style="margin-left:5px;">
             </div>
 
             <ul class="custom-list">
-                <li>
-                    <label>Nom :</label> <input type="text" id="nomP1" class="flex-fill">
-                    <label>Prénom :</label> <input type="text" id="prenomP1" class="flex-fill">
-                    <label>Age :</label> <input type="text" id="ageP1" style="width: 60px;">
+                <li class="row">
+                    <span>Nom :</span> <input type="text" id="nomP1" class="dotted flex-grow" style="margin: 0 10px;">
+                    <span>Prénom :</span> <input type="text" id="prenomP1" class="dotted flex-grow" style="margin: 0 10px;">
+                    <span>Age :</span> <input type="text" id="ageP1" class="dotted" style="width: 50px; margin-left: 5px;">
                 </li>
-                <li>
-                    <label>Adresse :</label> <input type="text" id="adresse" class="flex-fill">
+                <li class="row">
+                    <span>Adresse :</span> <input type="text" id="adresse" class="dotted flex-grow" style="margin-left: 5px;">
                 </li>
-                <li>
-                    <label>Numéros TEL :</label> <input type="text" id="tel" class="flex-fill">
+                <li class="row">
+                    <span>Numéros TEL :</span> <input type="text" id="tel" class="dotted flex-grow" style="margin-left: 5px;">
                 </li>
-                <li>
-                    <label>DE :</label> <input type="text" id="dateEntree" class="flex-fill">
-                    <label>DI :</label> <input type="text" id="dateInterv" class="flex-fill">
-                    <label>DS :</label> <input type="text" id="dateSortie" class="flex-fill">
+                <li class="row">
+                    <span>DE :</span> <input type="text" id="dateEntree" class="dotted flex-grow" style="margin: 0 10px;">
+                    <span>DI :</span> <input type="text" id="dateInterv" class="dotted flex-grow" style="margin: 0 10px;">
+                    <span>DS :</span> <input type="text" id="dateSortie" class="dotted flex-grow" style="margin-left: 10px;">
                 </li>
             </ul>
 
-            <div><span style="text-decoration: underline; font-style: italic;">Patient suivi par :</span></div>
+            <div class="u-i" style="margin-top: 10px;">Patient suivi par :</div>
             <ul class="custom-list">
-                <li><label>Assistant :</label> <input type="text" class="flex-fill"></li>
-                <li><label>Résident :</label> <input type="text" class="flex-fill"></li>
-                <li><label>Interne :</label> <input type="text" class="flex-fill"></li>
+                <li class="row"><span>Assistant :</span> <input type="text" id="assistant" class="dotted flex-grow" style="margin-left: 5px;"></li>
+                <li class="row"><span>Résident :</span> <input type="text" id="resident" class="dotted flex-grow" style="margin-left: 5px;"></li>
+                <li class="row"><span>Interne :</span> <input type="text" id="interne" class="dotted flex-grow" style="margin-left: 5px;"></li>
             </ul>
 
-            <div class="row" style="margin-top:15px;">
-                <label>Nom du médecin et/ou du service d'origine :</label>
-                <input type="text" class="flex-fill">
+            <div class="row" style="margin-top: 10px;">
+                <span>Nom du médecin et/ou du service d'origine :</span> <input type="text" id="medOrigine" class="dotted flex-grow" style="margin-left: 5px;">
             </div>
 
-            <div class="checkbox-group">
-                <span>*RCP :</span>
-                <label class="checkbox-item"><input type="checkbox"> Oui</label>
-                <label class="checkbox-item"><input type="checkbox"> Non</label>
-                
-                <span style="margin-left: 20px;">*Comité Rectum :</span>
-                <label class="checkbox-item"><input type="checkbox"> Oui</label>
-                <label class="checkbox-item"><input type="checkbox"> Non</label>
-                
-                <span style="margin-left: 20px;">*Comité Thyroïde :</span>
-                <label class="checkbox-item"><input type="checkbox"> Oui</label>
-                <label class="checkbox-item"><input type="checkbox"> Non</label>
+            <div class="row gap-30" style="margin: 15px 0;">
+                <div class="row" style="width: auto;"><span>*RCP : Oui</span><input type="checkbox" id="rcpOui"> <span>Non</span><input type="checkbox" id="rcpNon"></div>
+                <div class="row" style="width: auto;"><span>*Comité Rectum : Oui</span><input type="checkbox" id="rectumOui"> <span>Non</span><input type="checkbox" id="rectumNon"></div>
+                <div class="row" style="width: auto;"><span>Comité Thyroïde : Oui</span><input type="checkbox" id="thyroideOui"> <span>Non</span><input type="checkbox" id="thyroideNon"></div>
             </div>
 
-            <div class="row" style="margin-top:20px;">
-                <label class="section-title">Motif d'hospitalisation</label> <label> (diagnostic) :</label>
-                <input type="text" id="diagnostic" class="flex-fill">
+            <div class="row">
+                <span class="u-b-i">Motif d'hospitalisation</span> <span>&nbsp;(diagnostic) :</span>
+                <input type="text" id="diagnostic" class="dotted flex-grow" style="margin-left: 5px;">
             </div>
 
-            <div class="row" style="margin-top:10px; align-items: flex-start;">
-                <label class="section-title">Antécédents :</label>
-                <div style="flex-grow: 1; margin-left: 10px; width: 100%;">
+            <div class="row row-top" style="margin-top: 15px;">
+                <div class="u-b-i" style="width: 100px;">Antécédents :</div>
+                <div class="flex-grow">
                     <div class="row">
-                        <label>Médicaux :</label>
-                        <textarea id="atcdMed" class="flex-fill area-medium"></textarea>
+                        <span style="width: 80px;">Médicaux :</span>
+                        <input type="text" id="atcdMed1" class="dotted flex-grow">
                     </div>
-                    <div class="row">
-                        <label>Chirurgicaux :</label>
-                        <textarea id="atcdChir" class="flex-fill area-medium"></textarea>
+                    <div class="grid-textarea h-1">
+                        <div class="lines-container"><div class="line"></div></div>
+                        <textarea id="atcdMed2" class="t-area h-1"></textarea>
+                    </div>
+                    
+                    <div class="row" style="margin-top: 5px;">
+                        <span style="width: 90px;">Chirurgicaux :</span>
+                        <input type="text" id="atcdChir1" class="dotted flex-grow">
+                    </div>
+                    <div class="grid-textarea h-1">
+                        <div class="lines-container"><div class="line"></div></div>
+                        <textarea id="atcdChir2" class="t-area h-1"></textarea>
                     </div>
                 </div>
             </div>
 
-            <div class="row" style="margin-top:10px;">
-                <label>Score ASA :</label> <input type="text" style="width: 100px;">
-                <label style="margin-left: 30px;">BMI :</label> <input type="text" style="width: 80px;"> <label>Kg/m².</label>
+            <div class="row" style="width: 70%; margin-top: 10px;">
+                <span>Score ASA</span> <input type="text" id="asa" class="dotted flex-grow" style="margin: 0 10px;">
+                <span>BMI :</span> <input type="text" id="bmi" class="dotted" style="width: 80px; margin: 0 5px;"> <span>Kg/m².</span>
             </div>
 
-            <div style="margin-top:15px;">
-                <label class="section-title">Résumé clinique :</label>
-                <textarea class="area-large"></textarea>
+            <div style="margin-top: 15px;">
+                <span class="u-b-i">Résumé clinique :</span>
+                <div class="grid-textarea h-3">
+                    <div class="lines-container"><div class="line"></div><div class="line"></div><div class="line"></div></div>
+                    <textarea id="resumeClinique" class="t-area h-3"></textarea>
+                </div>
             </div>
 
-            <div style="margin-top:10px;">
-                <label class="section-title">Examens morphologiques</label> <label>(Conclusions des examens radiologiques) :</label>
-                <textarea class="area-large" style="height: 150px;"></textarea>
+            <div style="margin-top: 15px;">
+                <span class="u-b-i">Examens morphologiques</span> <span>(Conclusions des examens radiologiques) :</span>
+                <div class="grid-textarea h-6">
+                    <div class="lines-container"><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div></div>
+                    <textarea id="examensMorpho" class="t-area h-6"></textarea>
+                </div>
             </div>
         </div>
 
         <!-- PAGE 2 -->
-        <div class="a4-page">
+        <div class="a4-page" id="page2">
             
             <div>
-                <label class="section-title">Examens endoscopiques et biopsie :</label>
-                <textarea class="area-medium"></textarea>
+                <span class="u-b-i">Examens endoscopiques et biopsie :</span>
+                <div class="grid-textarea h-3">
+                    <div class="lines-container"><div class="line"></div><div class="line"></div><div class="line"></div></div>
+                    <textarea id="examensEndo" class="t-area h-3"></textarea>
+                </div>
             </div>
             
             <div class="row">
-                <label>IHC :</label> <input type="text" class="flex-fill">
+                <span>IHC :</span> <input type="text" id="ihc" class="dotted flex-grow" style="margin-left: 5px;">
             </div>
             <div class="row">
-                <label>Autres :</label> <input type="text" class="flex-fill">
+                <span>Autres :</span> <input type="text" id="autresExams" class="dotted flex-grow" style="margin-left: 5px;">
             </div>
 
-            <div style="margin-top:20px;">
-                <label class="section-title">Intervention :</label> <label> préciser (titre, date, extemporanée, incidents, transfusions)</label>
-                <textarea class="area-medium" id="interventionP2"></textarea>
-            </div>
-
-            <div class="row" style="margin-top:20px; align-items: flex-start;">
-                <label class="section-title">Suites opératoires :</label>
-                <div class="checkbox-group" style="margin: 15px 0 0 10px;">
-                    <label class="checkbox-item"><input type="checkbox" id="suitesSimples"> Simples</label>
-                    <label class="checkbox-item"><input type="checkbox" id="suitesComp"> Compliquées</label>
-                </div>
-                <label style="margin: 15px 0 0 20px;">Grade de la complication) :</label>
-                <input type="text" style="margin-top: 15px; width: 100px;">
-            </div>
-
-            <div style="padding-left: 30px;">
+            <div style="margin-top: 15px;">
+                <span class="u-b-i">Intervention :</span> <span>préciser (titre, date, extemporanée, incidents, transfusions)</span>
                 <div class="row">
-                    <label>- Si complications (préciser type, le délai, et la CAT) :</label>
-                    <textarea class="flex-fill area-medium"></textarea>
+                    <input type="text" id="interventionP2" class="dotted flex-grow">
                 </div>
-
-                <div class="row checkbox-group">
-                    <label>- Reprise chirurgicale :</label>
-                    <label class="checkbox-item"><input type="checkbox"> Oui</label>
-                    <label class="checkbox-item"><input type="checkbox"> Non</label>
-                </div>
-                <div class="row">
-                    <label>- Si reprise, préciser la ou les date, ainsi que le ou les gestes réaliser :</label>
-                    <textarea class="flex-fill area-medium"></textarea>
-                </div>
-
-                <div class="row" style="margin-top:10px;">
-                    <label>- Durée de séjour en réanimation :</label>
-                    <input type="text" style="width: 50px; text-align: center;"> <label>jours</label>
-                </div>
-                <div class="row">
-                    <label>- Traitements reçus (ATB, anticoagulants, antalgiques) :</label>
-                    <textarea class="flex-fill area-medium"></textarea>
-                </div>
-
-                <div class="row checkbox-group" style="margin-top:10px;">
-                    <label>- Alimentation parentérale :</label>
-                    <label class="checkbox-item"><input type="checkbox"> Oui</label>
-                    <label class="checkbox-item"><input type="checkbox"> Non</label>
-                    
-                    <label style="margin-left: 20px;">- Transfusions ou produits dérivés en postopératoire :</label>
-                    <label class="checkbox-item"><input type="checkbox"> Oui</label>
-                    <label class="checkbox-item"><input type="checkbox"> Non</label>
-                </div>
-                <div class="row">
-                    <label>- Si oui préciser la quantité :</label>
-                    <input type="text" class="flex-fill">
-                </div>
-
-                <div class="row">
-                    <label>- Ablation de la sonde naso-gastrique :</label>
-                    <label>J</label><input type="text" style="width: 40px; text-align:center;"> <label>post-op.</label>
-                </div>
-                <div class="row">
-                    <label>- Reprise du transit :</label>
-                    <label>J</label><input type="text" style="width: 40px; text-align:center;"> <label>post-op.</label>
-                </div>
-                <div class="row">
-                    <label>- Retrait des Lames et/ou drains :</label>
-                    <label>J</label><input type="text" style="width: 40px; text-align:center;"> <label>post-op.</label>
+                <div class="grid-textarea h-2">
+                    <div class="lines-container"><div class="line"></div><div class="line"></div></div>
+                    <textarea id="interventionDetails" class="t-area h-2"></textarea>
                 </div>
             </div>
 
-            <div style="margin-top:20px;">
-                <label>Sortie du patient (préciser date, adresser à, traitement à domicile (thrombo-prophylaxie/ antalgiques/ antibiotiques/ si DCD préciser cause, date et heure) :</label>
-                <textarea class="area-medium" style="height: 80px;"></textarea>
+            <div class="row gap-5" style="margin-top: 15px;">
+                <span class="u-b-i">Suites opératoires :</span>
+                <span>- Simples</span><input type="checkbox" id="suitesSimples">
+                <span style="margin-left:5px;">compliquées</span><input type="checkbox" id="suitesComp">
+                <span style="margin-left: 15px;">Grade de la complication) :</span>
+                <input type="text" id="gradeComp" class="dotted" style="width: 100px;">
+            </div>
+
+            <div style="padding-left: 20px;">
+                <div class="row">
+                    <span>- Si complications (préciser type, le délai, et la CAT) :</span>
+                    <input type="text" id="compType" class="dotted flex-grow" style="margin-left: 5px;">
+                </div>
+                <div class="grid-textarea h-1">
+                    <div class="lines-container"><div class="line"></div></div>
+                    <textarea id="compDetails" class="t-area h-1"></textarea>
+                </div>
+
+                <div class="row gap-5" style="margin: 5px 0;">
+                    <span>- Reprise chirurgicale : Oui</span><input type="checkbox" id="repriseOui">
+                    <span>Non</span><input type="checkbox" id="repriseNon">
+                </div>
+                
+                <div class="row">
+                    <span>- Si reprise, préciser la ou les date, ainsi que le ou les gestes réaliser :</span>
+                </div>
+                <div class="grid-textarea h-1">
+                    <div class="lines-container"><div class="line"></div></div>
+                    <textarea id="repriseDetails" class="t-area h-1"></textarea>
+                </div>
+
+                <div class="row" style="margin: 5px 0;">
+                    <span>- Durée de séjour en réanimation :</span>
+                    <input type="text" id="dureeRea" class="dotted" style="width: 50px; text-align: center; margin: 0 5px;"> <span>jours</span>
+                </div>
+
+                <div class="row">
+                    <span>- Traitements reçus (ATB, anticoagulants, antalgiques) :</span>
+                </div>
+                <div class="grid-textarea h-1">
+                    <div class="lines-container"><div class="line"></div></div>
+                    <textarea id="traitementsRecus" class="t-area h-1"></textarea>
+                </div>
+
+                <div class="row gap-5" style="margin: 5px 0;">
+                    <span>- Alimentation parentérale : Oui</span><input type="checkbox" id="alimOui">
+                    <span>Non</span><input type="checkbox" id="alimNon">
+                </div>
+                <div class="row gap-5" style="margin: 5px 0;">
+                    <span>- Transfusions ou produits dérivés en postopératoire : Oui</span><input type="checkbox" id="transfOui">
+                    <span>Non</span><input type="checkbox" id="transfNon">
+                </div>
+
+                <div class="row">
+                    <span>- Si oui préciser la quantité :</span>
+                    <input type="text" id="transfQte" class="dotted flex-grow" style="margin-left: 5px;">
+                </div>
+
+                <div class="row" style="margin-top:5px;">
+                    <span>- Ablation de la sonde naso-gastrique : J</span>
+                    <input type="text" id="ablationSng" class="dotted" style="width: 40px; text-align:center; margin: 0 5px;"> <span>post-op.</span>
+                </div>
+                <div class="row">
+                    <span>- Reprise du transit : J</span>
+                    <input type="text" id="repriseTransit" class="dotted" style="width: 40px; text-align:center; margin: 0 5px;"> <span>post-op.</span>
+                </div>
+                <div class="row">
+                    <span>- Retrait des Lames et/ou drains : J</span>
+                    <input type="text" id="retraitDrains" class="dotted" style="width: 40px; text-align:center; margin: 0 5px;"> <span>post-op.</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <span>Sortie du patient (préciser date, adresser à, traitement à domicile</span><br>
+                <div class="row">
+                    <span>(thrombo-prophylaxie/ antalgiques/ antibiotiques/ si DCD préciser cause ,date et heure) :</span>
+                </div>
+                <div class="grid-textarea h-2">
+                    <div class="lines-container"><div class="line"></div><div class="line"></div></div>
+                    <textarea id="sortieDetails" class="t-area h-2"></textarea>
+                </div>
             </div>
 
             <!-- BLOC RÉSUMÉ DE FIN -->
-            <div style="margin-top:30px; line-height: 2;">
-                <strong>Au total</strong>, il s'agit de <input type="text" id="sumNom" style="width:300px;">, âgé(e) de <input type="text" id="sumAge" style="width:50px;"> ans, <br>
-                Aux ATCD de <input type="text" id="sumAtcd" style="width:350px;">, hospitalisé pour <input type="text" id="sumDiag" style="width:350px;">.<br>
-                Il (elle) a bénéficié (geste) <input type="text" id="sumGeste" style="width: 450px;"><br>
-                Les suites opératoires ont été <input type="text" id="sumSuites" style="width: 300px;"><br>
-                <div class="row" style="margin-top:10px;">
-                    <label>Il sera revu en consultation par (Le chirurgien et en précisant la date) :</label>
-                    <input type="text" class="flex-fill">
+            <div style="margin-top: 15px;">
+                <div class="row">
+                    <span class="u-b-i">Au total,</span> <span>&nbsp;il s'agit de</span>
+                    <input type="text" id="sumNom" class="dotted flex-grow" style="margin: 0 5px;">
+                    <span>, âgé(e) de</span>
+                    <input type="text" id="sumAge" class="dotted" style="width:40px; text-align:center; margin: 0 5px;"> <span>ans,</span>
+                </div>
+                <div class="row">
+                    <span>Aux ATCD de</span>
+                    <input type="text" id="sumAtcd" class="dotted flex-grow" style="margin: 0 5px;">
+                    <span>, hospitalisé pour</span>
+                    <input type="text" id="sumDiag" class="dotted flex-grow" style="margin-left: 5px;"> <span>.</span>
+                </div>
+                <div class="row">
+                    <span>Il (elle) a bénéficié (geste)</span>
+                    <input type="text" id="sumGeste" class="dotted flex-grow" style="margin-left: 5px;">
+                </div>
+                <div class="row">
+                    <span>Les suites opératoires ont été</span>
+                    <input type="text" id="sumSuites" class="dotted flex-grow" style="margin-left: 5px;">
+                </div>
+                <div class="row">
+                    <span>Il sera revu en consultation par (Le chirurgien et en précisant la date)</span>
+                </div>
+                <div class="grid-textarea h-1">
+                    <div class="lines-container"><div class="line"></div></div>
+                    <textarea id="consultationDetails" class="t-area h-1"></textarea>
                 </div>
             </div>
 
         </div>
     </div>
 
+    <!-- SCRIPT FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -348,10 +440,8 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
         let patientsDb = {};
 
-        // Récupération des patients
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
             patientsDb = snapshot.val() || {};
             const select = document.getElementById('patientSelect');
@@ -368,60 +458,44 @@
             }
         });
 
-        // Remplissage automatique
         window.fillPatientData = function() {
             const bedId = document.getElementById('patientSelect').value;
             if (bedId && patientsDb[bedId]) {
                 const p = patientsDb[bedId];
                 
-                // Page 1
                 const fullName = p.nom.toUpperCase();
                 document.getElementById('nomP1').value = fullName;
-                document.getElementById('prenomP1').value = ""; // À remplir manuellement si tout est dans p.nom
                 document.getElementById('ageP1').value = p.age || "";
                 document.getElementById('dateEntree').value = p.dateEntree || "";
                 document.getElementById('diagnostic').value = p.diagnostic || "";
                 
-                // Gestion des ATCD textuels
                 const atcdText = p.atcd || "";
-                document.getElementById('atcdMed').value = atcdText; 
-                document.getElementById('atcdChir').value = "";
+                document.getElementById('atcdMed1').value = ""; 
+                document.getElementById('atcdMed2').value = atcdText; 
                 
-                // Intervention si disponible dans le programme
                 document.getElementById('interventionP2').value = p.intervention || "";
 
-                // Résumé fin de Page 2
                 document.getElementById('sumNom').value = fullName;
                 document.getElementById('sumAge').value = p.age || "";
-                document.getElementById('sumAtcd').value = atcdText;
+                document.getElementById('sumAtcd').value = atcdText.substring(0, 80); 
                 document.getElementById('sumDiag').value = p.diagnostic || "";
                 document.getElementById('sumGeste').value = p.intervention || "";
                 
-                // Checker "Suites Simples" par défaut pour le résumé
                 document.getElementById('suitesSimples').checked = true;
                 document.getElementById('suitesComp').checked = false;
                 document.getElementById('sumSuites').value = "Simples";
                 
             } else {
-                clearForm();
+                window.clearForm();
             }
         };
 
         window.clearForm = function() {
-            document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(el => el.value = '');
+            document.querySelectorAll('input[type="text"], textarea').forEach(el => el.value = '');
             document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
             document.getElementById('patientSelect').value = "";
         };
 
-        // Auto-resize des textareas pendant la frappe
-        document.querySelectorAll('textarea').forEach(textarea => {
-            textarea.addEventListener('input', function() {
-                this.style.height = 'auto';
-                this.style.height = (this.scrollHeight) + 'px';
-            });
-        });
-        
-        // Mettre à jour "Simples/Compliquées" dans le texte final
         document.getElementById('suitesSimples').addEventListener('change', (e) => {
             if(e.target.checked) document.getElementById('sumSuites').value = "Simples";
         });
@@ -429,5 +503,46 @@
             if(e.target.checked) document.getElementById('sumSuites').value = "Compliquées";
         });
     </script>
+
+    <!-- NOUVEAU MOTEUR CANVAS HTML5 GENERATEUR DE PDF EXPLOITANT JSPDF -->
+    <script>
+        async function saveAsPDF() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('portrait', 'mm', 'a4');
+
+            // Fonction pour dessiner une page HTML vers Canvas
+            async function drawPageToPdf(pageId, isFirstPage) {
+                const pageElement = document.getElementById(pageId);
+                
+                // Masquer temporairement les contours en pointillés pour la capture propre
+                const inputs = pageElement.querySelectorAll('input.dotted');
+                inputs.forEach(i => i.style.borderBottom = 'none');
+
+                const canvas = await html2canvas(pageElement, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                });
+
+                // Remettre les pointillés à l'écran
+                inputs.forEach(i => i.style.borderBottom = '');
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.98);
+                
+                if (!isFirstPage) {
+                    pdf.addPage();
+                }
+                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+            }
+
+            // Générer page 1 puis page 2
+            await drawPageToPdf('page1', true);
+            await drawPageToPdf('page2', false);
+
+            const patientName = document.getElementById('nomP1').value || 'Patient';
+            pdf.save(`Compte_Rendu_${patientName.replace(/ /g, '_')}.pdf`);
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
