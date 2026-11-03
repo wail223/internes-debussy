@@ -37,9 +37,9 @@
         .nav-btn.active { background: var(--primary); color: white; }
         
         .controls-bar { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
-        .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 220px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 150px; }
         .form-group label { font-size: 0.85em; font-weight: 600; }
-        .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .form-group select, .form-group input[type="number"] { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family:inherit;}
         
         .btn { padding: 10px 15px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; color: white; display: flex; align-items: center; gap: 5px; }
         .btn-pdf { background-color: var(--success); }
@@ -194,13 +194,26 @@
             <a href="compte-rendu.html" class="nav-btn active">📄 Compte Rendu</a>
         </div>
         <div class="controls-bar">
-            <div class="form-group">
+            <div class="form-group" style="flex:2;">
                 <label>Sélectionner un patient :</label>
                 <select id="patientSelect" onchange="fillPatientData()">
                     <option value="">-- Choisir un patient --</option>
                 </select>
             </div>
-            <button class="btn btn-pdf" onclick="saveAsPDF()">💾 Enregistrer PDF (2 Pages)</button>
+            <div class="form-group">
+                <label>Médecin (RDV) :</label>
+                <select id="medecinSelect" onchange="updateConsultation()">
+                    <option value="0|Dr. MERAD">Dr. MERAD (Dimanche)</option>
+                    <option value="1|Pr. CHEKMAN">Pr. CHEKMAN (Lundi)</option>
+                    <option value="3|Pr. AZZOUZ">Pr. AZZOUZ (Mercredi)</option>
+                    <option value="4|Pr. DJELALI">Pr. DJELALI (Jeudi)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Délai RDV (Jours) :</label>
+                <input type="number" id="delaiInput" value="15" min="1" oninput="updateConsultation()">
+            </div>
+            <button class="btn btn-pdf" onclick="saveAsPDF()">💾 Enregistrer PDF</button>
             <button class="btn btn-print" onclick="window.print()">🖨️ Imprimer</button>
             <button class="btn btn-clear" onclick="clearForm()">🗑️ Effacer</button>
         </div>
@@ -435,7 +448,7 @@
                     <input type="text" id="sumDiag" class="dotted flex-grow" style="margin-left: 5px;"> <span>.</span>
                 </div>
                 <div class="row">
-                    <span>Il (elle) a bénéficié (geste)</span>
+                    <span>Il (elle) a bénéficié de</span>
                     <input type="text" id="sumGeste" class="dotted flex-grow" style="margin-left: 5px;">
                 </div>
                 <div class="row">
@@ -471,8 +484,11 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        
         let patientsDb = {};
+        let allInterventions = [];
 
+        // 1. Charger les patients
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
             patientsDb = snapshot.val() || {};
             const select = document.getElementById('patientSelect');
@@ -489,35 +505,120 @@
             }
         });
 
+        // 2. Charger les interventions pour retrouver la date exacte
+        onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
+            const data = snapshot.val() || {};
+            allInterventions = [];
+            Object.keys(data).forEach(dateStr => {
+                if(Array.isArray(data[dateStr])) {
+                    data[dateStr].forEach(ligne => {
+                        if(ligne) allInterventions.push({ date: dateStr, ...ligne });
+                    });
+                }
+            });
+            // Trier de la plus récente à la plus ancienne
+            allInterventions.sort((a, b) => new Date(b.date) - new Date(a.date));
+        });
+
         window.fillPatientData = function() {
             const bedId = document.getElementById('patientSelect').value;
             if (bedId && patientsDb[bedId]) {
                 const p = patientsDb[bedId];
                 
-                const fullName = p.nom.toUpperCase();
-                document.getElementById('nomP1').value = fullName;
+                // Découpage Nom / Prénom
+                let fullNameArr = (p.nom || '').trim().split(' ');
+                let nomPatient = fullNameArr[0] || '';
+                let prenomPatient = fullNameArr.slice(1).join(' ') || '';
+
+                document.getElementById('nomP1').value = nomPatient.toUpperCase();
+                document.getElementById('prenomP1').value = prenomPatient;
                 document.getElementById('ageP1').value = p.age || "";
                 document.getElementById('dateEntree').value = p.dateEntree || "";
-                document.getElementById('diagnostic').value = p.diagnostic || "";
+                document.getElementById('diagnostic').value = p.diagnostic || p.motif || "";
                 
-                const atcdText = p.atcd || "";
+                // ATCD (si vide -> RAS)
+                const atcdText = (p.atcd && p.atcd.trim() !== '') ? p.atcd : "RAS";
                 document.getElementById('atcdMed1').value = ""; 
                 document.getElementById('atcdMed2').value = atcdText; 
                 
-                document.getElementById('interventionP2').value = p.intervention || "";
+                // Recherche de la dernière intervention (Nettoyée de "IHC")
+                let interventionTexte = "";
+                let dateIntervention = "";
+                for (let inv of allInterventions) {
+                    if (inv.bedId === bedId || (inv.patientText && inv.patientText.toUpperCase().includes(p.nom.toUpperCase()))) {
+                        interventionTexte = (inv.intervention || '').replace(/IHC/gi, '').trim();
+                        dateIntervention = inv.date;
+                        break; 
+                    }
+                }
+                if(!interventionTexte) interventionTexte = (p.intervention || '').replace(/IHC/gi, '').trim();
+                if(!dateIntervention) dateIntervention = p.di || "";
 
-                document.getElementById('sumNom').value = fullName;
+                document.getElementById('dateInterv').value = dateIntervention;
+                document.getElementById('interventionP2').value = interventionTexte;
+
+                // Remplissage du bloc résumé en bas
+                document.getElementById('sumNom').value = nomPatient.toUpperCase();
                 document.getElementById('sumAge').value = p.age || "";
                 document.getElementById('sumAtcd').value = atcdText.substring(0, 80); 
-                document.getElementById('sumDiag').value = p.diagnostic || "";
-                document.getElementById('sumGeste').value = p.intervention || "";
+                document.getElementById('sumDiag').value = p.diagnostic || p.motif || "";
+                document.getElementById('sumGeste').value = interventionTexte;
                 
                 document.getElementById('suitesSimples').checked = true;
                 document.getElementById('suitesComp').checked = false;
                 document.getElementById('sumSuites').value = "Simples";
                 
+                // Calcul du RDV pour remplir la dernière ligne
+                window.updateConsultation();
+                
             } else {
                 window.clearForm();
+            }
+        };
+
+        // Calcul exact de la date de consultation et écriture dans le champ
+        window.updateConsultation = function() {
+            let val = document.getElementById('medecinSelect').value.split('|');
+            let targetDay = parseInt(val[0]);
+            let medecinChoisi = val[1];
+            let delai = parseInt(document.getElementById('delaiInput').value) || 15;
+
+            let today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let targetDate = new Date(today);
+            targetDate.setDate(targetDate.getDate() + delai);
+
+            let dateAfter = new Date(targetDate);
+            while (dateAfter.getDay() !== targetDay) {
+                dateAfter.setDate(dateAfter.getDate() + 1);
+            }
+
+            let dateBefore = new Date(targetDate);
+            while (dateBefore.getDay() !== targetDay) {
+                dateBefore.setDate(dateBefore.getDate() - 1);
+            }
+
+            let daysBefore = Math.round((dateBefore - today) / (1000 * 60 * 60 * 24));
+            let daysAfter = Math.round((dateAfter - today) / (1000 * 60 * 60 * 24));
+
+            let selectedDate;
+            if (daysBefore > 0) {
+                let gapBefore = Math.abs(daysBefore - delai);
+                let gapAfter = Math.abs(daysAfter - delai);
+                selectedDate = (gapBefore <= gapAfter) ? dateBefore : dateAfter;
+            } else {
+                selectedDate = dateAfter;
+            }
+
+            let options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let dateFormatee = selectedDate.toLocaleDateString('fr-FR', options);
+            
+            // Mise à jour de la dernière ligne du compte rendu
+            const patientChoisi = document.getElementById('patientSelect').value;
+            if(patientChoisi) {
+                document.getElementById('assistant').value = medecinChoisi;
+                document.getElementById('consultationDetails').value = `${medecinChoisi} le ${dateFormatee}.`;
             }
         };
 
