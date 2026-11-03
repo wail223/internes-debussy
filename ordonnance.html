@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ordonnance - CPMC Debussy</title>
+    
+    <!-- Librairie pour générer le PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-light: #e0f2fe;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --danger: #dc2626;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background-color: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 15px; 
+        }
+
+        /* --- BARRE DE NAVIGATION --- */
+        .header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; }
+        .nav-links { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+        .nav-btn { background: #e2e8f0; color: var(--text); padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; white-space: nowrap; }
+        .nav-btn.active { background: var(--primary); color: white; }
+
+        /* --- BARRE DE CONTRÔLE --- */
+        .controls-bar {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
+        .form-group label { font-size: 0.85em; font-weight: 600; color: var(--text); }
+        .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: #f8fafc; }
+
+        .btn { padding: 10px 15px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; color: white; display: flex; align-items: center; gap: 5px; }
+        .btn-print { background-color: var(--primary); }
+        .btn-pdf { background-color: var(--success); }
+        .btn-clear { background-color: #64748b; }
+
+        /* --- ZONE DE L'ORDONNANCE (Format A5) --- */
+        .ordonnance-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 50px;
+        }
+
+        .a5-paper {
+            width: 148mm;
+            height: 210mm;
+            position: relative;
+            background-color: white;
+            background-image: url('IMG_5676.jpg'); 
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            box-sizing: border-box;
+        }
+
+        .field {
+            position: absolute;
+            background: transparent;
+            border: 1px dashed transparent;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 16px;
+            color: #000;
+            padding: 2px 5px;
+        }
+        
+        .field:hover, .field:focus {
+            border: 1px dashed #cbd5e1;
+            background: rgba(255, 255, 255, 0.8);
+            outline: none;
+        }
+
+        #dateField { top: 12.5%; left: 60%; width: 35%; font-style: italic; }
+        #nameField { top: 22%; left: 15%; width: 50%; font-weight: bold; }
+        #ageField { top: 22%; left: 75%; width: 20%; font-weight: bold; }
+        
+        #prescriptionBody {
+            top: 32%; 
+            left: 8%; 
+            width: 84%; 
+            height: 50%;
+            resize: none;
+            /* Typographie ajustée pour bien simuler l'impression */
+            font-family: Arial, sans-serif;
+            font-size: 15px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        /* --- STYLES D'IMPRESSION --- */
+        @media print {
+            @page { size: A5 portrait; margin: 0; }
+            body { background: none; padding: 0; }
+            .header, .controls-bar { display: none !important; }
+            .ordonnance-container { margin: 0; justify-content: flex-start; }
+            .a5-paper { 
+                box-shadow: none; 
+                width: 148mm; 
+                height: 209mm;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+            }
+            .field { border: none !important; background: transparent !important; }
+            textarea { overflow: hidden; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BARRE DE NAVIGATION -->
+    <div class="header">
+        <div class="top-bar">
+            <h2 style="margin:0; color: var(--primary);">🏥 CPMC Debussy</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="patients.html" class="nav-btn">🛏️ Lits / Hospitalisation</a>
+            <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
+            <a href="courbes.html" class="nav-btn">📈 Courbes de Suivi</a>
+            <a href="remarques-consignes.html" class="nav-btn">📝 Remarques</a>
+            <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
+            <a href="ordonnance.html" class="nav-btn active">💊 Ordonnance</a>
+        </div>
+    </div>
+
+    <!-- CONTRÔLES -->
+    <div class="controls-bar">
+        <div class="form-group">
+            <label>Sélectionner un patient :</label>
+            <select id="patientSelect" onchange="fillPatientData()">
+                <option value="">-- Choisir un patient --</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Traitement type :</label>
+            <select id="treatmentSelect" onchange="fillTreatmentData()">
+                <option value="">-- Vider ou choisir --</option>
+                <option value="standard">💊 Traitement Standard (Sortie)</option>
+                <option value="pansement">🩹 Changement de Pansement</option>
+            </select>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:flex-end;">
+            <button class="btn btn-print" onclick="window.print()">🖨️ Imprimer</button>
+            <button class="btn btn-pdf" onclick="saveAsPDF()">💾 PDF</button>
+            <button class="btn btn-clear" onclick="clearOrdonnance()">🗑️ Effacer</button>
+        </div>
+    </div>
+
+    <!-- ZONE DE L'ORDONNANCE A5 -->
+    <div class="ordonnance-container">
+        <div class="a5-paper" id="ordonnanceDoc">
+            <input type="text" id="dateField" class="field">
+            <input type="text" id="nameField" class="field">
+            <input type="text" id="ageField" class="field">
+            <textarea id="prescriptionBody" class="field" spellcheck="false"></textarea>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
+            authDomain: "internes-debussy.firebaseapp.com",
+            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "internes-debussy",
+            storageBucket: "internes-debussy.firebasestorage.app",
+            messagingSenderId: "614550756274",
+            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let patientsDb = {};
+
+        function setTodayDate() {
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const yyyy = today.getFullYear();
+            document.getElementById('dateField').value = `${dd}/${mm}/${yyyy}`;
+        }
+        setTodayDate();
+
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+            patientsDb = snapshot.val() || {};
+            const select = document.getElementById('patientSelect');
+            select.innerHTML = '<option value="">-- Choisir un patient --</option>';
+            for (const bedId in patientsDb) {
+                const p = patientsDb[bedId];
+                if (p && p.nom && !p.isTraceRea) {
+                    const option = document.createElement('option');
+                    option.value = bedId;
+                    option.textContent = `${p.nom.toUpperCase()} - (Lit ${bedId})`;
+                    select.appendChild(option);
+                }
+            }
+        });
+
+        window.fillPatientData = function() {
+            const bedId = document.getElementById('patientSelect').value;
+            if (bedId && patientsDb[bedId]) {
+                const p = patientsDb[bedId];
+                document.getElementById('nameField').value = p.nom.toUpperCase();
+                document.getElementById('ageField').value = p.age ? `${p.age} ans` : '';
+            } else {
+                document.getElementById('nameField').value = '';
+                document.getElementById('ageField').value = '';
+            }
+        };
+
+        window.fillTreatmentData = function() {
+            const choix = document.getElementById('treatmentSelect').value;
+            const body = document.getElementById('prescriptionBody');
+
+            if (choix === 'standard') {
+                // Formatage respectant les lignes (Traitement + QSP sur la même ligne)
+                body.value = 
+`- Lovenox 0.4UI ................................. QSP
+  1 inj / jour à heure fixe
+
+- Kéforal 1g ......................................... QSP 7j
+  1cp 02x/j
+
+- Paracetamol 1g ................................ 1bte
+  1cp/6H Si Douleur`;
+
+            } else if (choix === 'pansement') {
+                body.value = 
+`- Changement de Pansement 1j/2
++ Ablation de fil à la cicatrisation`;
+            } else {
+                body.value = '';
+            }
+        };
+
+        window.clearOrdonnance = function() {
+            document.getElementById('patientSelect').value = '';
+            document.getElementById('treatmentSelect').value = '';
+            document.getElementById('nameField').value = '';
+            document.getElementById('ageField').value = '';
+            document.getElementById('prescriptionBody').value = '';
+            setTodayDate();
+        };
+    </script>
+
+    <script>
+        function saveAsPDF() {
+            const element = document.getElementById('ordonnanceDoc');
+            const patientName = document.getElementById('nameField').value || 'Patient';
+            const fileName = `Ordonnance_${patientName.replace(/ /g, '_')}.pdf`;
+
+            const opt = {
+                margin:       0,
+                filename:     fileName,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 3, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a5', orientation: 'portrait' }
+            };
+
+            const fields = document.querySelectorAll('.field');
+            fields.forEach(f => f.style.border = 'none');
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                fields.forEach(f => f.style.border = '');
+            });
+        }
+    </script>
+</body>
+</html>
