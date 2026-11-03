@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compte Rendu d'Hospitalisation - CPMC</title>
+    
+    <style>
+        :root {
+            --primary: #0284c7;
+            --bg: #f1f5f9;
+            --text: #1e293b;
+        }
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 20px; 
+        }
+
+        /* --- BARRE DE NAVIGATION ET CONTRÔLES (Masqués à l'impression) --- */
+        .no-print-area { margin-bottom: 20px; }
+        .nav-links { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; }
+        .nav-btn { background: #e2e8f0; color: var(--text); padding: 8px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85em; font-weight: 600; }
+        .nav-btn.active { background: var(--primary); color: white; }
+        
+        .controls-bar {
+            background: white; padding: 15px; border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; gap: 15px; align-items: flex-end;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label { font-size: 0.85em; font-weight: 600; }
+        .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; min-width: 250px; }
+        
+        .btn { padding: 10px 15px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; color: white; }
+        .btn-print { background-color: #16a34a; }
+        .btn-clear { background-color: #64748b; }
+
+        /* --- STYLES DES PAGES A4 --- */
+        .page-container { display: flex; flex-direction: column; align-items: center; gap: 30px; }
+        
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            padding: 15mm 20mm;
+            box-sizing: border-box;
+            position: relative;
+            font-size: 14px;
+            line-height: 1.5;
+            color: black;
+        }
+
+        .header-titles { text-align: center; margin-bottom: 30px; }
+        .header-titles h4 { margin: 5px 0; font-weight: normal; font-size: 14px; }
+        .header-titles h3 { margin: 15px 0 25px 0; font-size: 18px; text-decoration: underline; }
+
+        /* Composants de formulaire "papier" */
+        input[type="text"], input[type="number"], textarea {
+            border: none;
+            border-bottom: 1px dotted #000;
+            background: transparent;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 15px;
+            font-weight: bold;
+            color: #1a1a1a;
+            padding: 2px 5px;
+        }
+        input[type="text"]:focus, textarea:focus { outline: none; background-color: #f8fafc; }
+        
+        textarea { width: 100%; resize: none; overflow: hidden; line-height: 1.5; }
+        
+        .row { display: flex; align-items: center; margin-bottom: 8px; width: 100%; gap: 5px; flex-wrap: wrap; }
+        .row label { white-space: nowrap; }
+        .flex-fill { flex-grow: 1; }
+
+        .checkbox-group { display: flex; align-items: center; gap: 15px; margin: 10px 0; font-size: 13px; }
+        .checkbox-item { display: flex; align-items: center; gap: 4px; }
+        .checkbox-item input { margin: 0; }
+
+        ul.custom-list { list-style-type: disc; margin: 10px 0 10px 20px; padding: 0; }
+        ul.custom-list li { margin-bottom: 8px; display: flex; align-items: center; gap: 5px; width: 100%; }
+        
+        .section-title { text-decoration: underline; font-style: italic; font-weight: bold; margin: 15px 0 5px 0; display: inline-block;}
+        
+        /* Auto-resizing textareas */
+        .area-large { height: 100px; }
+        .area-medium { height: 50px; }
+
+        /* --- STYLES D'IMPRESSION --- */
+        @media print {
+            @page { size: A4 portrait; margin: 0; }
+            body { background: none; padding: 0; margin: 0; }
+            .no-print-area { display: none !important; }
+            .page-container { gap: 0; display: block; }
+            .a4-page { 
+                box-shadow: none; 
+                margin: 0; 
+                padding: 15mm 20mm; 
+                page-break-after: always;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+            }
+            input[type="text"], textarea { background: transparent !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ZONE NON IMPRIMABLE : NAVIGATION & CONTRÔLES -->
+    <div class="no-print-area">
+        <div class="nav-links">
+            <a href="index.html" class="nav-btn">🏠 Accueil</a>
+            <a href="patients.html" class="nav-btn">🛏️ Lits / Hospitalisation</a>
+            <a href="interventions.html" class="nav-btn">📋 Programme Opératoire</a>
+            <a href="ordonnance.html" class="nav-btn">💊 Ordonnance</a>
+            <a href="compte-rendu.html" class="nav-btn active">📄 Compte Rendu</a>
+        </div>
+
+        <div class="controls-bar">
+            <div class="form-group">
+                <label>Sélectionner un patient :</label>
+                <select id="patientSelect" onchange="fillPatientData()">
+                    <option value="">-- Choisir un patient --</option>
+                </select>
+            </div>
+            <button class="btn btn-print" onclick="window.print()">🖨️ Imprimer le Compte Rendu</button>
+            <button class="btn btn-clear" onclick="clearForm()">🗑️ Effacer</button>
+        </div>
+    </div>
+
+    <!-- ZONE IMPRIMABLE : PAGES A4 -->
+    <div class="page-container">
+        
+        <!-- PAGE 1 -->
+        <div class="a4-page">
+            <div class="header-titles">
+                <h4>Etablissement hospitalier spécialisé en cancérologie Pierre et Marie Curie</h4>
+                <h4>CLINIQUE DEBUSSY SERVICE DE CHIRURGIE « C »</h4>
+                <h3>Compte rendu d'hospitalisation</h3>
+            </div>
+
+            <div class="row">
+                <label>Dossier : N°</label>
+                <input type="text" id="dossierNum" style="width: 150px;">
+                <label style="margin-left: 20px;">Organe :</label>
+                <input type="text" id="organe" class="flex-fill">
+            </div>
+
+            <ul class="custom-list">
+                <li>
+                    <label>Nom :</label> <input type="text" id="nomP1" class="flex-fill">
+                    <label>Prénom :</label> <input type="text" id="prenomP1" class="flex-fill">
+                    <label>Age :</label> <input type="text" id="ageP1" style="width: 60px;">
+                </li>
+                <li>
+                    <label>Adresse :</label> <input type="text" id="adresse" class="flex-fill">
+                </li>
+                <li>
+                    <label>Numéros TEL :</label> <input type="text" id="tel" class="flex-fill">
+                </li>
+                <li>
+                    <label>DE :</label> <input type="text" id="dateEntree" class="flex-fill">
+                    <label>DI :</label> <input type="text" id="dateInterv" class="flex-fill">
+                    <label>DS :</label> <input type="text" id="dateSortie" class="flex-fill">
+                </li>
+            </ul>
+
+            <div><span style="text-decoration: underline; font-style: italic;">Patient suivi par :</span></div>
+            <ul class="custom-list">
+                <li><label>Assistant :</label> <input type="text" class="flex-fill"></li>
+                <li><label>Résident :</label> <input type="text" class="flex-fill"></li>
+                <li><label>Interne :</label> <input type="text" class="flex-fill"></li>
+            </ul>
+
+            <div class="row" style="margin-top:15px;">
+                <label>Nom du médecin et/ou du service d'origine :</label>
+                <input type="text" class="flex-fill">
+            </div>
+
+            <div class="checkbox-group">
+                <span>*RCP :</span>
+                <label class="checkbox-item"><input type="checkbox"> Oui</label>
+                <label class="checkbox-item"><input type="checkbox"> Non</label>
+                
+                <span style="margin-left: 20px;">*Comité Rectum :</span>
+                <label class="checkbox-item"><input type="checkbox"> Oui</label>
+                <label class="checkbox-item"><input type="checkbox"> Non</label>
+                
+                <span style="margin-left: 20px;">*Comité Thyroïde :</span>
+                <label class="checkbox-item"><input type="checkbox"> Oui</label>
+                <label class="checkbox-item"><input type="checkbox"> Non</label>
+            </div>
+
+            <div class="row" style="margin-top:20px;">
+                <label class="section-title">Motif d'hospitalisation</label> <label> (diagnostic) :</label>
+                <input type="text" id="diagnostic" class="flex-fill">
+            </div>
+
+            <div class="row" style="margin-top:10px; align-items: flex-start;">
+                <label class="section-title">Antécédents :</label>
+                <div style="flex-grow: 1; margin-left: 10px; width: 100%;">
+                    <div class="row">
+                        <label>Médicaux :</label>
+                        <textarea id="atcdMed" class="flex-fill area-medium"></textarea>
+                    </div>
+                    <div class="row">
+                        <label>Chirurgicaux :</label>
+                        <textarea id="atcdChir" class="flex-fill area-medium"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+                <label>Score ASA :</label> <input type="text" style="width: 100px;">
+                <label style="margin-left: 30px;">BMI :</label> <input type="text" style="width: 80px;"> <label>Kg/m².</label>
+            </div>
+
+            <div style="margin-top:15px;">
+                <label class="section-title">Résumé clinique :</label>
+                <textarea class="area-large"></textarea>
+            </div>
+
+            <div style="margin-top:10px;">
+                <label class="section-title">Examens morphologiques</label> <label>(Conclusions des examens radiologiques) :</label>
+                <textarea class="area-large" style="height: 150px;"></textarea>
+            </div>
+        </div>
+
+        <!-- PAGE 2 -->
+        <div class="a4-page">
+            
+            <div>
+                <label class="section-title">Examens endoscopiques et biopsie :</label>
+                <textarea class="area-medium"></textarea>
+            </div>
+            
+            <div class="row">
+                <label>IHC :</label> <input type="text" class="flex-fill">
+            </div>
+            <div class="row">
+                <label>Autres :</label> <input type="text" class="flex-fill">
+            </div>
+
+            <div style="margin-top:20px;">
+                <label class="section-title">Intervention :</label> <label> préciser (titre, date, extemporanée, incidents, transfusions)</label>
+                <textarea class="area-medium" id="interventionP2"></textarea>
+            </div>
+
+            <div class="row" style="margin-top:20px; align-items: flex-start;">
+                <label class="section-title">Suites opératoires :</label>
+                <div class="checkbox-group" style="margin: 15px 0 0 10px;">
+                    <label class="checkbox-item"><input type="checkbox" id="suitesSimples"> Simples</label>
+                    <label class="checkbox-item"><input type="checkbox" id="suitesComp"> Compliquées</label>
+                </div>
+                <label style="margin: 15px 0 0 20px;">Grade de la complication) :</label>
+                <input type="text" style="margin-top: 15px; width: 100px;">
+            </div>
+
+            <div style="padding-left: 30px;">
+                <div class="row">
+                    <label>- Si complications (préciser type, le délai, et la CAT) :</label>
+                    <textarea class="flex-fill area-medium"></textarea>
+                </div>
+
+                <div class="row checkbox-group">
+                    <label>- Reprise chirurgicale :</label>
+                    <label class="checkbox-item"><input type="checkbox"> Oui</label>
+                    <label class="checkbox-item"><input type="checkbox"> Non</label>
+                </div>
+                <div class="row">
+                    <label>- Si reprise, préciser la ou les date, ainsi que le ou les gestes réaliser :</label>
+                    <textarea class="flex-fill area-medium"></textarea>
+                </div>
+
+                <div class="row" style="margin-top:10px;">
+                    <label>- Durée de séjour en réanimation :</label>
+                    <input type="text" style="width: 50px; text-align: center;"> <label>jours</label>
+                </div>
+                <div class="row">
+                    <label>- Traitements reçus (ATB, anticoagulants, antalgiques) :</label>
+                    <textarea class="flex-fill area-medium"></textarea>
+                </div>
+
+                <div class="row checkbox-group" style="margin-top:10px;">
+                    <label>- Alimentation parentérale :</label>
+                    <label class="checkbox-item"><input type="checkbox"> Oui</label>
+                    <label class="checkbox-item"><input type="checkbox"> Non</label>
+                    
+                    <label style="margin-left: 20px;">- Transfusions ou produits dérivés en postopératoire :</label>
+                    <label class="checkbox-item"><input type="checkbox"> Oui</label>
+                    <label class="checkbox-item"><input type="checkbox"> Non</label>
+                </div>
+                <div class="row">
+                    <label>- Si oui préciser la quantité :</label>
+                    <input type="text" class="flex-fill">
+                </div>
+
+                <div class="row">
+                    <label>- Ablation de la sonde naso-gastrique :</label>
+                    <label>J</label><input type="text" style="width: 40px; text-align:center;"> <label>post-op.</label>
+                </div>
+                <div class="row">
+                    <label>- Reprise du transit :</label>
+                    <label>J</label><input type="text" style="width: 40px; text-align:center;"> <label>post-op.</label>
+                </div>
+                <div class="row">
+                    <label>- Retrait des Lames et/ou drains :</label>
+                    <label>J</label><input type="text" style="width: 40px; text-align:center;"> <label>post-op.</label>
+                </div>
+            </div>
+
+            <div style="margin-top:20px;">
+                <label>Sortie du patient (préciser date, adresser à, traitement à domicile (thrombo-prophylaxie/ antalgiques/ antibiotiques/ si DCD préciser cause, date et heure) :</label>
+                <textarea class="area-medium" style="height: 80px;"></textarea>
+            </div>
+
+            <!-- BLOC RÉSUMÉ DE FIN -->
+            <div style="margin-top:30px; line-height: 2;">
+                <strong>Au total</strong>, il s'agit de <input type="text" id="sumNom" style="width:300px;">, âgé(e) de <input type="text" id="sumAge" style="width:50px;"> ans, <br>
+                Aux ATCD de <input type="text" id="sumAtcd" style="width:350px;">, hospitalisé pour <input type="text" id="sumDiag" style="width:350px;">.<br>
+                Il (elle) a bénéficié (geste) <input type="text" id="sumGeste" style="width: 450px;"><br>
+                Les suites opératoires ont été <input type="text" id="sumSuites" style="width: 300px;"><br>
+                <div class="row" style="margin-top:10px;">
+                    <label>Il sera revu en consultation par (Le chirurgien et en précisant la date) :</label>
+                    <input type="text" class="flex-fill">
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
+            authDomain: "internes-debussy.firebaseapp.com",
+            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "internes-debussy",
+            storageBucket: "internes-debussy.firebasestorage.app",
+            messagingSenderId: "614550756274",
+            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let patientsDb = {};
+
+        // Récupération des patients
+        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+            patientsDb = snapshot.val() || {};
+            const select = document.getElementById('patientSelect');
+            select.innerHTML = '<option value="">-- Choisir un patient --</option>';
+            
+            for (const bedId in patientsDb) {
+                const p = patientsDb[bedId];
+                if (p && p.nom && !p.isTraceRea) {
+                    const option = document.createElement('option');
+                    option.value = bedId;
+                    option.textContent = `${p.nom.toUpperCase()} - (Lit ${bedId})`;
+                    select.appendChild(option);
+                }
+            }
+        });
+
+        // Remplissage automatique
+        window.fillPatientData = function() {
+            const bedId = document.getElementById('patientSelect').value;
+            if (bedId && patientsDb[bedId]) {
+                const p = patientsDb[bedId];
+                
+                // Page 1
+                const fullName = p.nom.toUpperCase();
+                document.getElementById('nomP1').value = fullName;
+                document.getElementById('prenomP1').value = ""; // À remplir manuellement si tout est dans p.nom
+                document.getElementById('ageP1').value = p.age || "";
+                document.getElementById('dateEntree').value = p.dateEntree || "";
+                document.getElementById('diagnostic').value = p.diagnostic || "";
+                
+                // Gestion des ATCD textuels
+                const atcdText = p.atcd || "";
+                document.getElementById('atcdMed').value = atcdText; 
+                document.getElementById('atcdChir').value = "";
+                
+                // Intervention si disponible dans le programme
+                document.getElementById('interventionP2').value = p.intervention || "";
+
+                // Résumé fin de Page 2
+                document.getElementById('sumNom').value = fullName;
+                document.getElementById('sumAge').value = p.age || "";
+                document.getElementById('sumAtcd').value = atcdText;
+                document.getElementById('sumDiag').value = p.diagnostic || "";
+                document.getElementById('sumGeste').value = p.intervention || "";
+                
+                // Checker "Suites Simples" par défaut pour le résumé
+                document.getElementById('suitesSimples').checked = true;
+                document.getElementById('suitesComp').checked = false;
+                document.getElementById('sumSuites').value = "Simples";
+                
+            } else {
+                clearForm();
+            }
+        };
+
+        window.clearForm = function() {
+            document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(el => el.value = '');
+            document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
+            document.getElementById('patientSelect').value = "";
+        };
+
+        // Auto-resize des textareas pendant la frappe
+        document.querySelectorAll('textarea').forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+        });
+        
+        // Mettre à jour "Simples/Compliquées" dans le texte final
+        document.getElementById('suitesSimples').addEventListener('change', (e) => {
+            if(e.target.checked) document.getElementById('sumSuites').value = "Simples";
+        });
+        document.getElementById('suitesComp').addEventListener('change', (e) => {
+            if(e.target.checked) document.getElementById('sumSuites').value = "Compliquées";
+        });
+    </script>
+</body>
+</html>
