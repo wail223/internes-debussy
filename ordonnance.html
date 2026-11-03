@@ -57,6 +57,20 @@
         .btn-pdf { background-color: var(--success); }
         .btn-clear { background-color: #64748b; }
         .btn-add { background-color: var(--primary); margin-top: 4px; }
+        
+        /* Boutons pour les bilans */
+        .btn-bilan { background-color: #f1f5f9; color: var(--primary); border: 1px solid var(--primary); padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-bilan:hover { background-color: var(--primary); color: white; }
+
+        .btn-group { background-color: #e0e7ff; color: #4338ca; border: 1px solid #6366f1; }
+        .btn-group:hover { background-color: #4338ca; color: white; }
+
+        /* État Actif (Sélectionné) */
+        .btn-bilan.active-bilan {
+            background-color: var(--success) !important;
+            color: white !important;
+            border-color: var(--success) !important;
+        }
 
         .custom-drug-section {
             width: 100%;
@@ -68,6 +82,23 @@
             gap: 10px;
             align-items: flex-end;
             margin-top: 5px;
+        }
+        
+        .bilan-section {
+            width: 100%;
+            background: #fffbeb;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px dashed #fbbf24;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .bilan-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         /* --- ZONE DE L'ORDONNANCE (Format A5) --- */
@@ -102,12 +133,9 @@
             outline: none;
         }
 
-        /* EMPLACEMENTS RÉAJUSTÉS */
         #dateField { top: 12.8%; left: 72%; width: 25%; font-style: italic; }
-        
-        /* Nom et Âge décalés de ~3mm à droite (+2%) et de ~2mm vers le haut (-1%) */
         #nameField { top: 20.9%; left: 20%; width: 53%; font-weight: bold; }
-        #ageField { top: 20.9%; left: 77%; width: 20%; font-weight: bold; }
+        #ageField { top: 20.9%; left: 75%; width: 22%; font-weight: bold; font-size: 14px; }
         
         #specialTitle {
             top: 33%;
@@ -134,27 +162,12 @@
             white-space: pre-wrap;
         }
 
-        /* --- STYLES D'IMPRESSION --- */
         @media print {
             @page { size: A4 portrait; margin: 0; }
             body { background: none; padding: 0; margin: 0; }
             .header, .controls-bar { display: none !important; }
-            
-            .ordonnance-container { 
-                margin: 0; 
-                display: block; 
-                width: 100%;
-                padding-top: 0; 
-            }
-            
-            .a5-paper { 
-                box-shadow: none; 
-                width: 148mm; 
-                height: 210mm; 
-                margin: 0 auto; 
-                -webkit-print-color-adjust: exact; print-color-adjust: exact; 
-            }
-            
+            .ordonnance-container { margin: 0; display: block; width: 100%; padding-top: 0; }
+            .a5-paper { box-shadow: none; width: 148mm; height: 210mm; margin: 0 auto; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .field { border: none !important; background: transparent !important; }
             #specialTitle { -webkit-print-color-adjust: exact; print-color-adjust: exact; } 
             textarea { overflow: hidden; }
@@ -163,7 +176,6 @@
 </head>
 <body>
 
-    <!-- BARRE DE NAVIGATION -->
     <div class="header">
         <div class="top-bar">
             <h2 style="margin:0; color: var(--primary);">🏥 CPMC Debussy</h2>
@@ -180,7 +192,6 @@
         </div>
     </div>
 
-    <!-- CONTRÔLES -->
     <div class="controls-bar">
         <div class="form-group">
             <label>Sélectionner un patient :</label>
@@ -196,6 +207,7 @@
                 <option value="vierge">📝 Ordonnance Vierge</option>
                 <option value="standard">💊 Traitement Standard (Sortie)</option>
                 <option value="pansement">🩹 Changement de Pansement</option>
+                <option value="bilan">🩸 Bilans Biologiques</option>
             </select>
         </div>
 
@@ -205,8 +217,7 @@
             <button class="btn btn-clear" onclick="clearOrdonnance()">🗑️ Tout effacer</button>
         </div>
 
-        <!-- SECTION : AJOUTER UN MÉDICAMENT SPÉCIFIQUE -->
-        <div class="custom-drug-section">
+        <div class="custom-drug-section" id="medicamentSection">
             <div class="form-group" style="flex: 2;">
                 <label>Médicament :</label>
                 <input type="text" id="customDrug" list="dzMeds" placeholder="Ex: Amoxicilline 1g">
@@ -220,6 +231,42 @@
                 <input type="text" id="customQsp" list="dzQsp" placeholder="Ex: 1 bte, QSP 7j">
             </div>
             <button class="btn btn-add" onclick="addCustomDrug()">➕ Ajouter</button>
+        </div>
+
+        <div class="bilan-section" id="bilanSection">
+            <label style="font-size: 0.85em; font-weight: 600; color: var(--warning);">Groupes de bilans (Cliquez pour ajouter/retirer) :</label>
+            <div class="bilan-grid">
+                <button class="btn-bilan btn-group" onclick="toggleBilan(this, ['FNS', 'TP', 'TCK'])">📦 Hémostase (FNS, TP, TCK)</button>
+                <button class="btn-bilan btn-group" onclick="toggleBilan(this, ['Urée Sanguine', 'Créatinine', 'Ionogramme Sanguin', 'Glycémie à jeun'])">📦 Biochimie (Urée, Créat, Iono, Glycémie)</button>
+                <button class="btn-bilan btn-group" onclick="toggleBilan(this, ['ASAT (SGOT) / ALAT (SGPT)', 'PAL', 'Gamma-GT', 'Bilirubine T'])">📦 Bilan Hépatique complet</button>
+            </div>
+            
+            <label style="font-size: 0.85em; font-weight: 600; color: var(--warning); margin-top: 5px;">Bilans individuels :</label>
+            <div class="bilan-grid">
+                <button class="btn-bilan" onclick="toggleBilan(this, ['FNS'])">FNS</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['TP'])">TP</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['TCK'])">TCK</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Ionogramme Sanguin'])">Iono Sanguin</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Urée Sanguine'])">Urée Sanguine</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Créatinine'])">Créatinine</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Glycémie à jeun'])">Glycémie à jeun</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['ASAT (SGOT) / ALAT (SGPT)'])">ASAT/ALAT</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['PAL'])">PAL</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Gamma-GT'])">Gamma-GT</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Bilirubine T'])">Bilirubine T</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Fer sérique'])">Fer sérique</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['VS'])">VS</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['CRP'])">CRP</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['RAI'])">RAI</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Hémoculture'])">Hémoculture</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['INR'])">INR</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Troponine'])">Troponine</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['TSH'])">TSH</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['FT3'])">FT3</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['FT4'])">FT4</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Procalcitonine'])">Procalcitonine</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Sérologie (HIV, HBS, HCV)'])">Sérologie (HIV, HBS, HCV)</button>
+            </div>
         </div>
     </div>
 
@@ -283,15 +330,12 @@
         <option value="2 flacons">
     </datalist>
 
-    <!-- ZONE DE L'ORDONNANCE A5 -->
     <div class="ordonnance-container">
         <div class="a5-paper" id="ordonnanceDoc">
             <input type="text" id="dateField" class="field">
             <input type="text" id="nameField" class="field">
             <input type="text" id="ageField" class="field">
-            
             <input type="text" id="specialTitle" class="field" value="PRIÈRE DE FAIRE :" readonly>
-            
             <textarea id="prescriptionBody" class="field" spellcheck="false"></textarea>
         </div>
     </div>
@@ -304,15 +348,11 @@
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
             authDomain: "internes-debussy.firebaseapp.com",
             databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "internes-debussy",
-            storageBucket: "internes-debussy.firebasestorage.app",
-            messagingSenderId: "614550756274",
-            appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
+            projectId: "internes-debussy"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
         let patientsDb = {};
 
         function setTodayDate() {
@@ -344,17 +384,36 @@
             if (bedId && patientsDb[bedId]) {
                 const p = patientsDb[bedId];
                 document.getElementById('nameField').value = p.nom.toUpperCase();
-                document.getElementById('ageField').value = p.age ? `${p.age} ans` : '';
+                const ageText = p.age ? `${p.age} ans` : '';
+                const ddnText = p.dateNaissance || p.ddn || '00/00/0000';
+                
+                if(ageText) {
+                    document.getElementById('ageField').value = `${ageText} (${ddnText})`;
+                } else {
+                    document.getElementById('ageField').value = `Né(e) le: ${ddnText}`;
+                }
             } else {
                 document.getElementById('nameField').value = '';
                 document.getElementById('ageField').value = '';
             }
         };
 
+        // Supprime l'état actif des boutons
+        function resetBilanButtons() {
+            document.querySelectorAll('.btn-bilan').forEach(btn => {
+                btn.classList.remove('active-bilan');
+            });
+        }
+
         window.fillTreatmentData = function() {
+            resetBilanButtons();
+            
             const choix = document.getElementById('treatmentSelect').value;
             const body = document.getElementById('prescriptionBody');
             const specialTitle = document.getElementById('specialTitle');
+            const bilanSection = document.getElementById('bilanSection');
+
+            bilanSection.style.display = 'none';
 
             if (choix === 'standard') {
                 specialTitle.style.display = 'none';
@@ -378,6 +437,12 @@
 `- Changement de Pansement 1j/2
 + Ablation de fil à la cicatrisation`;
             
+            } else if (choix === 'bilan') {
+                specialTitle.style.display = 'block';
+                body.style.top = '44%';
+                body.style.height = '47%';
+                body.value = ''; 
+                bilanSection.style.display = 'flex'; 
             } else if (choix === 'vierge') {
                 specialTitle.style.display = 'none';
                 body.style.top = '36%';
@@ -386,23 +451,47 @@
             }
         };
 
+        // --- NOUVELLE FONCTION POUR AJOUTER / RETIRER ---
+        window.toggleBilan = function(btnElement, testArray) {
+            const body = document.getElementById('prescriptionBody');
+            let text = body.value;
+            
+            const isActive = btnElement.classList.contains('active-bilan');
+            
+            if (isActive) {
+                // Désélection : Retire les tests
+                btnElement.classList.remove('active-bilan');
+                testArray.forEach(test => {
+                    const regex = new RegExp(`- ${test.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n?`, 'g');
+                    text = text.replace(regex, '');
+                });
+            } else {
+                // Sélection : Ajoute les tests
+                btnElement.classList.add('active-bilan');
+                testArray.forEach(test => {
+                    if (!text.includes(`- ${test}`)) {
+                        if (text.length > 0 && !text.endsWith('\n')) {
+                            text += '\n';
+                        }
+                        text += `- ${test}\n`;
+                    }
+                });
+            }
+            
+            body.value = text;
+        };
+
         window.addCustomDrug = function() {
             const drug = document.getElementById('customDrug').value;
             const posology = document.getElementById('customPosology').value || "";
             const qsp = document.getElementById('customQsp').value || "QSP";
 
-            if (!drug) {
-                alert("Veuillez entrer au moins le nom d'un médicament.");
-                return;
-            }
+            if (!drug) return alert("Veuillez entrer au moins le nom d'un médicament.");
 
             const body = document.getElementById('prescriptionBody');
             let dots = " .................. "; 
-            
             let newEntry = `- ${drug}${dots}${qsp}`;
-            if (posology) {
-                newEntry += `\n  ${posology}`;
-            }
+            if (posology) newEntry += `\n  ${posology}`;
             newEntry += `\n\n`;
 
             body.value = body.value + newEntry;
@@ -420,15 +509,15 @@
             document.getElementById('prescriptionBody').value = '';
             document.getElementById('specialTitle').style.display = 'none';
             document.getElementById('prescriptionBody').style.top = '36%';
+            document.getElementById('bilanSection').style.display = 'none';
+            resetBilanButtons();
             setTodayDate();
         };
     </script>
 
-    <!-- NOUVEAU MOTEUR DE GÉNÉRATION PDF 100% PRÉCIS VIA CANVAS -->
     <script>
         async function saveAsPDF() {
             const { jsPDF } = window.jspdf;
-
             const bgImg = new Image();
             bgImg.src = 'IMG_5676.jpg';
 
@@ -453,19 +542,17 @@
 
             ctx.fillStyle = '#000000';
 
-            // Coordonnées pour le PDF
             ctx.font = 'italic 30px "Times New Roman", serif';
             const dateVal = document.getElementById('dateField').value || '';
             ctx.fillText(dateVal, w * 0.72, h * 0.145);
 
-            // Nom et âge décalés de 3mm vers la droite (+2%) et 2mm vers le haut (-1%)
             ctx.font = 'bold 32px "Times New Roman", serif';
             const nameVal = document.getElementById('nameField').value || '';
             ctx.fillText(nameVal, w * 0.20, h * 0.229);
 
-            ctx.font = 'bold 32px "Times New Roman", serif';
+            ctx.font = 'bold 30px "Times New Roman", serif';
             const ageVal = document.getElementById('ageField').value || '';
-            ctx.fillText(ageVal, w * 0.77, h * 0.229);
+            ctx.fillText(ageVal, w * 0.74, h * 0.229);
 
             const specialTitle = document.getElementById('specialTitle');
             let startY = h * 0.38;
