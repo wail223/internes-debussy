@@ -103,15 +103,16 @@
             outline: none;
         }
 
-        #dateField { top: 12.5%; left: 60%; width: 35%; font-style: italic; }
-        #nameField { top: 22%; left: 15%; width: 50%; font-weight: bold; }
-        #ageField { top: 22%; left: 75%; width: 20%; font-weight: bold; }
+        /* CORRECTIONS D'ALIGNEMENT (+2cm à droite pour l'en-tête, +4cm en bas pour le corps) */
+        #dateField { top: 12.5%; left: calc(60% + 2cm); width: 35%; font-style: italic; }
+        #nameField { top: 22%; left: calc(15% + 2cm); width: 45%; font-weight: bold; }
+        #ageField { top: 22%; left: calc(75% + 2cm); width: 20%; font-weight: bold; }
         
         #prescriptionBody {
-            top: 32%; 
+            top: calc(32% + 4cm); /* Décalage de 4cm vers le bas */
             left: 8%; 
             width: 84%; 
-            height: 50%;
+            height: calc(50% - 4cm); /* Réduction de la hauteur pour ne pas déborder en bas */
             resize: none;
             font-family: Arial, sans-serif;
             font-size: 15px;
@@ -347,8 +348,11 @@
   1cp/6H Si Douleur`;
 
             } else if (choix === 'pansement') {
+                // Ajout de "Prière de faire :"
                 body.value = 
-`- Changement de Pansement 1j/2
+`Prière de faire :
+
+- Changement de Pansement 1j/2
 + Ablation de fil à la cicatrisation`;
             
             } else if (choix === 'vierge') {
