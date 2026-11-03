@@ -33,7 +33,7 @@
         .nav-btn.active { background: var(--primary); color: white; }
         
         .controls-bar { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
-        .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 150px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px; }
         .form-group label { font-size: 0.85em; font-weight: 600; }
         .form-group select, .form-group input[type="number"] { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family:inherit;}
         
@@ -47,7 +47,7 @@
         
         .a4-page {
             width: 210mm;
-            height: 297mm; /* Hauteur A4 fixe */
+            height: 297mm;
             max-height: 297mm;
             background: white;
             box-shadow: 0 5px 15px rgba(0,0,0,0.15);
@@ -58,10 +58,11 @@
             overflow: hidden;
         }
 
-        .header-titles { text-align: center; margin-bottom: 12px; font-family: 'Times New Roman', Times, serif; }
-        .header-titles h4 { margin: 0; font-weight: normal; font-size: 13.5px; line-height: 1.2; }
-        .header-titles h4.bold { font-weight: bold; margin-top: 3px; }
-        .header-titles h3 { margin: 10px 0 15px 0; font-size: 17px; text-decoration: underline; font-weight: bold; }
+        /* ENTÊTE AVEC POLICE AGRANDIE */
+        .header-titles { text-align: center; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif; }
+        .header-titles h4 { margin: 0; font-weight: normal; font-size: 15.5px; line-height: 1.3; }
+        .header-titles h4.bold { font-weight: bold; margin-top: 4px; font-size: 16.5px; }
+        .header-titles h3 { margin: 15px 0 15px 0; font-size: 19px; text-decoration: underline; font-weight: bold; }
 
         .row { display: flex; flex-direction: row; align-items: center; width: 100%; }
         .row-top { align-items: flex-start; }
@@ -74,7 +75,7 @@
         ul.custom-list { margin: 3px 0 3px 20px; padding: 0; list-style: disc; }
         ul.custom-list li { margin-bottom: 3px; }
 
-        /* Champs ligne en pointillés */
+        /* Champs ligne en pointillés simples */
         input.dotted {
             border: none;
             border-bottom: 2px dotted #000;
@@ -113,33 +114,34 @@
             color: #000;
         }
 
-        /* Zones de texte multilignes (NOUVEAU STYLE PERMETTANT D'ÉCRIRE PARTOUT) */
+        /* Zones de texte multilignes (SOLUTION "CADRE INVISIBLE À L'IMPRESSION") */
         textarea.t-area {
             width: 100%;
-            line-height: 25px;
+            line-height: 22px;
             background: transparent;
-            background-image: repeating-linear-gradient(transparent, transparent 23px, #000 24px, transparent 25px);
-            background-attachment: local;
-            border: none;
+            border: 1px dashed #94a3b8; /* Cadre gris visible SEULEMENT à l'écran */
+            border-radius: 4px;
             resize: none;
             outline: none;
             font-family: inherit;
             font-size: 13.5px;
             font-weight: bold;
-            padding: 0;
-            margin: 0;
+            padding: 5px;
             margin-top: 5px;
             color: #000;
             overflow: hidden;
         }
+        textarea.t-area:focus {
+            border: 1px dashed var(--primary); /* S'illumine en bleu quand on clique dedans */
+        }
         
-        .h-1 { height: 25px; }
+        .h-1 { height: 26px; }
         .h-2 { height: 50px; }
         .h-3 { height: 75px; }
         .h-4 { height: 100px; }
-        .h-6 { height: 150px; }
+        .h-6 { height: 150px; } /* Grande zone pour les examens morpho */
 
-        /* --- STYLES D'IMPRESSION STRICTS A4 (FORCE 2 PAGES EXACTES) --- */
+        /* --- STYLES D'IMPRESSION STRICTS A4 --- */
         @media print {
             @page { 
                 size: A4 portrait; 
@@ -165,8 +167,10 @@
                 page-break-after: always;
                 page-break-inside: avoid;
             }
-            .a4-page:last-child {
-                page-break-after: avoid;
+            /* Disparition des cadres pointillés à l'impression */
+            textarea.t-area {
+                border: none !important;
+                padding: 0 !important;
             }
         }
     </style>
@@ -184,15 +188,22 @@
         </div>
         <div class="controls-bar">
             <div class="form-group" style="flex:2;">
-                <label>Sélectionner un patient :</label>
+                <label>Patient :</label>
                 <select id="patientSelect" onchange="fillPatientData()">
                     <option value="">-- Choisir un patient --</option>
+                </select>
+            </div>
+            <!-- NOUVEAU SELECTEUR DE SEXE -->
+            <div class="form-group" style="min-width: 90px;">
+                <label>Sexe :</label>
+                <select id="sexeSelect" onchange="updateResume()">
+                    <option value="Homme">Homme</option>
+                    <option value="Femme">Femme</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>Médecin (RDV) :</label>
                 <select id="medecinSelect" onchange="updateConsultation()">
-                    <!-- Liste des assistants mise à jour -->
                     <option value="0|Dr Benmoussa">Dr Benmoussa (Dimanche)</option>
                     <option value="0|Dr MERAD">Dr MERAD (Dimanche)</option>
                     <option value="1|Dr Gouaref">Dr Gouaref (Lundi)</option>
@@ -206,10 +217,9 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Délai RDV (Jours) :</label>
+                <label>Délai RDV :</label>
                 <input type="number" id="delaiInput" value="15" min="1" oninput="updateConsultation()">
             </div>
-            <!-- Le bouton Save PDF appelle désormais la fonction d'impression native pour garantir un texte sélectionnable -->
             <button class="btn btn-pdf" onclick="saveAsPDF()">💾 Enregistrer PDF</button>
             <button class="btn btn-print" onclick="window.print()">🖨️ Imprimer</button>
             <button class="btn btn-clear" onclick="clearForm()">🗑️ Effacer</button>
@@ -271,7 +281,7 @@
 
             <div class="row">
                 <span class="u-b-i">Motif d'hospitalisation</span> <span>&nbsp;(diagnostic) :</span>
-                <input type="text" id="diagnostic" class="dotted flex-grow" style="margin-left: 5px;">
+                <input type="text" id="diagnostic" class="dotted flex-grow" style="margin-left: 5px;" oninput="updateResume()">
             </div>
 
             <div class="row row-top" style="margin-top: 10px;">
@@ -298,12 +308,13 @@
 
             <div style="margin-top: 10px;">
                 <span class="u-b-i">Résumé clinique :</span>
+                <!-- Ce champ va se pré-remplir automatiquement -->
                 <textarea id="resumeClinique" class="t-area h-3"></textarea>
             </div>
 
             <div style="margin-top: 10px;">
                 <span class="u-b-i">Examens morphologiques</span> <span>(Conclusions des examens radiologiques) :</span>
-                <!-- NOUVEAU TEXTAREA QUI PERMET D'ÉCRIRE PARTOUT -->
+                <!-- Une grande zone cliquable et modifiable à volonté -->
                 <textarea id="examensMorpho" class="t-area h-6"></textarea>
             </div>
         </div>
@@ -315,8 +326,6 @@
                 <span class="u-b-i">Examens endoscopiques et biopsie :</span>
                 <textarea id="examensEndo" class="t-area h-3"></textarea>
             </div>
-            
-            <!-- LIGNE IHC SUPPRIMÉE ICI -->
 
             <div class="row" style="margin-top:5px;">
                 <span>Autres :</span> <input type="text" id="autresExams" class="dotted flex-grow" style="margin-left: 5px;">
@@ -453,7 +462,6 @@
         let patientsDb = {};
         let allInterventions = [];
 
-        // 1. Charger les patients
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
             patientsDb = snapshot.val() || {};
             const select = document.getElementById('patientSelect');
@@ -470,7 +478,6 @@
             }
         });
 
-        // 2. Charger les interventions pour retrouver la date exacte
         onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
             const data = snapshot.val() || {};
             allInterventions = [];
@@ -484,12 +491,24 @@
             allInterventions.sort((a, b) => new Date(b.date) - new Date(a.date));
         });
 
+        // NOUVELLE FONCTION POUR GÉNÉRER LE RÉSUMÉ CLINIQUE
+        window.updateResume = function() {
+            let sexe = document.getElementById('sexeSelect').value;
+            let age = document.getElementById('ageP1').value || "...";
+            let diag = document.getElementById('diagnostic').value || "...";
+            
+            let genrePatient = (sexe === "Femme") ? "de la patiente" : "du patient";
+            let genreOp = (sexe === "Femme") ? "opérée" : "opéré";
+            
+            let phrase = `Il s'agit ${genrePatient} âgé(e) de ${age} ans, ${genreOp} pour : ${diag}, révélé par `;
+            document.getElementById('resumeClinique').value = phrase;
+        };
+
         window.fillPatientData = function() {
             const bedId = document.getElementById('patientSelect').value;
             if (bedId && patientsDb[bedId]) {
                 const p = patientsDb[bedId];
                 
-                // Découpage Nom / Prénom
                 let fullNameArr = (p.nom || '').trim().split(' ');
                 let nomPatient = fullNameArr[0] || '';
                 let prenomPatient = fullNameArr.slice(1).join(' ') || '';
@@ -499,19 +518,15 @@
                 document.getElementById('ageP1').value = p.age || "";
                 document.getElementById('dateEntree').value = p.dateEntree || "";
                 
-                // Date de sortie par défaut aujourd'hui
                 document.getElementById('dateSortie').value = new Date().toLocaleDateString('fr-FR');
                 
-                // Diagnostic principal (sans IHC)
                 let diagnosticTxt = (p.diagnostic || p.motif || p.diag || "").replace(/IHC/gi, '').trim();
                 document.getElementById('diagnostic').value = diagnosticTxt;
                 
-                // ATCD (si vide -> RAS)
                 const atcdText = (p.atcd && p.atcd.trim() !== '') ? p.atcd : "RAS";
                 document.getElementById('atcdMed1').value = ""; 
                 document.getElementById('atcdMed2').value = atcdText; 
                 
-                // Recherche de la dernière intervention avec DATE
                 let interventionTexte = "";
                 let dateIntervention = "";
                 for (let inv of allInterventions) {
@@ -526,17 +541,14 @@
 
                 document.getElementById('dateInterv').value = dateIntervention;
                 
-                // Concaténation Titre + Date pour la case Intervention
                 let texteInterventionP2 = interventionTexte;
                 if(dateIntervention) texteInterventionP2 += " le " + dateIntervention.split('-').reverse().join('/');
                 document.getElementById('interventionP2').value = texteInterventionP2;
 
-                // Remplissage du bloc résumé en bas
                 document.getElementById('sumNom').value = nomPatient.toUpperCase();
                 document.getElementById('sumAge').value = p.age || "";
                 document.getElementById('sumAtcd').value = atcdText.substring(0, 80); 
                 
-                // Concaténation Diagnostic + BMI
                 let diagAvecBmi = diagnosticTxt;
                 if (p.bmi && p.bmi !== "") {
                     diagAvecBmi += ` (BMI : ${p.bmi})`;
@@ -549,12 +561,13 @@
                 document.getElementById('suitesComp').checked = false;
                 document.getElementById('sumSuites').value = "Simples";
                 
-                // Remplir les autres champs de base
                 document.getElementById('bmi').value = p.bmi || "";
                 
-                // Endoscopie (sans IHC)
                 let endoText = (p.endo || "").replace(/IHC/gi, '').trim();
                 document.getElementById('examensEndo').value = endoText;
+                
+                // Mettre à jour le résumé clinique avec les infos chargées
+                window.updateResume();
                 
                 window.updateConsultation();
                 
@@ -563,7 +576,6 @@
             }
         };
 
-        // Calcul exact de la date de consultation et écriture dans le champ
         window.updateConsultation = function() {
             let val = document.getElementById('medecinSelect').value.split('|');
             let targetDay = parseInt(val[0]);
@@ -621,9 +633,8 @@
             if(e.target.checked) document.getElementById('sumSuites').value = "Compliquées";
         });
 
-        // FONCTION EXPORT PDF TEXTE
         window.saveAsPDF = function() {
-            alert("Astuce : Pour garantir un PDF de haute qualité où le texte peut être sélectionné et copié (PDF Vectoriel), veuillez utiliser le menu d'impression qui va s'ouvrir et choisissez 'Enregistrer au format PDF' dans les imprimantes.");
+            alert("Astuce : Pour garantir un PDF de haute qualité (avec texte copiable), choisissez 'Enregistrer au format PDF' dans la fenêtre d'impression qui va s'ouvrir.");
             setTimeout(() => {
                 window.print();
             }, 500);
