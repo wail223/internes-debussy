@@ -415,7 +415,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT FIREBASE & LOGIQUE (Mise à jour en version Compat) -->
+    <!-- SCRIPT FIREBASE & LOGIQUE -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
@@ -462,7 +462,7 @@
             allInterventions.sort((a, b) => new Date(b.date) - new Date(a.date));
         });
 
-        function updateResume() {
+        window.updateResume = function() {
             let sexe = document.getElementById('sexeSelect').value;
             let age = document.getElementById('ageP1').value || "...";
             let diag = document.getElementById('diagnostic').value || "...";
@@ -479,9 +479,9 @@
             // Mise à jour de la phrase avec le nom complet du patient
             let phrase = `Il s'agit ${genrePatient} ${fullName}, ${genreAge} de ${age} ans, ${genreOp} pour : ${diag}, révélé par `;
             document.getElementById('resumeClinique').value = phrase;
-        }
+        };
 
-        function fillPatientData() {
+        window.fillPatientData = function() {
             const bedId = document.getElementById('patientSelect').value;
             if (bedId && patientsDb[bedId]) {
                 const p = patientsDb[bedId];
@@ -537,15 +537,15 @@
                 let endoText = (p.endo || "").replace(/IHC/gi, '').trim();
                 document.getElementById('examensEndo').value = endoText;
                 
-                updateResume();
-                updateConsultation();
+                window.updateResume();
+                window.updateConsultation();
                 
             } else {
-                clearForm();
+                window.clearForm();
             }
-        }
+        };
 
-        function updateConsultation() {
+        window.updateConsultation = function() {
             let val = document.getElementById('medecinSelect').value.split('|');
             let targetDay = parseInt(val[0]);
             let medecinChoisi = val[1];
@@ -577,42 +577,68 @@
                 document.getElementById('assistant').value = medecinChoisi;
                 document.getElementById('consultationDetails').value = `${medecinChoisi} le ${selectedDate.toLocaleDateString('fr-FR', options)}.`;
             }
-        }
+        };
 
-        function clearForm() {
+        window.clearForm = function() {
             document.querySelectorAll('input[type="text"], textarea').forEach(el => el.value = '');
             document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
             document.getElementById('patientSelect').value = "";
-        }
+        };
 
         document.getElementById('suitesSimples').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('sumSuites').value = "Simples"; });
         document.getElementById('suitesComp').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('sumSuites').value = "Compliquées"; });
 
-        // Fonction de génération PDF
-        async function generatePDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
+        // Fonction de génération PDF (Corrigée et Robuste)
+        window.generatePDF = async function() {
+            const btn = document.querySelector('.btn-pdf');
+            const originalText = btn.innerHTML;
             
-            const page1 = document.getElementById('page1');
-            const page2 = document.getElementById('page2');
-            const textareas = document.querySelectorAll('textarea.t-area');
+            try {
+                // Changer le texte du bouton pendant le traitement
+                btn.innerHTML = '⏳ Génération en cours...';
+                btn.disabled = true;
 
-            textareas.forEach(ta => ta.style.border = 'none');
+                // Remonter tout en haut de la page (Bug connu de html2canvas)
+                window.scrollTo(0, 0);
 
-            const canvas1 = await html2canvas(page1, { scale: 2 });
-            doc.addImage(canvas1.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
-            
-            doc.addPage();
-            
-            const canvas2 = await html2canvas(page2, { scale: 2 });
-            doc.addImage(canvas2.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
+                const jsPDF = window.jspdf.jsPDF;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                
+                const page1 = document.getElementById('page1');
+                const page2 = document.getElementById('page2');
+                const textareas = document.querySelectorAll('textarea.t-area');
 
-            textareas.forEach(ta => ta.style.border = '1px dashed #94a3b8');
+                // Enlever temporairement les bordures pointillées
+                textareas.forEach(ta => ta.style.border = 'none');
 
-            let nom = document.getElementById('nomP1').value || "Patient";
-            let prenom = document.getElementById('prenomP1').value || "";
-            doc.save(`CRH_${nom}_${prenom}.pdf`);
-        }
+                // Capture de la Page 1
+                const canvas1 = await html2canvas(page1, { scale: 2, useCORS: true, logging: false });
+                doc.addImage(canvas1.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
+                
+                // Ajout et capture de la Page 2
+                doc.addPage();
+                const canvas2 = await html2canvas(page2, { scale: 2, useCORS: true, logging: false });
+                doc.addImage(canvas2.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
+
+                // Remettre les bordures pour l'écran
+                textareas.forEach(ta => ta.style.border = '1px dashed #94a3b8');
+
+                // Récupérer le nom pour le fichier
+                let nom = document.getElementById('nomP1').value || "Patient";
+                let prenom = document.getElementById('prenomP1').value || "";
+                
+                // Télécharger le PDF
+                doc.save(`CRH_${nom}_${prenom}.pdf`);
+
+            } catch (error) {
+                console.error("Erreur lors de la création du PDF :", error);
+                alert("Une erreur est survenue lors de la création du PDF.");
+            } finally {
+                // Restaurer le bouton
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        };
     </script>
 </body>
 </html>
