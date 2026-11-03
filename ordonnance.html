@@ -102,13 +102,13 @@
             outline: none;
         }
 
-        /* POSITIONNEMENT EXAMINE SUR ECO-ÉCRAN ET PAPIER */
-        #dateField { top: 12.5%; left: calc(55% + 1cm); width: 35%; font-style: italic; }
-        #nameField { top: 22%; left: calc(12% + 1cm); width: 45%; font-weight: bold; }
-        #ageField { top: 22%; left: calc(72% + 1cm); width: 20%; font-weight: bold; }
+        /* NOUVEAUX EMPLACEMENTS RÉAJUSTÉS */
+        #dateField { top: 12.8%; left: 52%; width: 35%; font-style: italic; }
+        #nameField { top: 19.5%; left: 20%; width: 70%; font-weight: bold; }
+        #ageField { top: 25.5%; left: 16%; width: 30%; font-weight: bold; }
         
         #specialTitle {
-            top: calc(32% + 0.5cm);
+            top: 33%;
             left: 8%;
             width: 84%;
             font-weight: bold;
@@ -121,10 +121,10 @@
         }
 
         #prescriptionBody {
-            top: calc(32% + 0.5cm); 
+            top: 36%; /* Descendu pour éviter d'écrire sur le mot "ORDONNANCE" */
             left: 8%; 
             width: 84%; 
-            height: calc(50% - 0.5cm); 
+            height: 55%; 
             resize: none;
             font-family: Arial, sans-serif;
             font-size: 15px;
@@ -355,30 +355,31 @@
 
             if (choix === 'standard') {
                 specialTitle.style.display = 'none';
-                body.style.top = 'calc(32% + 0.5cm)';
-                body.style.height = 'calc(50% - 0.5cm)';
+                body.style.top = '36%';
+                body.style.height = '55%';
+                // Points réduits pour éviter que la quantité parte à la ligne
                 body.value = 
-`- Lovenox 0.4UI ................................. QSP
+`- Lovenox 0.4UI .................. QSP
   1 inj / jour à heure fixe
 
-- Kéforal 1g ......................................... QSP 7j
+- Kéforal 1g .......................... QSP 7j
   1cp 02x/j
 
-- Paracetamol 1g ................................ 1bte
+- Paracetamol 1g ................. 1bte
   1cp/6H Si Douleur`;
 
             } else if (choix === 'pansement') {
                 specialTitle.style.display = 'block';
-                body.style.top = 'calc(32% + 1.5cm)';
-                body.style.height = 'calc(50% - 1.5cm)';
+                body.style.top = '44%';
+                body.style.height = '47%';
                 body.value = 
 `- Changement de Pansement 1j/2
 + Ablation de fil à la cicatrisation`;
             
             } else if (choix === 'vierge') {
                 specialTitle.style.display = 'none';
-                body.style.top = 'calc(32% + 0.5cm)';
-                body.style.height = 'calc(50% - 0.5cm)';
+                body.style.top = '36%';
+                body.style.height = '55%';
                 body.value = '';
             }
         };
@@ -394,7 +395,8 @@
             }
 
             const body = document.getElementById('prescriptionBody');
-            let dots = " ......................................... ";
+            // Points réduits drastiquement pour ne pas dépasser la marge
+            let dots = " .................. "; 
             
             let newEntry = `- ${drug}${dots}${qsp}`;
             if (posology) {
@@ -416,7 +418,7 @@
             document.getElementById('ageField').value = '';
             document.getElementById('prescriptionBody').value = '';
             document.getElementById('specialTitle').style.display = 'none';
-            document.getElementById('prescriptionBody').style.top = 'calc(32% + 0.5cm)';
+            document.getElementById('prescriptionBody').style.top = '36%';
             setTodayDate();
         };
     </script>
@@ -426,7 +428,6 @@
         async function saveAsPDF() {
             const { jsPDF } = window.jspdf;
 
-            // 1. Charger l'image de fond officielle
             const bgImg = new Image();
             bgImg.src = 'IMG_5676.jpg';
 
@@ -435,7 +436,6 @@
                 bgImg.onerror = resolve; 
             });
 
-            // 2. Créer un Canvas ultra haute définition (Largeur A5 : 1240 x 1754 px)
             const canvas = document.createElement('canvas');
             const w = 1240;
             const h = 1754;
@@ -443,7 +443,6 @@
             canvas.height = h;
             const ctx = canvas.getContext('2d');
 
-            // Dessiner le fond d'écran
             if (bgImg.complete && bgImg.naturalWidth !== 0) {
                 ctx.drawImage(bgImg, 0, 0, w, h);
             } else {
@@ -451,51 +450,43 @@
                 ctx.fillRect(0, 0, w, h);
             }
 
-            // 3. Dessiner les champs avec leurs coordonnées précises
             ctx.fillStyle = '#000000';
 
-            // --- Date ---
+            // Coordonnées pour le PDF synchronisées avec les % CSS
             ctx.font = 'italic 30px "Times New Roman", serif';
             const dateVal = document.getElementById('dateField').value || '';
-            ctx.fillText(dateVal, w * 0.65, h * 0.135);
+            ctx.fillText(dateVal, w * 0.52, h * 0.145);
 
-            // --- Nom & Prénom ---
             ctx.font = 'bold 32px "Times New Roman", serif';
             const nameVal = document.getElementById('nameField').value || '';
-            ctx.fillText(nameVal, w * 0.22, h * 0.23);
+            ctx.fillText(nameVal, w * 0.20, h * 0.215);
 
-            // --- Âge ---
             ctx.font = 'bold 32px "Times New Roman", serif';
             const ageVal = document.getElementById('ageField').value || '';
-            ctx.fillText(ageVal, w * 0.78, h * 0.23);
+            ctx.fillText(ageVal, w * 0.16, h * 0.275);
 
-            // --- Titre Spécial ("PRIÈRE DE FAIRE :") ---
             const specialTitle = document.getElementById('specialTitle');
-            let startY = h * 0.35;
+            let startY = h * 0.38;
 
             if (specialTitle && specialTitle.style.display !== 'none') {
-                // Fond Jaune
                 ctx.fillStyle = '#fef08a';
                 ctx.fillRect(w * 0.1, startY - 35, w * 0.8, 50);
                 
-                // Texte
                 ctx.fillStyle = '#000000';
                 ctx.font = 'bold 34px "Times New Roman", serif';
                 ctx.textAlign = 'center';
                 ctx.fillText("PRIÈRE DE FAIRE :", w / 2, startY);
                 
-                // Soulignement
                 ctx.beginPath();
                 ctx.moveTo((w / 2) - 150, startY + 8);
                 ctx.lineTo((w / 2) + 150, startY + 8);
                 ctx.lineWidth = 3;
                 ctx.stroke();
 
-                ctx.textAlign = 'left'; // Reset
+                ctx.textAlign = 'left';
                 startY += 80;
             }
 
-            // --- Corps du Traitement ---
             ctx.fillStyle = '#000000';
             ctx.font = '28px Arial, sans-serif';
             const bodyText = document.getElementById('prescriptionBody').value || '';
@@ -506,15 +497,10 @@
                 ctx.fillText(lines[i], w * 0.08, startY + (i * lineHeight));
             }
 
-            // 4. Générer la page A4 avec l'image A5 centrée en haut (comme l'impression)
             const imgData = canvas.toDataURL('image/jpeg', 0.95);
             const pdf = new jsPDF('portrait', 'mm', 'a4');
-
-            // Dimensions de l'A5 sur l'A4 : 148mm x 210mm
-            // Position : Centré horizontalement ( (210 - 148) / 2 = 31mm ), Collé en haut ( 0mm )
             pdf.addImage(imgData, 'JPEG', 31, 0, 148, 210);
 
-            // Sauvegarder
             const patientName = document.getElementById('nameField').value || 'Patient';
             pdf.save(`Ordonnance_${patientName.replace(/ /g, '_')}.pdf`);
         }
