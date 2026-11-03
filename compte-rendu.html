@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compte Rendu d'Hospitalisation - CPMC</title>
-    
-    <!-- Librairies pour générer le PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         :root {
@@ -59,7 +55,7 @@
             box-sizing: border-box;
             position: relative;
             line-height: 25px;
-            overflow: hidden; /* Empêche le débordement sur une nouvelle page */
+            overflow: hidden;
         }
 
         .header-titles { text-align: center; margin-bottom: 12px; font-family: 'Times New Roman', Times, serif; }
@@ -117,29 +113,22 @@
             color: #000;
         }
 
-        /* Zones de texte multilignes */
-        .grid-textarea {
-            display: grid;
-            width: 100%;
-            margin-top: 2px;
-            margin-bottom: 3px;
-        }
-        .grid-textarea > div, .grid-textarea > textarea { grid-column: 1; grid-row: 1; }
-        .lines-container { display: flex; flex-direction: column; pointer-events: none; }
-        .lines-container .line { width: 100%; height: 25px; border-bottom: 2px dotted #000; box-sizing: border-box; }
-        
+        /* Zones de texte multilignes (NOUVEAU STYLE PERMETTANT D'ÉCRIRE PARTOUT) */
         textarea.t-area {
             width: 100%;
+            line-height: 25px;
             background: transparent;
+            background-image: repeating-linear-gradient(transparent, transparent 23px, #000 24px, transparent 25px);
+            background-attachment: local;
             border: none;
             resize: none;
             outline: none;
             font-family: inherit;
             font-size: 13.5px;
             font-weight: bold;
-            line-height: 25px;
             padding: 0;
             margin: 0;
+            margin-top: 5px;
             color: #000;
             overflow: hidden;
         }
@@ -203,16 +192,24 @@
             <div class="form-group">
                 <label>Médecin (RDV) :</label>
                 <select id="medecinSelect" onchange="updateConsultation()">
-                    <option value="0|Dr. MERAD">Dr. MERAD (Dimanche)</option>
-                    <option value="1|Pr. CHEKMAN">Pr. CHEKMAN (Lundi)</option>
-                    <option value="3|Pr. AZZOUZ">Pr. AZZOUZ (Mercredi)</option>
-                    <option value="4|Pr. DJELALI">Pr. DJELALI (Jeudi)</option>
+                    <!-- Liste des assistants mise à jour -->
+                    <option value="0|Dr Benmoussa">Dr Benmoussa (Dimanche)</option>
+                    <option value="0|Dr MERAD">Dr MERAD (Dimanche)</option>
+                    <option value="1|Dr Gouaref">Dr Gouaref (Lundi)</option>
+                    <option value="1|Pr CHEKMAN">Pr CHEKMAN (Lundi)</option>
+                    <option value="3|Pr Jnied">Pr Jnied (Mercredi)</option>
+                    <option value="3|Dr Khelif">Dr Khelif (Mercredi)</option>
+                    <option value="3|Pr AZZOUZ">Pr AZZOUZ (Mercredi)</option>
+                    <option value="4|Dr Bouzid">Dr Bouzid (Jeudi)</option>
+                    <option value="4|Dr Akbal">Dr Akbal (Jeudi)</option>
+                    <option value="4|Pr DJELALI">Pr DJELALI (Jeudi)</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>Délai RDV (Jours) :</label>
                 <input type="number" id="delaiInput" value="15" min="1" oninput="updateConsultation()">
             </div>
+            <!-- Le bouton Save PDF appelle désormais la fonction d'impression native pour garantir un texte sélectionnable -->
             <button class="btn btn-pdf" onclick="saveAsPDF()">💾 Enregistrer PDF</button>
             <button class="btn btn-print" onclick="window.print()">🖨️ Imprimer</button>
             <button class="btn btn-clear" onclick="clearForm()">🗑️ Effacer</button>
@@ -230,7 +227,8 @@
                 <h3>Compte rendu d'hospitalisation</h3>
             </div>
 
-            <div class="row">
+            <!-- Espace vide ajouté sous Dossier et Organe -->
+            <div class="row" style="margin-bottom: 25px;">
                 <span>Dossier : N°</span> <input type="text" id="dossierNum" class="dotted" style="width: 150px; margin-left:5px;">
                 <span style="margin-left: 30px;">Organe :</span> <input type="text" id="organe" class="dotted flex-grow" style="margin-left:5px;">
             </div>
@@ -283,19 +281,13 @@
                         <span style="width: 80px;">Médicaux :</span>
                         <input type="text" id="atcdMed1" class="dotted flex-grow">
                     </div>
-                    <div class="grid-textarea h-1">
-                        <div class="lines-container"><div class="line"></div></div>
-                        <textarea id="atcdMed2" class="t-area h-1"></textarea>
-                    </div>
+                    <textarea id="atcdMed2" class="t-area h-1"></textarea>
                     
                     <div class="row" style="margin-top: 3px;">
                         <span style="width: 90px;">Chirurgicaux :</span>
                         <input type="text" id="atcdChir1" class="dotted flex-grow">
                     </div>
-                    <div class="grid-textarea h-1">
-                        <div class="lines-container"><div class="line"></div></div>
-                        <textarea id="atcdChir2" class="t-area h-1"></textarea>
-                    </div>
+                    <textarea id="atcdChir2" class="t-area h-1"></textarea>
                 </div>
             </div>
 
@@ -306,18 +298,13 @@
 
             <div style="margin-top: 10px;">
                 <span class="u-b-i">Résumé clinique :</span>
-                <div class="grid-textarea h-3">
-                    <div class="lines-container"><div class="line"></div><div class="line"></div><div class="line"></div></div>
-                    <textarea id="resumeClinique" class="t-area h-3"></textarea>
-                </div>
+                <textarea id="resumeClinique" class="t-area h-3"></textarea>
             </div>
 
             <div style="margin-top: 10px;">
                 <span class="u-b-i">Examens morphologiques</span> <span>(Conclusions des examens radiologiques) :</span>
-                <div class="grid-textarea h-6">
-                    <div class="lines-container"><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div></div>
-                    <textarea id="examensMorpho" class="t-area h-6"></textarea>
-                </div>
+                <!-- NOUVEAU TEXTAREA QUI PERMET D'ÉCRIRE PARTOUT -->
+                <textarea id="examensMorpho" class="t-area h-6"></textarea>
             </div>
         </div>
 
@@ -326,16 +313,12 @@
             
             <div>
                 <span class="u-b-i">Examens endoscopiques et biopsie :</span>
-                <div class="grid-textarea h-3">
-                    <div class="lines-container"><div class="line"></div><div class="line"></div><div class="line"></div></div>
-                    <textarea id="examensEndo" class="t-area h-3"></textarea>
-                </div>
+                <textarea id="examensEndo" class="t-area h-3"></textarea>
             </div>
             
-            <div class="row">
-                <span>IHC :</span> <input type="text" id="ihc" class="dotted flex-grow" style="margin-left: 5px;">
-            </div>
-            <div class="row">
+            <!-- LIGNE IHC SUPPRIMÉE ICI -->
+
+            <div class="row" style="margin-top:5px;">
                 <span>Autres :</span> <input type="text" id="autresExams" class="dotted flex-grow" style="margin-left: 5px;">
             </div>
 
@@ -344,10 +327,7 @@
                 <div class="row">
                     <input type="text" id="interventionP2" class="dotted flex-grow">
                 </div>
-                <div class="grid-textarea h-2">
-                    <div class="lines-container"><div class="line"></div><div class="line"></div></div>
-                    <textarea id="interventionDetails" class="t-area h-2"></textarea>
-                </div>
+                <textarea id="interventionDetails" class="t-area h-2"></textarea>
             </div>
 
             <div class="row gap-5" style="margin-top: 10px;">
@@ -363,10 +343,7 @@
                     <span>- Si complications (préciser type, le délai, et la CAT) :</span>
                     <input type="text" id="compType" class="dotted flex-grow" style="margin-left: 5px;">
                 </div>
-                <div class="grid-textarea h-1">
-                    <div class="lines-container"><div class="line"></div></div>
-                    <textarea id="compDetails" class="t-area h-1"></textarea>
-                </div>
+                <textarea id="compDetails" class="t-area h-1"></textarea>
 
                 <div class="row gap-5" style="margin: 3px 0;">
                     <span>- Reprise chirurgicale : Oui</span><input type="checkbox" id="repriseOui">
@@ -376,10 +353,7 @@
                 <div class="row">
                     <span>- Si reprise, préciser la ou les date, ainsi que le ou les gestes réaliser :</span>
                 </div>
-                <div class="grid-textarea h-1">
-                    <div class="lines-container"><div class="line"></div></div>
-                    <textarea id="repriseDetails" class="t-area h-1"></textarea>
-                </div>
+                <textarea id="repriseDetails" class="t-area h-1"></textarea>
 
                 <div class="row" style="margin: 3px 0;">
                     <span>- Durée de séjour en réanimation :</span>
@@ -389,10 +363,7 @@
                 <div class="row">
                     <span>- Traitements reçus (ATB, anticoagulants, antalgiques) :</span>
                 </div>
-                <div class="grid-textarea h-1">
-                    <div class="lines-container"><div class="line"></div></div>
-                    <textarea id="traitementsRecus" class="t-area h-1"></textarea>
-                </div>
+                <textarea id="traitementsRecus" class="t-area h-1"></textarea>
 
                 <div class="row gap-5" style="margin: 3px 0;">
                     <span>- Alimentation parentérale : Oui</span><input type="checkbox" id="alimOui">
@@ -427,10 +398,7 @@
                 <div class="row">
                     <span>(thrombo-prophylaxie/ antalgiques/ antibiotiques/ si DCD préciser cause ,date et heure) :</span>
                 </div>
-                <div class="grid-textarea h-2">
-                    <div class="lines-container"><div class="line"></div><div class="line"></div></div>
-                    <textarea id="sortieDetails" class="t-area h-2"></textarea>
-                </div>
+                <textarea id="sortieDetails" class="t-area h-2"></textarea>
             </div>
 
             <!-- BLOC RÉSUMÉ DE FIN -->
@@ -444,7 +412,7 @@
                 <div class="row">
                     <span>Aux ATCD de</span>
                     <input type="text" id="sumAtcd" class="dotted flex-grow" style="margin: 0 5px;">
-                    <span>, hospitalisé pour</span>
+                    <span>, hospitalisé pour :</span>
                     <input type="text" id="sumDiag" class="dotted flex-grow" style="margin-left: 5px;"> <span>.</span>
                 </div>
                 <div class="row">
@@ -458,10 +426,7 @@
                 <div class="row">
                     <span>Il sera revu en consultation par (Le chirurgien et en précisant la date)</span>
                 </div>
-                <div class="grid-textarea h-1">
-                    <div class="lines-container"><div class="line"></div></div>
-                    <textarea id="consultationDetails" class="t-area h-1"></textarea>
-                </div>
+                <textarea id="consultationDetails" class="t-area h-1"></textarea>
             </div>
 
         </div>
@@ -516,7 +481,6 @@
                     });
                 }
             });
-            // Trier de la plus récente à la plus ancienne
             allInterventions.sort((a, b) => new Date(b.date) - new Date(a.date));
         });
 
@@ -534,14 +498,20 @@
                 document.getElementById('prenomP1').value = prenomPatient;
                 document.getElementById('ageP1').value = p.age || "";
                 document.getElementById('dateEntree').value = p.dateEntree || "";
-                document.getElementById('diagnostic').value = p.diagnostic || p.motif || "";
+                
+                // Date de sortie par défaut aujourd'hui
+                document.getElementById('dateSortie').value = new Date().toLocaleDateString('fr-FR');
+                
+                // Diagnostic principal (sans IHC)
+                let diagnosticTxt = (p.diagnostic || p.motif || p.diag || "").replace(/IHC/gi, '').trim();
+                document.getElementById('diagnostic').value = diagnosticTxt;
                 
                 // ATCD (si vide -> RAS)
                 const atcdText = (p.atcd && p.atcd.trim() !== '') ? p.atcd : "RAS";
                 document.getElementById('atcdMed1').value = ""; 
                 document.getElementById('atcdMed2').value = atcdText; 
                 
-                // Recherche de la dernière intervention (Nettoyée de "IHC")
+                // Recherche de la dernière intervention avec DATE
                 let interventionTexte = "";
                 let dateIntervention = "";
                 for (let inv of allInterventions) {
@@ -552,23 +522,40 @@
                     }
                 }
                 if(!interventionTexte) interventionTexte = (p.intervention || '').replace(/IHC/gi, '').trim();
-                if(!dateIntervention) dateIntervention = p.di || "";
+                if(!dateIntervention) dateIntervention = p.dateIntervention || p.di || "";
 
                 document.getElementById('dateInterv').value = dateIntervention;
-                document.getElementById('interventionP2').value = interventionTexte;
+                
+                // Concaténation Titre + Date pour la case Intervention
+                let texteInterventionP2 = interventionTexte;
+                if(dateIntervention) texteInterventionP2 += " le " + dateIntervention.split('-').reverse().join('/');
+                document.getElementById('interventionP2').value = texteInterventionP2;
 
                 // Remplissage du bloc résumé en bas
                 document.getElementById('sumNom').value = nomPatient.toUpperCase();
                 document.getElementById('sumAge').value = p.age || "";
                 document.getElementById('sumAtcd').value = atcdText.substring(0, 80); 
-                document.getElementById('sumDiag').value = p.diagnostic || p.motif || "";
+                
+                // Concaténation Diagnostic + BMI
+                let diagAvecBmi = diagnosticTxt;
+                if (p.bmi && p.bmi !== "") {
+                    diagAvecBmi += ` (BMI : ${p.bmi})`;
+                }
+                document.getElementById('sumDiag').value = diagAvecBmi;
+
                 document.getElementById('sumGeste').value = interventionTexte;
                 
                 document.getElementById('suitesSimples').checked = true;
                 document.getElementById('suitesComp').checked = false;
                 document.getElementById('sumSuites').value = "Simples";
                 
-                // Calcul du RDV pour remplir la dernière ligne
+                // Remplir les autres champs de base
+                document.getElementById('bmi').value = p.bmi || "";
+                
+                // Endoscopie (sans IHC)
+                let endoText = (p.endo || "").replace(/IHC/gi, '').trim();
+                document.getElementById('examensEndo').value = endoText;
+                
                 window.updateConsultation();
                 
             } else {
@@ -614,7 +601,6 @@
             let options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             let dateFormatee = selectedDate.toLocaleDateString('fr-FR', options);
             
-            // Mise à jour de la dernière ligne du compte rendu
             const patientChoisi = document.getElementById('patientSelect').value;
             if(patientChoisi) {
                 document.getElementById('assistant').value = medecinChoisi;
@@ -634,38 +620,14 @@
         document.getElementById('suitesComp').addEventListener('change', (e) => {
             if(e.target.checked) document.getElementById('sumSuites').value = "Compliquées";
         });
-    </script>
 
-    <!-- GENERATION PDF HAUTE RESOLUTION VIA CANVAS (2 PAGES EXACTES) -->
-    <script>
-        async function saveAsPDF() {
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('portrait', 'mm', 'a4');
-
-            async function capturePage(pageId) {
-                const pageElement = document.getElementById(pageId);
-                const canvas = await html2canvas(pageElement, {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
-                    windowWidth: pageElement.scrollWidth,
-                    windowHeight: pageElement.scrollHeight
-                });
-                return canvas.toDataURL('image/jpeg', 0.98);
-            }
-
-            // Capture Page 1
-            const img1 = await capturePage('page1');
-            pdf.addImage(img1, 'JPEG', 0, 0, 210, 297);
-
-            // Capture Page 2
-            pdf.addPage();
-            const img2 = await capturePage('page2');
-            pdf.addImage(img2, 'JPEG', 0, 0, 210, 297);
-
-            const patientName = document.getElementById('nomP1').value || 'Patient';
-            pdf.save(`Compte_Rendu_${patientName.replace(/ /g, '_')}.pdf`);
-        }
+        // FONCTION EXPORT PDF TEXTE
+        window.saveAsPDF = function() {
+            alert("Astuce : Pour garantir un PDF de haute qualité où le texte peut être sélectionné et copié (PDF Vectoriel), veuillez utiliser le menu d'impression qui va s'ouvrir et choisissez 'Enregistrer au format PDF' dans les imprimantes.");
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        };
     </script>
 </body>
 </html>
