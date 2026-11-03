@@ -9,26 +9,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <style>
-        :root {
-            --primary: #0284c7;
-            --successVoici le code complet mis à jour. 
-
-J'ai modifié la fonction du résumé clinique pour qu'elle récupère et affiche automatiquement le Nom et le Prénom juste après "Il s'agit du patient / de la patiente". J'ai également fait en sorte que si vous modifiez le nom ou le prénom à la main, cela se mette à jour en temps réel dans le résumé.
-
-Voici le code complet à copier-coller :
-
-```html
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compte Rendu d'Hospitalisation - CPMC</title>
-
-    <!-- Bibliothèques pour la génération PDF -->
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js](https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js)"></script>
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js](https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js)"></script>
+    <!-- Bibliothèques Firebase Compatibles (fonctionnent en local) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
         :root {
@@ -63,7 +46,7 @@ Voici le code complet à copier-coller :
         .form-group select, .form-group input[type="number"] { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family:inherit;}
         
         .btn { padding: 10px 15px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; color: white; display: flex; align-items: center; gap: 5px; }
-        .btn-pdf { background-color: var(--success); }
+        .btn-pdf { background-color: #16a34a !important; color: white !important; }
         .btn-print { background-color: var(--primary); }
         .btn-clear { background-color: #64748b; }
 
@@ -239,7 +222,6 @@ Voici le code complet à copier-coller :
 
             <ul class="custom-list">
                 <li class="row">
-                    <!-- Ajout de oninput pour mettre à jour le résumé si on tape le nom manuellement -->
                     <span>Nom :</span> <input type="text" id="nomP1" class="dotted flex-grow" style="margin: 0 10px;" oninput="updateResume()">
                     <span>Prénom :</span> <input type="text" id="prenomP1" class="dotted flex-grow" style="margin: 0 10px;" oninput="updateResume()">
                     <span>Age :</span> <input type="text" id="ageP1" class="dotted" style="width: 50px; margin-left: 5px;" oninput="updateResume()">
@@ -433,28 +415,25 @@ Voici le code complet à copier-coller :
         </div>
     </div>
 
-    <!-- SCRIPT FIREBASE & PDF -->
-    <script type="module">
-        import { initializeApp } from "[https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js)";
-        import { getDatabase, ref, onValue } from "[https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js)";
-
+    <!-- SCRIPT FIREBASE & LOGIQUE (Mise à jour en version Compat) -->
+    <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDPXF0x6LT_1eG67ANYfwDCjgy_2Vghq9M",
             authDomain: "internes-debussy.firebaseapp.com",
-            databaseURL: "[https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app](https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app)",
+            databaseURL: "https://internes-debussy-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "internes-debussy",
             storageBucket: "internes-debussy.firebasestorage.app",
             messagingSenderId: "614550756274",
             appId: "1:614550756274:web:d2b4a7aae5e939af9222ab"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
         
         let patientsDb = {};
         let allInterventions = [];
 
-        onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
+        db.ref('dossiers_patients/').on('value', (snapshot) => {
             patientsDb = snapshot.val() || {};
             const select = document.getElementById('patientSelect');
             select.innerHTML = '<option value="">-- Choisir un patient --</option>';
@@ -470,29 +449,7 @@ Voici le code complet à copier-coller :
             }
         });
 
-        window.updateResume = function() {
-            let sexe = document.getElementById('sexeSelect').value;
-            let age = document.getElementById('ageP1').value || "...";
-            let diag = document.getElementById('diagnostic').value || "...";
-            let nom = document.getElementById('nomP1').value || "";
-            let prenom = document.getElementById('prenomP1').value || "";
-            
-            // On gère l'affichage du nom et prénom s'ils sont renseignés
-            let fullName = (nom + " " + prenom).trim();
-            if (fullName === "") {
-                fullName = "...";
-            }
-            
-            let genrePatient = (sexe === "Femme") ? "de la patiente" : "du patient";
-            let genreOp = (sexe === "Femme") ? "opérée" : "opéré";
-            let genreAge = (sexe === "Femme") ? "âgée" : "âgé";
-            
-            // Le texte mis à jour
-            let phrase = `Il s'agit ${genrePatient} ${fullName}, ${genreAge} de ${age} ans, ${genreOp} pour : ${diag}, révélé par `;
-            document.getElementById('resumeClinique').value = phrase;
-        };
-
-        onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
+        db.ref('programmes_operatoires/').on('value', (snapshot) => {
             const data = snapshot.val() || {};
             allInterventions = [];
             Object.keys(data).forEach(dateStr => {
@@ -505,7 +462,26 @@ Voici le code complet à copier-coller :
             allInterventions.sort((a, b) => new Date(b.date) - new Date(a.date));
         });
 
-        window.fillPatientData = function() {
+        function updateResume() {
+            let sexe = document.getElementById('sexeSelect').value;
+            let age = document.getElementById('ageP1').value || "...";
+            let diag = document.getElementById('diagnostic').value || "...";
+            
+            let nom = document.getElementById('nomP1').value || "";
+            let prenom = document.getElementById('prenomP1').value || "";
+            let fullName = (nom + " " + prenom).trim();
+            if(fullName === "") fullName = "...";
+            
+            let genrePatient = (sexe === "Femme") ? "de la patiente" : "du patient";
+            let genreOp = (sexe === "Femme") ? "opérée" : "opéré";
+            let genreAge = (sexe === "Femme") ? "âgée" : "âgé";
+            
+            // Mise à jour de la phrase avec le nom complet du patient
+            let phrase = `Il s'agit ${genrePatient} ${fullName}, ${genreAge} de ${age} ans, ${genreOp} pour : ${diag}, révélé par `;
+            document.getElementById('resumeClinique').value = phrase;
+        }
+
+        function fillPatientData() {
             const bedId = document.getElementById('patientSelect').value;
             if (bedId && patientsDb[bedId]) {
                 const p = patientsDb[bedId];
@@ -546,12 +522,10 @@ Voici le code complet à copier-coller :
                 if(dateIntervention) texteInterventionP2 += " le " + dateIntervention.split('-').reverse().join('/');
                 document.getElementById('interventionP2').value = texteInterventionP2;
 
-                document.getElementById('sumNom').value = (nomPatient + " " + prenomPatient).trim().toUpperCase();
+                document.getElementById('sumNom').value = nomPatient.toUpperCase() + " " + prenomPatient;
                 document.getElementById('sumAge').value = p.age || "";
                 document.getElementById('sumAtcd').value = atcdText.substring(0, 80); 
-                
                 document.getElementById('sumDiag').value = diagnosticTxt;
-
                 document.getElementById('sumGeste').value = interventionTexte;
                 
                 document.getElementById('suitesSimples').checked = true;
@@ -563,15 +537,15 @@ Voici le code complet à copier-coller :
                 let endoText = (p.endo || "").replace(/IHC/gi, '').trim();
                 document.getElementById('examensEndo').value = endoText;
                 
-                window.updateResume();
-                window.updateConsultation();
+                updateResume();
+                updateConsultation();
                 
             } else {
-                window.clearForm();
+                clearForm();
             }
-        };
+        }
 
-        window.updateConsultation = function() {
+        function updateConsultation() {
             let val = document.getElementById('medecinSelect').value.split('|');
             let targetDay = parseInt(val[0]);
             let medecinChoisi = val[1];
@@ -596,41 +570,26 @@ Voici le code complet à copier-coller :
             let daysBefore = Math.round((dateBefore - today) / (1000 * 60 * 60 * 24));
             let daysAfter = Math.round((dateAfter - today) / (1000 * 60 * 60 * 24));
 
-            let selectedDate;
-            if (daysBefore > 0) {
-                let gapBefore = Math.abs(daysBefore - delai);
-                let gapAfter = Math.abs(daysAfter - delai);
-                selectedDate = (gapBefore <= gapAfter) ? dateBefore : dateAfter;
-            } else {
-                selectedDate = dateAfter;
-            }
-
+            let selectedDate = (daysBefore > 0 && Math.abs(daysBefore - delai) <= Math.abs(daysAfter - delai)) ? dateBefore : dateAfter;
             let options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            let dateFormatee = selectedDate.toLocaleDateString('fr-FR', options);
             
-            const patientChoisi = document.getElementById('patientSelect').value;
-            if(patientChoisi) {
+            if(document.getElementById('patientSelect').value) {
                 document.getElementById('assistant').value = medecinChoisi;
-                document.getElementById('consultationDetails').value = `${medecinChoisi} le ${dateFormatee}.`;
+                document.getElementById('consultationDetails').value = `${medecinChoisi} le ${selectedDate.toLocaleDateString('fr-FR', options)}.`;
             }
-        };
+        }
 
-        window.clearForm = function() {
+        function clearForm() {
             document.querySelectorAll('input[type="text"], textarea').forEach(el => el.value = '');
             document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
             document.getElementById('patientSelect').value = "";
-        };
+        }
 
-        document.getElementById('suitesSimples').addEventListener('change', (e) => {
-            if(e.target.checked) document.getElementById('sumSuites').value = "Simples";
-        });
-        document.getElementById('suitesComp').addEventListener('change', (e) => {
-            if(e.target.checked) document.getElementById('sumSuites').value = "Compliquées";
-        });
-    </script>
-    
-    <script>
-        window.generatePDF = async function() {
+        document.getElementById('suitesSimples').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('sumSuites').value = "Simples"; });
+        document.getElementById('suitesComp').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('sumSuites').value = "Compliquées"; });
+
+        // Fonction de génération PDF
+        async function generatePDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4');
             
@@ -641,21 +600,19 @@ Voici le code complet à copier-coller :
             textareas.forEach(ta => ta.style.border = 'none');
 
             const canvas1 = await html2canvas(page1, { scale: 2 });
-            const imgData1 = canvas1.toDataURL('image/jpeg', 1.0);
-            doc.addImage(imgData1, 'JPEG', 0, 0, 210, 297);
+            doc.addImage(canvas1.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
             
             doc.addPage();
             
             const canvas2 = await html2canvas(page2, { scale: 2 });
-            const imgData2 = canvas2.toDataURL('image/jpeg', 1.0);
-            doc.addImage(imgData2, 'JPEG', 0, 0, 210, 297);
+            doc.addImage(canvas2.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
 
             textareas.forEach(ta => ta.style.border = '1px dashed #94a3b8');
 
             let nom = document.getElementById('nomP1').value || "Patient";
             let prenom = document.getElementById('prenomP1').value || "";
             doc.save(`CRH_${nom}_${prenom}.pdf`);
-        };
+        }
     </script>
 </body>
 </html>
