@@ -44,24 +44,35 @@
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
-            align-items: center;
+            align-items: flex-end;
         }
         
         .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 200px; }
         .form-group label { font-size: 0.85em; font-weight: 600; color: var(--text); }
-        .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: #f8fafc; }
+        .form-group select, .form-group input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: #f8fafc; }
+        .form-group input:focus { outline: none; border-color: var(--primary); }
 
         .btn { padding: 10px 15px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; color: white; display: flex; align-items: center; gap: 5px; }
         .btn-print { background-color: var(--primary); }
         .btn-pdf { background-color: var(--success); }
         .btn-clear { background-color: #64748b; }
+        .btn-add { background-color: var(--primary); margin-top: 4px; }
+
+        /* Bloc pour l'ajout manuel */
+        .custom-drug-section {
+            width: 100%;
+            background: var(--primary-light);
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+            margin-top: 5px;
+        }
 
         /* --- ZONE DE L'ORDONNANCE (Format A5) --- */
-        .ordonnance-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 50px;
-        }
+        .ordonnance-container { display: flex; justify-content: center; margin-bottom: 50px; }
 
         .a5-paper {
             width: 148mm;
@@ -102,7 +113,6 @@
             width: 84%; 
             height: 50%;
             resize: none;
-            /* Typographie ajustée pour bien simuler l'impression */
             font-family: Arial, sans-serif;
             font-size: 15px;
             line-height: 1.6;
@@ -116,11 +126,8 @@
             .header, .controls-bar { display: none !important; }
             .ordonnance-container { margin: 0; justify-content: flex-start; }
             .a5-paper { 
-                box-shadow: none; 
-                width: 148mm; 
-                height: 209mm;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact; 
+                box-shadow: none; width: 148mm; height: 209mm;
+                -webkit-print-color-adjust: exact; print-color-adjust: exact; 
             }
             .field { border: none !important; background: transparent !important; }
             textarea { overflow: hidden; }
@@ -155,20 +162,109 @@
         </div>
         
         <div class="form-group">
-            <label>Traitement type :</label>
+            <label>Modèles rapides :</label>
             <select id="treatmentSelect" onchange="fillTreatmentData()">
-                <option value="">-- Vider ou choisir --</option>
+                <option value="">-- Choisir un modèle --</option>
+                <option value="vierge">📝 Ordonnance Vierge</option>
                 <option value="standard">💊 Traitement Standard (Sortie)</option>
                 <option value="pansement">🩹 Changement de Pansement</option>
             </select>
         </div>
 
-        <div style="display:flex; gap:10px; align-items:flex-end;">
+        <div style="display:flex; gap:10px;">
             <button class="btn btn-print" onclick="window.print()">🖨️ Imprimer</button>
             <button class="btn btn-pdf" onclick="saveAsPDF()">💾 PDF</button>
-            <button class="btn btn-clear" onclick="clearOrdonnance()">🗑️ Effacer</button>
+            <button class="btn btn-clear" onclick="clearOrdonnance()">🗑️ Tout effacer</button>
+        </div>
+
+        <!-- SECTION : AJOUTER UN MÉDICAMENT SPÉCIFIQUE -->
+        <div class="custom-drug-section">
+            <div class="form-group" style="flex: 2;">
+                <label>Médicament :</label>
+                <input type="text" id="customDrug" list="dzMeds" placeholder="Ex: Amoxicilline 1g">
+            </div>
+            <div class="form-group" style="flex: 1.5;">
+                <label>Posologie (Taper ou choisir) :</label>
+                <input type="text" id="customPosology" list="dzPosologies" placeholder="Ex: 1cp 02x/j">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>Quantité (Taper ou choisir) :</label>
+                <input type="text" id="customQsp" list="dzQsp" placeholder="Ex: 1 bte, QSP 7j">
+            </div>
+            <button class="btn btn-add" onclick="addCustomDrug()">➕ Ajouter</button>
         </div>
     </div>
+
+    <!-- BASES DE DONNÉES (Listes déroulantes) -->
+    
+    <!-- Liste des Médicaments -->
+    <datalist id="dzMeds">
+        <!-- Hormones / Thyroïde -->
+        <option value="Levothyrox 25 µg">
+        <option value="Levothyrox 50 µg">
+        <option value="Levothyrox 75 µg">
+        <option value="Levothyrox 100 µg">
+        <option value="Levothyrox 150 µg">
+        <!-- Dérivés Sanguins / Solutés -->
+        <option value="Albumine 20%">
+        <!-- Antalgiques / AINS -->
+        <option value="Paracétamol 1g">
+        <option value="Paracétamol 500mg">
+        <option value="Tramadol 50mg">
+        <option value="Nefopam (Acupan) 20mg">
+        <option value="Ibuprofène 400mg">
+        <option value="Ketoprofène (Profenid) 100mg">
+        <option value="Diclofenac (Voltarene) 50mg">
+        <!-- Antibiotiques -->
+        <option value="Amoxicilline + Ac. Clav (Augmentin) 1g">
+        <option value="Amoxicilline 1g">
+        <option value="Cefalexine (Keforal) 1g">
+        <option value="Cefalexine (Keforal) 500mg">
+        <option value="Ciprofloxacine 500mg">
+        <option value="Metronidazole (Flagyl) 500mg">
+        <option value="Pristinamycine (Pyostacine) 500mg">
+        <!-- Anticoagulants -->
+        <option value="Enoxaparine (Lovenox) 0.4 UI">
+        <option value="Enoxaparine (Lovenox) 0.6 UI">
+        <option value="Tinzaparine (Innohep) 0.45">
+        <option value="Acenocoumarol (Sintrom) 4mg">
+        <!-- Gastro / Antiémétiques -->
+        <option value="Omeprazole 20mg">
+        <option value="Esomeprazole (Inexium) 40mg">
+        <option value="Pantoprazole 40mg">
+        <option value="Metoclopramide (Primperan) 10mg">
+        <option value="Domperidone (Motilium) 10mg">
+        <option value="Phloroglucinol (Spasfon) 80mg">
+        <!-- Corticoïdes -->
+        <option value="Prednisolone (Solupred) 20mg">
+        <option value="Prednisone (Cortancyl) 20mg">
+    </datalist>
+
+    <!-- Liste des Posologies -->
+    <datalist id="dzPosologies">
+        <option value="1cp / jour">
+        <option value="1cp 02x / jour">
+        <option value="1cp 03x / jour">
+        <option value="1cp / 6h si douleur">
+        <option value="1 inj / jour à heure fixe">
+        <option value="1 flacon / jour">
+        <option value="1cp le matin à jeun">
+        <option value="1 sachet 03x / jour">
+    </datalist>
+
+    <!-- Liste des Quantités (QSP / Boîtes) -->
+    <datalist id="dzQsp">
+        <option value="QSP">
+        <option value="QSP 7j">
+        <option value="QSP 10j">
+        <option value="QSP 15j">
+        <option value="QSP 1 mois">
+        <option value="1 bte">
+        <option value="2 btes">
+        <option value="3 btes">
+        <option value="1 flacon">
+        <option value="2 flacons">
+    </datalist>
 
     <!-- ZONE DE L'ORDONNANCE A5 -->
     <div class="ordonnance-container">
@@ -240,7 +336,6 @@
             const body = document.getElementById('prescriptionBody');
 
             if (choix === 'standard') {
-                // Formatage respectant les lignes (Traitement + QSP sur la même ligne)
                 body.value = 
 `- Lovenox 0.4UI ................................. QSP
   1 inj / jour à heure fixe
@@ -255,9 +350,38 @@
                 body.value = 
 `- Changement de Pansement 1j/2
 + Ablation de fil à la cicatrisation`;
-            } else {
+            
+            } else if (choix === 'vierge') {
                 body.value = '';
             }
+        };
+
+        window.addCustomDrug = function() {
+            const drug = document.getElementById('customDrug').value;
+            const posology = document.getElementById('customPosology').value || "";
+            const qsp = document.getElementById('customQsp').value || "QSP";
+
+            if (!drug) {
+                alert("Veuillez entrer au moins le nom d'un médicament.");
+                return;
+            }
+
+            const body = document.getElementById('prescriptionBody');
+            
+            let dots = " ......................................... ";
+            
+            let newEntry = `- ${drug}${dots}${qsp}`;
+            if (posology) {
+                newEntry += `\n  ${posology}`;
+            }
+            newEntry += `\n\n`;
+
+            body.value = body.value + newEntry;
+
+            // Vider les champs
+            document.getElementById('customDrug').value = '';
+            document.getElementById('customPosology').value = '';
+            document.getElementById('customQsp').value = '';
         };
 
         window.clearOrdonnance = function() {
