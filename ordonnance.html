@@ -135,27 +135,24 @@
             white-space: pre-wrap;
         }
 
-        /* --- STYLES D'IMPRESSION --- */
+        /* --- STYLES D'IMPRESSION DIRECTE --- */
         @media print {
-            /* Format A4 sans aucune marge par défaut */
             @page { size: A4 portrait; margin: 0; }
             body { background: none; padding: 0; margin: 0; }
             .header, .controls-bar { display: none !important; }
             
-            /* Conteneur principal collé en haut */
             .ordonnance-container { 
                 margin: 0; 
-                display: block; /* Retire le flexbox pour éviter le centrage vertical forcé */
+                display: block; 
                 width: 100%;
-                padding-top: 0; /* Colle à la limite supérieure */
+                padding-top: 0; 
             }
             
-            /* L'ordonnance A5 centrée horizontalement uniquement */
             .a5-paper { 
                 box-shadow: none; 
                 width: 148mm; 
-                height: 210mm; /* Garde sa taille A5 d'origine */
-                margin: 0 auto; /* margin-top: 0 (colle en haut), auto sur les côtés (centre horizontal) */
+                height: 210mm; 
+                margin: 0 auto; 
                 -webkit-print-color-adjust: exact; print-color-adjust: exact; 
             }
             
@@ -375,7 +372,6 @@
   1cp/6H Si Douleur`;
 
             } else if (choix === 'pansement') {
-                // Affiche le titre et descend légèrement le texte
                 specialTitle.style.display = 'block';
                 body.style.top = 'calc(32% + 1.5cm)';
                 body.style.height = 'calc(50% - 1.5cm)';
@@ -402,7 +398,6 @@
             }
 
             const body = document.getElementById('prescriptionBody');
-            
             let dots = " ......................................... ";
             
             let newEntry = `- ${drug}${dots}${qsp}`;
@@ -432,7 +427,61 @@
 
     <script>
         function saveAsPDF() {
-            const element = document.getElementById('ordonnanceDoc');
+            const originalElement = document.getElementById('ordonnanceDoc');
+            
+            // 1. Créer une page A4 conteneur pour le PDF
+            const a4Wrapper = document.createElement('div');
+            a4Wrapper.style.width = '210mm';
+            a4Wrapper.style.height = '297mm';
+            a4Wrapper.style.backgroundColor = '#ffffff';
+            a4Wrapper.style.display = 'flex';
+            a4Wrapper.style.justifyContent = 'center';
+            a4Wrapper.style.alignItems = 'flex-start'; // Colle tout en haut (limite supérieure)
+            a4Wrapper.style.boxSizing = 'border-box';
+
+            // 2. Cloner l'ordonnance A5
+            const clone = originalElement.cloneNode(true);
+            clone.style.margin = '0 auto';
+            clone.style.boxShadow = 'none';
+
+            // 3. Remplacer les champs éditables par des divs pour éviter les bugs de suppression/tronquage
+            function replaceWithDiv(parent, id, isTextarea = false) {
+                const input = document.getElementById(id);
+                const cloneInput = parent.querySelector(`#${id}`);
+                if (!input || !cloneInput) return;
+
+                const div = document.createElement('div');
+                div.className = 'field';
+                div.style.cssText = window.getComputedStyle(input).cssText;
+                div.style.border = 'none';
+                div.style.background = 'transparent';
+                
+                if (isTextarea) {
+                    div.style.whiteSpace = 'pre-wrap';
+                    div.style.overflow = 'visible';
+                }
+                
+                div.innerText = input.value;
+                cloneInput.parentNode.replaceChild(div, cloneInput);
+            }
+
+            replaceWithDiv(clone, 'dateField');
+            replaceWithDiv(clone, 'nameField');
+            replaceWithDiv(clone, 'ageField');
+            replaceWithDiv(clone, 'specialTitle');
+            replaceWithDiv(clone, 'prescriptionBody', true);
+
+            a4Wrapper.appendChild(clone);
+
+            // 4. Placer temporairement le conteneur hors écran
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.top = '-9999px';
+            tempContainer.style.left = '-9999px';
+            tempContainer.appendChild(a4Wrapper);
+            document.body.appendChild(tempContainer);
+
+            // 5. Paramétrer la génération PDF au format A4
             const patientName = document.getElementById('nameField').value || 'Patient';
             const fileName = `Ordonnance_${patientName.replace(/ /g, '_')}.pdf`;
 
@@ -441,14 +490,11 @@
                 filename:     fileName,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 3, useCORS: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a5', orientation: 'portrait' }
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            const fields = document.querySelectorAll('.field');
-            fields.forEach(f => f.style.border = 'none');
-
-            html2pdf().set(opt).from(element).save().then(() => {
-                fields.forEach(f => f.style.border = '');
+            html2pdf().set(opt).from(a4Wrapper).save().then(() => {
+                document.body.removeChild(tempContainer);
             });
         }
     </script>
