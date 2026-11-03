@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compte Rendu d'Hospitalisation - CPMC</title>
     
-    <!-- Librairie pour générer le PDF vectoriel/canvas -->
+    <!-- Librairies pour générer le PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
@@ -15,13 +16,18 @@
             --bg: #f1f5f9;
             --text: #1e293b;
         }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body { 
             font-family: Arial, sans-serif; 
             background-color: var(--bg); 
             margin: 0; 
             padding: 20px; 
             color: black;
-            font-size: 14px;
+            font-size: 13.5px;
         }
 
         /* --- BARRE DE NAVIGATION ET CONTRÔLES --- */
@@ -41,23 +47,25 @@
         .btn-clear { background-color: #64748b; }
 
         /* --- STYLES DES PAGES A4 --- */
-        .page-container { display: flex; flex-direction: column; align-items: center; gap: 25px; }
+        .page-container { display: flex; flex-direction: column; align-items: center; gap: 20px; }
         
         .a4-page {
             width: 210mm;
-            min-height: 297mm;
+            height: 297mm; /* Hauteur A4 fixe */
+            max-height: 297mm;
             background: white;
             box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-            padding: 15mm 20mm;
+            padding: 12mm 15mm;
             box-sizing: border-box;
             position: relative;
-            line-height: 26px;
+            line-height: 25px;
+            overflow: hidden; /* Empêche le débordement sur une nouvelle page */
         }
 
-        .header-titles { text-align: center; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif; }
-        .header-titles h4 { margin: 0; font-weight: normal; font-size: 14px; line-height: 1.3; }
-        .header-titles h4.bold { font-weight: bold; margin-top: 4px; }
-        .header-titles h3 { margin: 15px 0 20px 0; font-size: 18px; text-decoration: underline; font-weight: bold; }
+        .header-titles { text-align: center; margin-bottom: 12px; font-family: 'Times New Roman', Times, serif; }
+        .header-titles h4 { margin: 0; font-weight: normal; font-size: 13.5px; line-height: 1.2; }
+        .header-titles h4.bold { font-weight: bold; margin-top: 3px; }
+        .header-titles h3 { margin: 10px 0 15px 0; font-size: 17px; text-decoration: underline; font-weight: bold; }
 
         .row { display: flex; flex-direction: row; align-items: center; width: 100%; }
         .row-top { align-items: flex-start; }
@@ -67,8 +75,8 @@
         
         .u-i { text-decoration: underline; font-style: italic; }
         .u-b-i { text-decoration: underline; font-weight: bold; font-style: italic; }
-        ul.custom-list { margin: 5px 0 5px 25px; padding: 0; list-style: disc; }
-        ul.custom-list li { margin-bottom: 5px; }
+        ul.custom-list { margin: 3px 0 3px 20px; padding: 0; list-style: disc; }
+        ul.custom-list li { margin-bottom: 3px; }
 
         /* Champs ligne en pointillés */
         input.dotted {
@@ -76,26 +84,26 @@
             border-bottom: 2px dotted #000;
             background: transparent;
             font-family: inherit;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: bold;
             color: #000;
             padding: 0 5px;
             outline: none;
-            height: 24px;
+            height: 22px;
         }
 
         /* Cases à cocher */
         input[type="checkbox"] {
             appearance: none;
             -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
+            width: 13px;
+            height: 13px;
             border: 1px solid #000;
             background-color: transparent;
             display: inline-block;
             position: relative;
             vertical-align: middle;
-            margin: 0 4px;
+            margin: 0 3px;
             cursor: pointer;
         }
         input[type="checkbox"]:checked::after {
@@ -104,21 +112,21 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             color: #000;
         }
 
-        /* Zones de texte multilignes à grilles d'impression */
+        /* Zones de texte multilignes */
         .grid-textarea {
             display: grid;
             width: 100%;
             margin-top: 2px;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         .grid-textarea > div, .grid-textarea > textarea { grid-column: 1; grid-row: 1; }
         .lines-container { display: flex; flex-direction: column; pointer-events: none; }
-        .lines-container .line { width: 100%; height: 26px; border-bottom: 2px dotted #000; box-sizing: border-box; }
+        .lines-container .line { width: 100%; height: 25px; border-bottom: 2px dotted #000; box-sizing: border-box; }
         
         textarea.t-area {
             width: 100%;
@@ -127,27 +135,50 @@
             resize: none;
             outline: none;
             font-family: inherit;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: bold;
-            line-height: 26px;
+            line-height: 25px;
             padding: 0;
             margin: 0;
             color: #000;
             overflow: hidden;
         }
         
-        .h-1 { height: 26px; }
-        .h-2 { height: 52px; }
-        .h-3 { height: 78px; }
-        .h-4 { height: 104px; }
-        .h-6 { height: 156px; }
+        .h-1 { height: 25px; }
+        .h-2 { height: 50px; }
+        .h-3 { height: 75px; }
+        .h-4 { height: 100px; }
+        .h-6 { height: 150px; }
 
+        /* --- STYLES D'IMPRESSION STRICTS A4 (FORCE 2 PAGES EXACTES) --- */
         @media print {
-            @page { size: A4 portrait; margin: 0; }
-            body { margin: 0; padding: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            @page { 
+                size: A4 portrait; 
+                margin: 0; 
+            }
+            html, body { 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                background: #fff; 
+                height: 100%;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+            }
             .no-print { display: none !important; }
             .page-container { gap: 0; display: block; }
-            .a4-page { margin: 0; box-shadow: none; border: none; page-break-after: always; }
+            .a4-page { 
+                margin: 0 auto !important; 
+                box-shadow: none !important; 
+                border: none !important; 
+                width: 210mm !important;
+                height: 297mm !important;
+                max-height: 297mm !important;
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+            .a4-page:last-child {
+                page-break-after: avoid;
+            }
         }
     </style>
 </head>
@@ -169,7 +200,7 @@
                     <option value="">-- Choisir un patient --</option>
                 </select>
             </div>
-            <button class="btn btn-pdf" onclick="saveAsPDF()">💾 Enregistrer PDF</button>
+            <button class="btn btn-pdf" onclick="saveAsPDF()">💾 Enregistrer PDF (2 Pages)</button>
             <button class="btn btn-print" onclick="window.print()">🖨️ Imprimer</button>
             <button class="btn btn-clear" onclick="clearForm()">🗑️ Effacer</button>
         </div>
@@ -210,18 +241,18 @@
                 </li>
             </ul>
 
-            <div class="u-i" style="margin-top: 10px;">Patient suivi par :</div>
+            <div class="u-i" style="margin-top: 5px;">Patient suivi par :</div>
             <ul class="custom-list">
                 <li class="row"><span>Assistant :</span> <input type="text" id="assistant" class="dotted flex-grow" style="margin-left: 5px;"></li>
                 <li class="row"><span>Résident :</span> <input type="text" id="resident" class="dotted flex-grow" style="margin-left: 5px;"></li>
                 <li class="row"><span>Interne :</span> <input type="text" id="interne" class="dotted flex-grow" style="margin-left: 5px;"></li>
             </ul>
 
-            <div class="row" style="margin-top: 10px;">
+            <div class="row" style="margin-top: 5px;">
                 <span>Nom du médecin et/ou du service d'origine :</span> <input type="text" id="medOrigine" class="dotted flex-grow" style="margin-left: 5px;">
             </div>
 
-            <div class="row gap-30" style="margin: 15px 0;">
+            <div class="row gap-30" style="margin: 10px 0;">
                 <div class="row" style="width: auto;"><span>*RCP : Oui</span><input type="checkbox" id="rcpOui"> <span>Non</span><input type="checkbox" id="rcpNon"></div>
                 <div class="row" style="width: auto;"><span>*Comité Rectum : Oui</span><input type="checkbox" id="rectumOui"> <span>Non</span><input type="checkbox" id="rectumNon"></div>
                 <div class="row" style="width: auto;"><span>Comité Thyroïde : Oui</span><input type="checkbox" id="thyroideOui"> <span>Non</span><input type="checkbox" id="thyroideNon"></div>
@@ -232,7 +263,7 @@
                 <input type="text" id="diagnostic" class="dotted flex-grow" style="margin-left: 5px;">
             </div>
 
-            <div class="row row-top" style="margin-top: 15px;">
+            <div class="row row-top" style="margin-top: 10px;">
                 <div class="u-b-i" style="width: 100px;">Antécédents :</div>
                 <div class="flex-grow">
                     <div class="row">
@@ -244,7 +275,7 @@
                         <textarea id="atcdMed2" class="t-area h-1"></textarea>
                     </div>
                     
-                    <div class="row" style="margin-top: 5px;">
+                    <div class="row" style="margin-top: 3px;">
                         <span style="width: 90px;">Chirurgicaux :</span>
                         <input type="text" id="atcdChir1" class="dotted flex-grow">
                     </div>
@@ -255,12 +286,12 @@
                 </div>
             </div>
 
-            <div class="row" style="width: 70%; margin-top: 10px;">
+            <div class="row" style="width: 70%; margin-top: 5px;">
                 <span>Score ASA</span> <input type="text" id="asa" class="dotted flex-grow" style="margin: 0 10px;">
                 <span>BMI :</span> <input type="text" id="bmi" class="dotted" style="width: 80px; margin: 0 5px;"> <span>Kg/m².</span>
             </div>
 
-            <div style="margin-top: 15px;">
+            <div style="margin-top: 10px;">
                 <span class="u-b-i">Résumé clinique :</span>
                 <div class="grid-textarea h-3">
                     <div class="lines-container"><div class="line"></div><div class="line"></div><div class="line"></div></div>
@@ -268,7 +299,7 @@
                 </div>
             </div>
 
-            <div style="margin-top: 15px;">
+            <div style="margin-top: 10px;">
                 <span class="u-b-i">Examens morphologiques</span> <span>(Conclusions des examens radiologiques) :</span>
                 <div class="grid-textarea h-6">
                     <div class="lines-container"><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div></div>
@@ -295,7 +326,7 @@
                 <span>Autres :</span> <input type="text" id="autresExams" class="dotted flex-grow" style="margin-left: 5px;">
             </div>
 
-            <div style="margin-top: 15px;">
+            <div style="margin-top: 10px;">
                 <span class="u-b-i">Intervention :</span> <span>préciser (titre, date, extemporanée, incidents, transfusions)</span>
                 <div class="row">
                     <input type="text" id="interventionP2" class="dotted flex-grow">
@@ -306,7 +337,7 @@
                 </div>
             </div>
 
-            <div class="row gap-5" style="margin-top: 15px;">
+            <div class="row gap-5" style="margin-top: 10px;">
                 <span class="u-b-i">Suites opératoires :</span>
                 <span>- Simples</span><input type="checkbox" id="suitesSimples">
                 <span style="margin-left:5px;">compliquées</span><input type="checkbox" id="suitesComp">
@@ -314,7 +345,7 @@
                 <input type="text" id="gradeComp" class="dotted" style="width: 100px;">
             </div>
 
-            <div style="padding-left: 20px;">
+            <div style="padding-left: 15px;">
                 <div class="row">
                     <span>- Si complications (préciser type, le délai, et la CAT) :</span>
                     <input type="text" id="compType" class="dotted flex-grow" style="margin-left: 5px;">
@@ -324,7 +355,7 @@
                     <textarea id="compDetails" class="t-area h-1"></textarea>
                 </div>
 
-                <div class="row gap-5" style="margin: 5px 0;">
+                <div class="row gap-5" style="margin: 3px 0;">
                     <span>- Reprise chirurgicale : Oui</span><input type="checkbox" id="repriseOui">
                     <span>Non</span><input type="checkbox" id="repriseNon">
                 </div>
@@ -337,7 +368,7 @@
                     <textarea id="repriseDetails" class="t-area h-1"></textarea>
                 </div>
 
-                <div class="row" style="margin: 5px 0;">
+                <div class="row" style="margin: 3px 0;">
                     <span>- Durée de séjour en réanimation :</span>
                     <input type="text" id="dureeRea" class="dotted" style="width: 50px; text-align: center; margin: 0 5px;"> <span>jours</span>
                 </div>
@@ -350,11 +381,11 @@
                     <textarea id="traitementsRecus" class="t-area h-1"></textarea>
                 </div>
 
-                <div class="row gap-5" style="margin: 5px 0;">
+                <div class="row gap-5" style="margin: 3px 0;">
                     <span>- Alimentation parentérale : Oui</span><input type="checkbox" id="alimOui">
                     <span>Non</span><input type="checkbox" id="alimNon">
                 </div>
-                <div class="row gap-5" style="margin: 5px 0;">
+                <div class="row gap-5" style="margin: 3px 0;">
                     <span>- Transfusions ou produits dérivés en postopératoire : Oui</span><input type="checkbox" id="transfOui">
                     <span>Non</span><input type="checkbox" id="transfNon">
                 </div>
@@ -364,7 +395,7 @@
                     <input type="text" id="transfQte" class="dotted flex-grow" style="margin-left: 5px;">
                 </div>
 
-                <div class="row" style="margin-top:5px;">
+                <div class="row" style="margin-top:3px;">
                     <span>- Ablation de la sonde naso-gastrique : J</span>
                     <input type="text" id="ablationSng" class="dotted" style="width: 40px; text-align:center; margin: 0 5px;"> <span>post-op.</span>
                 </div>
@@ -378,7 +409,7 @@
                 </div>
             </div>
 
-            <div style="margin-top: 15px;">
+            <div style="margin-top: 10px;">
                 <span>Sortie du patient (préciser date, adresser à, traitement à domicile</span><br>
                 <div class="row">
                     <span>(thrombo-prophylaxie/ antalgiques/ antibiotiques/ si DCD préciser cause ,date et heure) :</span>
@@ -390,7 +421,7 @@
             </div>
 
             <!-- BLOC RÉSUMÉ DE FIN -->
-            <div style="margin-top: 15px;">
+            <div style="margin-top: 10px;">
                 <div class="row">
                     <span class="u-b-i">Au total,</span> <span>&nbsp;il s'agit de</span>
                     <input type="text" id="sumNom" class="dotted flex-grow" style="margin: 0 5px;">
@@ -504,45 +535,36 @@
         });
     </script>
 
-    <!-- NOUVEAU MOTEUR CANVAS HTML5 GENERATEUR DE PDF EXPLOITANT JSPDF -->
+    <!-- GENERATION PDF HAUTE RESOLUTION VIA CANVAS (2 PAGES EXACTES) -->
     <script>
         async function saveAsPDF() {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('portrait', 'mm', 'a4');
 
-            // Fonction pour dessiner une page HTML vers Canvas
-            async function drawPageToPdf(pageId, isFirstPage) {
+            async function capturePage(pageId) {
                 const pageElement = document.getElementById(pageId);
-                
-                // Masquer temporairement les contours en pointillés pour la capture propre
-                const inputs = pageElement.querySelectorAll('input.dotted');
-                inputs.forEach(i => i.style.borderBottom = 'none');
-
                 const canvas = await html2canvas(pageElement, {
                     scale: 2,
                     useCORS: true,
-                    logging: false
+                    logging: false,
+                    windowWidth: pageElement.scrollWidth,
+                    windowHeight: pageElement.scrollHeight
                 });
-
-                // Remettre les pointillés à l'écran
-                inputs.forEach(i => i.style.borderBottom = '');
-
-                const imgData = canvas.toDataURL('image/jpeg', 0.98);
-                
-                if (!isFirstPage) {
-                    pdf.addPage();
-                }
-                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+                return canvas.toDataURL('image/jpeg', 0.98);
             }
 
-            // Générer page 1 puis page 2
-            await drawPageToPdf('page1', true);
-            await drawPageToPdf('page2', false);
+            // Capture Page 1
+            const img1 = await capturePage('page1');
+            pdf.addImage(img1, 'JPEG', 0, 0, 210, 297);
+
+            // Capture Page 2
+            pdf.addPage();
+            const img2 = await capturePage('page2');
+            pdf.addImage(img2, 'JPEG', 0, 0, 210, 297);
 
             const patientName = document.getElementById('nomP1').value || 'Patient';
             pdf.save(`Compte_Rendu_${patientName.replace(/ /g, '_')}.pdf`);
         }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
