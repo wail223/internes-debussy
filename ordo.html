@@ -6,7 +6,7 @@
     <title>Ordonnance - CPMC Debussy</title>
     
     <!-- Librairie pour générer le PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         :root {
@@ -57,7 +57,7 @@
         .btn-pdf { background-color: var(--success); }
         .btn-clear { background-color: #64748b; }
         .btn-add { background-color: var(--primary); margin-top: 4px; }
-        
+
         /* Boutons pour les bilans */
         .btn-bilan { background-color: #f1f5f9; color: var(--primary); border: 1px solid var(--primary); padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
         .btn-bilan:hover { background-color: var(--primary); color: white; }
@@ -83,7 +83,7 @@
             align-items: flex-end;
             margin-top: 5px;
         }
-        
+
         .bilan-section {
             width: 100%;
             background: #fffbeb;
@@ -133,16 +133,12 @@
             outline: none;
         }
 
-        /* ALIGNEMENTS (Haussés et décalés) */
-        /* Date : haussée de 6mm (~3% en moins sur top), calc conservé pour la droite */
-        #dateField { top: 9.5%; left: calc(60% + 1cm); width: 35%; font-style: italic; }
+        /* ALIGNEMENTS ORIGINAUX EXACTS DU FICHIER CONSERVÉS */
+        #dateField { top: 12.5%; left: calc(60% + 1cm); width: 35%; font-style: italic; }
+        #nameField { top: 22%; left: calc(15% + 1cm); width: 45%; font-weight: bold; }
+        #ageField { top: 22%; left: calc(75% + 1cm); width: 20%; font-weight: bold; }
         
-        /* Nom : haussé de 5mm (~2.5% en moins) */
-        #nameField { top: 19.5%; left: calc(15% + 1cm); width: 45%; font-weight: bold; }
-        
-        /* Âge : haussé de 5mm et décalé à droite de 6mm (4mm + 2mm) */
-        #ageField { top: 19.5%; left: calc(75% + 1.6cm); width: 22%; font-weight: bold; font-size: 14px; }
-        
+        /* TITRE SPÉCIAL (Prière de faire) */
         #specialTitle {
             top: calc(32% + 0.5cm);
             left: 8%;
@@ -156,6 +152,7 @@
             display: none;
         }
 
+        /* CORPS DE L'ORDONNANCE */
         #prescriptionBody {
             top: calc(32% + 0.5cm); 
             left: 8%; 
@@ -199,7 +196,6 @@
             <a href="remarques-consignes.html" class="nav-btn">📝 Remarques</a>
             <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
             <a href="ordonnance.html" class="nav-btn active">💊 Ordonnance</a>
-            <a href="compte-rendu.html" class="nav-btn">📄 Compte Rendu</a>
         </div>
     </div>
 
@@ -230,7 +226,7 @@
         </div>
 
         <!-- SECTION : AJOUTER UN MÉDICAMENT SPÉCIFIQUE -->
-        <div class="custom-drug-section" id="medicamentSection">
+        <div class="custom-drug-section">
             <div class="form-group" style="flex: 2;">
                 <label>Médicament :</label>
                 <input type="text" id="customDrug" list="dzMeds" placeholder="Ex: Amoxicilline 1g">
@@ -343,6 +339,20 @@
         <option value="1 flacon">
         <option value="2 flacons">
     </datalist>
+
+    <!-- ZONE DE L'ORDONNANCE A5 -->
+    <div class="ordonnance-container">
+        <div class="a5-paper" id="ordonnanceDoc">
+            <input type="text" id="dateField" class="field">
+            <input type="text" id="nameField" class="field">
+            <input type="text" id="ageField" class="field">
+            
+            <!-- Titre "Prière de faire" masqué par défaut -->
+            <input type="text" id="specialTitle" class="field" value="PRIÈRE DE FAIRE :" readonly>
+            
+            <textarea id="prescriptionBody" class="field" spellcheck="false"></textarea>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -534,97 +544,26 @@
         };
     </script>
 
-    <!-- NOUVEAU MOTEUR DE GÉNÉRATION PDF 100% PRÉCIS POUR A5 (148 x 210 mm) -->
     <script>
-        async function saveAsPDF() {
-            const { jsPDF } = window.jspdf;
-            
-            const bgImg = new Image();
-            bgImg.src = 'IMG_5676.jpg';
-
-            await new Promise((resolve) => {
-                bgImg.onload = resolve;
-                bgImg.onerror = resolve; 
-            });
-
-            // Dimensions haute résolution basées sur le ratio A5
-            const canvas = document.createElement('canvas');
-            const w = 1748; // (148mm * 300dpi / 25.4)
-            const h = 2480; // (210mm * 300dpi / 25.4)
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext('2d');
-
-            if (bgImg.complete && bgImg.naturalWidth !== 0) {
-                ctx.drawImage(bgImg, 0, 0, w, h);
-            } else {
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, w, h);
-            }
-
-            ctx.fillStyle = '#000000';
-
-            // Coordonnées recalculées pour le nouveau canevas A5 HD
-            
-            // DATE : Haussée de 6mm (~3% en moins sur Y), placée à ~67% de la largeur (+1cm simulé)
-            ctx.font = 'italic 42px "Times New Roman", serif';
-            const dateVal = document.getElementById('dateField').value || '';
-            ctx.fillText(dateVal, w * 0.67, h * 0.125); 
-
-            // NOM : Haussé de 5mm (~2% en moins), placé à ~21% de la largeur
-            ctx.font = 'bold 45px "Times New Roman", serif';
-            const nameVal = document.getElementById('nameField').value || '';
-            ctx.fillText(nameVal, w * 0.21, h * 0.215);
-
-            // ÂGE : Haussé de 5mm, décalé à droite (4mm + 2mm)
-            ctx.font = 'bold 42px "Times New Roman", serif';
-            const ageVal = document.getElementById('ageField').value || '';
-            ctx.fillText(ageVal, w * 0.81, h * 0.215); 
-
-            const specialTitle = document.getElementById('specialTitle');
-            let startY = h * 0.36;
-
-            if (specialTitle && specialTitle.style.display !== 'none') {
-                // Surlignage jaune
-                ctx.fillStyle = '#fef08a';
-                ctx.fillRect(w * 0.08, startY - 45, w * 0.84, 65);
-                
-                ctx.fillStyle = '#000000';
-                ctx.font = 'bold 48px "Times New Roman", serif';
-                ctx.textAlign = 'center';
-                ctx.fillText("PRIÈRE DE FAIRE :", w / 2, startY + 5);
-                
-                // Soulignement
-                ctx.beginPath();
-                ctx.moveTo((w / 2) - 200, startY + 15);
-                ctx.lineTo((w / 2) + 200, startY + 15);
-                ctx.lineWidth = 4;
-                ctx.stroke();
-
-                ctx.textAlign = 'left';
-                startY += 120;
-            } else {
-                startY = h * 0.36;
-            }
-
-            ctx.fillStyle = '#000000';
-            ctx.font = '40px Arial, sans-serif';
-            const bodyText = document.getElementById('prescriptionBody').value || '';
-            const lines = bodyText.split('\n');
-            const lineHeight = 60;
-
-            for (let i = 0; i < lines.length; i++) {
-                ctx.fillText(lines[i], w * 0.1, startY + (i * lineHeight));
-            }
-
-            const imgData = canvas.toDataURL('image/jpeg', 0.98);
-            
-            // Format a5 strict
-            const pdf = new jsPDF('portrait', 'mm', 'a5');
-            pdf.addImage(imgData, 'JPEG', 0, 0, 148, 210);
-
+        function saveAsPDF() {
+            const element = document.getElementById('ordonnanceDoc');
             const patientName = document.getElementById('nameField').value || 'Patient';
-            pdf.save(`Ordonnance_${patientName.replace(/ /g, '_')}.pdf`);
+            const fileName = `Ordonnance_${patientName.replace(/ /g, '_')}.pdf`;
+
+            const opt = {
+                margin:       0,
+                filename:     fileName,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 3, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a5', orientation: 'portrait' }
+            };
+
+            const fields = document.querySelectorAll('.field');
+            fields.forEach(f => f.style.border = 'none');
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                fields.forEach(f => f.style.border = '');
+            });
         }
     </script>
 </body>
