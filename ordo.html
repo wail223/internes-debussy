@@ -6,7 +6,7 @@
     <title>Ordonnance - CPMC Debussy</title>
     
     <!-- Librairie pour générer le PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         :root {
@@ -57,8 +57,21 @@
         .btn-pdf { background-color: var(--success); }
         .btn-clear { background-color: #64748b; }
         .btn-add { background-color: var(--primary); margin-top: 4px; }
+        
+        /* Boutons pour les bilans */
+        .btn-bilan { background-color: #f1f5f9; color: var(--primary); border: 1px solid var(--primary); padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-bilan:hover { background-color: var(--primary); color: white; }
 
-        /* Bloc pour l'ajout manuel */
+        .btn-group { background-color: #e0e7ff; color: #4338ca; border: 1px solid #6366f1; }
+        .btn-group:hover { background-color: #4338ca; color: white; }
+
+        /* État Actif (Sélectionné) */
+        .btn-bilan.active-bilan {
+            background-color: var(--success) !important;
+            color: white !important;
+            border-color: var(--success) !important;
+        }
+
         .custom-drug-section {
             width: 100%;
             background: var(--primary-light);
@@ -69,6 +82,23 @@
             gap: 10px;
             align-items: flex-end;
             margin-top: 5px;
+        }
+        
+        .bilan-section {
+            width: 100%;
+            background: #fffbeb;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px dashed #fbbf24;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .bilan-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         /* --- ZONE DE L'ORDONNANCE (Format A5) --- */
@@ -103,12 +133,16 @@
             outline: none;
         }
 
-        /* ALIGNEMENT (+1cm à droite conservé) */
-        #dateField { top: 12.5%; left: calc(60% + 1cm); width: 35%; font-style: italic; }
-        #nameField { top: 22%; left: calc(15% + 1cm); width: 45%; font-weight: bold; }
-        #ageField { top: 22%; left: calc(75% + 1cm); width: 20%; font-weight: bold; }
+        /* ALIGNEMENTS (Haussés et décalés) */
+        /* Date : haussée de 6mm (~3% en moins sur top), calc conservé pour la droite */
+        #dateField { top: 9.5%; left: calc(60% + 1cm); width: 35%; font-style: italic; }
         
-        /* TITRE SPÉCIAL (Prière de faire) */
+        /* Nom : haussé de 5mm (~2.5% en moins) */
+        #nameField { top: 19.5%; left: calc(15% + 1cm); width: 45%; font-weight: bold; }
+        
+        /* Âge : haussé de 5mm et décalé à droite de 6mm (4mm + 2mm) */
+        #ageField { top: 19.5%; left: calc(75% + 1.6cm); width: 22%; font-weight: bold; font-size: 14px; }
+        
         #specialTitle {
             top: calc(32% + 0.5cm);
             left: 8%;
@@ -117,12 +151,11 @@
             font-size: 19px;
             text-align: center;
             text-decoration: underline;
-            background-color: #fef08a; /* Surlignage jaune */
+            background-color: #fef08a;
             border: none;
-            display: none; /* Masqué par défaut */
+            display: none;
         }
 
-        /* CORPS DE L'ORDONNANCE (Rehaussé) */
         #prescriptionBody {
             top: calc(32% + 0.5cm); 
             left: 8%; 
@@ -146,7 +179,7 @@
                 -webkit-print-color-adjust: exact; print-color-adjust: exact; 
             }
             .field { border: none !important; background: transparent !important; }
-            #specialTitle { -webkit-print-color-adjust: exact; print-color-adjust: exact; } /* Garde le jaune à l'impression */
+            #specialTitle { -webkit-print-color-adjust: exact; print-color-adjust: exact; } 
             textarea { overflow: hidden; }
         }
     </style>
@@ -166,6 +199,7 @@
             <a href="remarques-consignes.html" class="nav-btn">📝 Remarques</a>
             <a href="fiche-de-mouvement.html" class="nav-btn">📄 Fiche Mouvement</a>
             <a href="ordonnance.html" class="nav-btn active">💊 Ordonnance</a>
+            <a href="compte-rendu.html" class="nav-btn">📄 Compte Rendu</a>
         </div>
     </div>
 
@@ -185,6 +219,7 @@
                 <option value="vierge">📝 Ordonnance Vierge</option>
                 <option value="standard">💊 Traitement Standard (Sortie)</option>
                 <option value="pansement">🩹 Changement de Pansement</option>
+                <option value="bilan">🩸 Bilans Biologiques</option>
             </select>
         </div>
 
@@ -195,7 +230,7 @@
         </div>
 
         <!-- SECTION : AJOUTER UN MÉDICAMENT SPÉCIFIQUE -->
-        <div class="custom-drug-section">
+        <div class="custom-drug-section" id="medicamentSection">
             <div class="form-group" style="flex: 2;">
                 <label>Médicament :</label>
                 <input type="text" id="customDrug" list="dzMeds" placeholder="Ex: Amoxicilline 1g">
@@ -209,6 +244,43 @@
                 <input type="text" id="customQsp" list="dzQsp" placeholder="Ex: 1 bte, QSP 7j">
             </div>
             <button class="btn btn-add" onclick="addCustomDrug()">➕ Ajouter</button>
+        </div>
+
+        <!-- SECTION : BILANS BIOLOGIQUES -->
+        <div class="bilan-section" id="bilanSection">
+            <label style="font-size: 0.85em; font-weight: 600; color: var(--warning);">Groupes de bilans (Cliquez pour ajouter/retirer) :</label>
+            <div class="bilan-grid">
+                <button class="btn-bilan btn-group" onclick="toggleBilan(this, ['FNS', 'TP', 'TCK'])">📦 Hémostase (FNS, TP, TCK)</button>
+                <button class="btn-bilan btn-group" onclick="toggleBilan(this, ['Urée Sanguine', 'Créatinine', 'Ionogramme Sanguin', 'Glycémie à jeun'])">📦 Biochimie (Urée, Créat, Iono, Glycémie)</button>
+                <button class="btn-bilan btn-group" onclick="toggleBilan(this, ['ASAT (SGOT) / ALAT (SGPT)', 'PAL', 'Gamma-GT', 'Bilirubine T'])">📦 Bilan Hépatique complet</button>
+            </div>
+            
+            <label style="font-size: 0.85em; font-weight: 600; color: var(--warning); margin-top: 5px;">Bilans individuels :</label>
+            <div class="bilan-grid">
+                <button class="btn-bilan" onclick="toggleBilan(this, ['FNS'])">FNS</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['TP'])">TP</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['TCK'])">TCK</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Ionogramme Sanguin'])">Iono Sanguin</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Urée Sanguine'])">Urée Sanguine</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Créatinine'])">Créatinine</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Glycémie à jeun'])">Glycémie à jeun</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['ASAT (SGOT) / ALAT (SGPT)'])">ASAT/ALAT</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['PAL'])">PAL</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Gamma-GT'])">Gamma-GT</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Bilirubine T'])">Bilirubine T</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Fer sérique'])">Fer sérique</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['VS'])">VS</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['CRP'])">CRP</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['RAI'])">RAI</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Hémoculture'])">Hémoculture</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['INR'])">INR</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Troponine'])">Troponine</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['TSH'])">TSH</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['FT3'])">FT3</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['FT4'])">FT4</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Procalcitonine'])">Procalcitonine</button>
+                <button class="btn-bilan" onclick="toggleBilan(this, ['Sérologie (HIV, HBS, HCV)'])">Sérologie (HIV, HBS, HCV)</button>
+            </div>
         </div>
     </div>
 
@@ -272,20 +344,6 @@
         <option value="2 flacons">
     </datalist>
 
-    <!-- ZONE DE L'ORDONNANCE A5 -->
-    <div class="ordonnance-container">
-        <div class="a5-paper" id="ordonnanceDoc">
-            <input type="text" id="dateField" class="field">
-            <input type="text" id="nameField" class="field">
-            <input type="text" id="ageField" class="field">
-            
-            <!-- Titre "Prière de faire" masqué par défaut -->
-            <input type="text" id="specialTitle" class="field" value="PRIÈRE DE FAIRE :" readonly>
-            
-            <textarea id="prescriptionBody" class="field" spellcheck="false"></textarea>
-        </div>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -341,10 +399,21 @@
             }
         };
 
+        function resetBilanButtons() {
+            document.querySelectorAll('.btn-bilan').forEach(btn => {
+                btn.classList.remove('active-bilan');
+            });
+        }
+
         window.fillTreatmentData = function() {
+            resetBilanButtons();
+            
             const choix = document.getElementById('treatmentSelect').value;
             const body = document.getElementById('prescriptionBody');
             const specialTitle = document.getElementById('specialTitle');
+            const bilanSection = document.getElementById('bilanSection');
+
+            bilanSection.style.display = 'none';
 
             if (choix === 'standard') {
                 specialTitle.style.display = 'none';
@@ -361,7 +430,6 @@
   1cp/6H Si Douleur`;
 
             } else if (choix === 'pansement') {
-                // Affiche le titre et descend légèrement le texte
                 specialTitle.style.display = 'block';
                 body.style.top = 'calc(32% + 1.5cm)';
                 body.style.height = 'calc(50% - 1.5cm)';
@@ -369,12 +437,61 @@
 `- Changement de Pansement 1j/2
 + Ablation de fil à la cicatrisation`;
             
+            } else if (choix === 'bilan') {
+                specialTitle.style.display = 'block';
+                body.style.top = 'calc(32% + 1.5cm)';
+                body.style.height = 'calc(50% - 1.5cm)';
+                body.value = ''; 
+                bilanSection.style.display = 'flex'; 
             } else if (choix === 'vierge') {
                 specialTitle.style.display = 'none';
                 body.style.top = 'calc(32% + 0.5cm)';
                 body.style.height = 'calc(50% - 0.5cm)';
                 body.value = '';
             }
+        };
+
+        window.toggleBilan = function(btnElement, testArray) {
+            const body = document.getElementById('prescriptionBody');
+            let text = body.value;
+            
+            const isActive = btnElement.classList.contains('active-bilan');
+            
+            let ddn = "00/00/0000";
+            const bedId = document.getElementById('patientSelect').value;
+            if (bedId && patientsDb[bedId]) {
+                ddn = patientsDb[bedId].dateNaissance || patientsDb[bedId].ddn || "00/00/0000";
+            }
+            
+            if (isActive) {
+                btnElement.classList.remove('active-bilan');
+                testArray.forEach(test => {
+                    if (test === 'Procalcitonine') {
+                        text = text.replace(/- Procalcitonine.*\n?/g, '');
+                    } else {
+                        const regex = new RegExp(`- ${test.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n?`, 'g');
+                        text = text.replace(regex, '');
+                    }
+                });
+            } else {
+                btnElement.classList.add('active-bilan');
+                testArray.forEach(test => {
+                    let testLine = test;
+                    
+                    if (test === 'Procalcitonine') {
+                        testLine = `Procalcitonine ( date de naissance : ${ddn} )`;
+                    }
+                    
+                    if (!text.includes(`- ${testLine}`) && (test !== 'Procalcitonine' || !text.includes('- Procalcitonine'))) {
+                        if (text.length > 0 && !text.endsWith('\n')) {
+                            text += '\n';
+                        }
+                        text += `- ${testLine}\n`;
+                    }
+                });
+            }
+            
+            body.value = text;
         };
 
         window.addCustomDrug = function() {
@@ -388,7 +505,6 @@
             }
 
             const body = document.getElementById('prescriptionBody');
-            
             let dots = " ......................................... ";
             
             let newEntry = `- ${drug}${dots}${qsp}`;
@@ -412,30 +528,103 @@
             document.getElementById('prescriptionBody').value = '';
             document.getElementById('specialTitle').style.display = 'none';
             document.getElementById('prescriptionBody').style.top = 'calc(32% + 0.5cm)';
+            document.getElementById('bilanSection').style.display = 'none';
+            resetBilanButtons();
             setTodayDate();
         };
     </script>
 
+    <!-- NOUVEAU MOTEUR DE GÉNÉRATION PDF 100% PRÉCIS POUR A5 (148 x 210 mm) -->
     <script>
-        function saveAsPDF() {
-            const element = document.getElementById('ordonnanceDoc');
-            const patientName = document.getElementById('nameField').value || 'Patient';
-            const fileName = `Ordonnance_${patientName.replace(/ /g, '_')}.pdf`;
+        async function saveAsPDF() {
+            const { jsPDF } = window.jspdf;
+            
+            const bgImg = new Image();
+            bgImg.src = 'IMG_5676.jpg';
 
-            const opt = {
-                margin:       0,
-                filename:     fileName,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 3, useCORS: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a5', orientation: 'portrait' }
-            };
-
-            const fields = document.querySelectorAll('.field');
-            fields.forEach(f => f.style.border = 'none');
-
-            html2pdf().set(opt).from(element).save().then(() => {
-                fields.forEach(f => f.style.border = '');
+            await new Promise((resolve) => {
+                bgImg.onload = resolve;
+                bgImg.onerror = resolve; 
             });
+
+            // Dimensions haute résolution basées sur le ratio A5
+            const canvas = document.createElement('canvas');
+            const w = 1748; // (148mm * 300dpi / 25.4)
+            const h = 2480; // (210mm * 300dpi / 25.4)
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+
+            if (bgImg.complete && bgImg.naturalWidth !== 0) {
+                ctx.drawImage(bgImg, 0, 0, w, h);
+            } else {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, w, h);
+            }
+
+            ctx.fillStyle = '#000000';
+
+            // Coordonnées recalculées pour le nouveau canevas A5 HD
+            
+            // DATE : Haussée de 6mm (~3% en moins sur Y), placée à ~67% de la largeur (+1cm simulé)
+            ctx.font = 'italic 42px "Times New Roman", serif';
+            const dateVal = document.getElementById('dateField').value || '';
+            ctx.fillText(dateVal, w * 0.67, h * 0.125); 
+
+            // NOM : Haussé de 5mm (~2% en moins), placé à ~21% de la largeur
+            ctx.font = 'bold 45px "Times New Roman", serif';
+            const nameVal = document.getElementById('nameField').value || '';
+            ctx.fillText(nameVal, w * 0.21, h * 0.215);
+
+            // ÂGE : Haussé de 5mm, décalé à droite (4mm + 2mm)
+            ctx.font = 'bold 42px "Times New Roman", serif';
+            const ageVal = document.getElementById('ageField').value || '';
+            ctx.fillText(ageVal, w * 0.81, h * 0.215); 
+
+            const specialTitle = document.getElementById('specialTitle');
+            let startY = h * 0.36;
+
+            if (specialTitle && specialTitle.style.display !== 'none') {
+                // Surlignage jaune
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(w * 0.08, startY - 45, w * 0.84, 65);
+                
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 48px "Times New Roman", serif';
+                ctx.textAlign = 'center';
+                ctx.fillText("PRIÈRE DE FAIRE :", w / 2, startY + 5);
+                
+                // Soulignement
+                ctx.beginPath();
+                ctx.moveTo((w / 2) - 200, startY + 15);
+                ctx.lineTo((w / 2) + 200, startY + 15);
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                ctx.textAlign = 'left';
+                startY += 120;
+            } else {
+                startY = h * 0.36;
+            }
+
+            ctx.fillStyle = '#000000';
+            ctx.font = '40px Arial, sans-serif';
+            const bodyText = document.getElementById('prescriptionBody').value || '';
+            const lines = bodyText.split('\n');
+            const lineHeight = 60;
+
+            for (let i = 0; i < lines.length; i++) {
+                ctx.fillText(lines[i], w * 0.1, startY + (i * lineHeight));
+            }
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.98);
+            
+            // Format a5 strict
+            const pdf = new jsPDF('portrait', 'mm', 'a5');
+            pdf.addImage(imgData, 'JPEG', 0, 0, 148, 210);
+
+            const patientName = document.getElementById('nameField').value || 'Patient';
+            pdf.save(`Ordonnance_${patientName.replace(/ /g, '_')}.pdf`);
         }
     </script>
 </body>
