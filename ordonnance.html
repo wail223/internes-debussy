@@ -299,7 +299,7 @@
     </div>
 
     <!-- BASES DE DONNÉES -->
-        <datalist id="dzMeds">
+    <datalist id="dzMeds">
         <option value="Levothyrox 25 µg">
         <option value="Levothyrox 50 µg">
         <option value="Levothyrox 75 µg">
@@ -336,7 +336,6 @@
         <option value="Vitamine C">
     </datalist>
     
-    
     <datalist id="dzPosologies">
         <option value="1cp / jour">
         <option value="1cp 02x / jour">
@@ -361,7 +360,6 @@
         <option value="2 flacons">
     </datalist>
     
-
     <div class="ordonnance-container">
         <div class="a5-paper" id="ordonnanceDoc">
             <input type="text" id="dateField" class="field">
@@ -415,7 +413,7 @@
             }
         });
 
-        // Écoute des programmes opératoires (pour les détails des interventions)
+        // Écoute des programmes opératoires
         onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
             const data = snapshot.val() || {};
             allInterventions = [];
@@ -436,10 +434,8 @@
                 document.getElementById('nameField').value = p.nom.toUpperCase();
                 document.getElementById('ageField').value = p.age ? `${p.age} ans` : '';
                 
-                // Si on a déjà sélectionné un type de lettre, on la met à jour avec les nouvelles infos
                 const choix = document.getElementById('treatmentSelect').value;
                 if (choix === 'lettre') {
-                    // On vide temporairement pour forcer l'utilisateur à re-sélectionner le bouton spécifique (cardiaque, uro...)
                     document.getElementById('prescriptionBody').innerHTML = '<i>Patient sélectionné. Veuillez re-cliquer sur le type d\'orientation ci-dessus...</i>';
                 }
             } else {
@@ -537,7 +533,7 @@
                 case 'echo': motif = "la réalisation d'une échographie abdomino-pelvienne de contrôle post-opératoire"; break;
             }
 
-            // Données par défaut si aucun patient n'est sélectionné (sans crochets)
+            // Données par défaut (sans les "(e)")
             let valAtcd = "antécédents médicaux et chirurgicaux";
             let valDate = "date de l'intervention";
             let valDiag = "diagnostic précis";
@@ -548,20 +544,17 @@
 
             const bedId = document.getElementById('patientSelect').value;
             
-            // Si un patient est sélectionné, on récupère ses données (comme dans le Compte-Rendu)
+            // Si un patient est sélectionné, on récupère ses données
             if (bedId && patientsDb[bedId]) {
                 const p = patientsDb[bedId];
                 
-                genrePatient = "le/la patient(e) sus-nommé(e), sus-âgé(e)";
-                genreOp = "Il(elle) a été opéré(e)";
-                
+                // On garde les phrases par défaut pour éviter les parenthèses genrées
                 valAtcd = (p.atcd && p.atcd.trim() !== '') ? p.atcd : "RAS";
                 valDiag = (p.diagnostic || p.motif || p.diag || "").replace(/IHC/gi, '').trim() || valDiag;
                 
                 let interventionTexte = (p.intervention || '').replace(/IHC/gi, '').trim();
                 let dateIntervention = p.dateIntervention || p.di || "";
                 
-                // Recherche dans le programme opératoire pour plus de précision
                 for (let inv of allInterventions) {
                     if (inv.bedId === bedId || (inv.patientText && p.nom && inv.patientText.toUpperCase().includes(p.nom.toUpperCase()))) {
                         if (inv.intervention) interventionTexte = inv.intervention.replace(/IHC/gi, '').trim();
@@ -580,7 +573,7 @@
                 if (dateIntervention) valDate = dateIntervention;
             }
 
-            body.innerHTML = `<div style="text-align: justify; padding-right: 5px; line-height: 1.4;"><b>Chère consœur, cher confrère,</b><br><br>Permettez-moi de vous adresser <b>${genrePatient}</b>, aux antécédents de <b>${valAtcd}</b>.<br><br><b>${genreOp}</b> chez nous le <b>${valDate}</b> pour <b>${valDiag}</b>. Le geste effectué a consisté en <b>${valGeste}</b>, aux suites opératoires <b>${suiteOp}</b>.<br><br>Je vous le/la confie pour <b>${motif}</b>.<br><br><div style="text-align: right; padding-right: 20px;"><b>Cordialement.</b></div></div>`;
+            body.innerHTML = `<div style="text-align: justify; padding-right: 5px; line-height: 1.4;"><b>Chère consœur, cher confrère,</b><br><br>Permettez-moi de vous adresser <b>${genrePatient}</b>, aux antécédents de <b>${valAtcd}</b>.<br><br><b>${genreOp}</b> chez nous le <b>${valDate}</b> pour <b>${valDiag}</b>. Le geste effectué a consisté en <b>${valGeste}</b>, aux suites opératoires <b>${suiteOp}</b>.<br><br>Je vous l'adresse pour <b>${motif}</b>.<br><br><div style="text-align: right; padding-right: 20px;"><b>Cordialement.</b></div></div>`;
         };
 
         window.toggleBilan = function(btnElement, testArray) {
