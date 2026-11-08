@@ -270,6 +270,7 @@
 
                 <div class="section-card">
                     <div class="section-title">☑️ Procédures & Suivi</div>
+                    <div class="data-row"><span class="data-label" style="color:var(--danger); font-weight:bold;">État du Dossier</span> <span class="data-value" id="vDossierRempli">⚠️ Non rempli</span></div>
                     <div class="data-row"><span class="data-label">Commande de sang</span> <span class="data-value" id="vCmdSang">❌ Non faite</span></div>
                     <div class="data-row"><span class="data-label">Commande de médicament</span> <span class="data-value" id="vCmdMed">❌ Non faite</span></div>
                     <div class="data-row"><span class="data-label">Protocole de sortie</span> <span class="data-value" id="vProtocoleSortie">❌ Non fait</span></div>
@@ -382,6 +383,9 @@
                 <div class="section-card" style="background:#fff;">
                     <div class="section-title">☑ Procédures & Suivi</div>
                     <div class="checkbox-group">
+                        <label class="checkbox-item" style="color: #dc2626; font-weight: bold; background: #fee2e2; padding: 5px; border-radius: 6px;">
+                            <input type="checkbox" id="eDossierRempli"> Dossier médical entièrement rempli
+                        </label>
                         <label class="checkbox-item"><input type="checkbox" id="eCmdSang"> Commande de sang faite</label>
                         <label class="checkbox-item"><input type="checkbox" id="eCmdMed"> Commande de médicament faite</label>
                         <label class="checkbox-item"><input type="checkbox" id="eProtocoleSortie"> Protocole de sortie prêt</label>
@@ -638,7 +642,6 @@
                     const patient = patientsDb[bedId];
                     
                     if (patient.isTraceRea) {
-                        // FIX: Affiche (vide) puis le texte de la trace en rouge
                         if(nameSpan) {
                             nameSpan.innerHTML = `(vide) <span style="color: var(--danger); font-weight: bold; display: block;">${patient.nom}</span>`;
                         }
@@ -670,7 +673,13 @@
                     else if(statut === 'bloc') btn.classList.add('status-bloc');
                     else if(statut === 'postop') btn.classList.add('status-postop');
 
-                    if(nameSpan) nameSpan.textContent = patient.nom.toUpperCase();
+                    if(nameSpan) {
+                        if (!patient.dossierRempli && !isGarde && !patient.isTraceRea) {
+                            nameSpan.innerHTML = `<span style="color: var(--danger);" title="Dossier à remplir">⚠️</span> ${patient.nom.toUpperCase()}`;
+                        } else {
+                            nameSpan.textContent = patient.nom.toUpperCase();
+                        }
+                    }
 
                     if(badgesDiv) {
                         const jHospi = calculateDaysDiff(patient.dateEntree);
@@ -849,6 +858,7 @@
                 document.getElementById('vBmi').textContent = `${p.poids || '-'} kg / ${p.taille || '-'} cm (BMI: ${p.bmi || '-'})`;
                 document.getElementById('vAllergies').textContent = p.allergies || 'Aucune';
                 
+                document.getElementById('vDossierRempli').innerHTML = p.dossierRempli ? '✅ <span style="color:var(--success);">Rempli</span>' : '⚠️ <span style="color:var(--danger);">Non rempli</span>';
                 document.getElementById('vCmdSang').textContent = p.cmdSang ? '✅ Fait' : '❌ Non faite';
                 document.getElementById('vCmdMed').textContent = p.cmdMed ? '✅ Fait' : '❌ Non faite';
                 document.getElementById('vProtocoleSortie').textContent = p.protocoleSortie ? '✅ Prêt' : '❌ Non fait';
@@ -928,7 +938,9 @@
             document.getElementById('eNumDossier').value = p.numDossier || '';
             document.getElementById('eMedecinTraitant').value = p.medecinTraitant || '';
             document.getElementById('eStatut').value = p.statut || 'normal';
-            document.getElementById('eName').value = p.nom || '';
+            
+            document.getElementById('eName').value = p.isTraceRea ? '' : (p.nom || '');
+            
             document.getElementById('eTel').value = p.telephone || '';
             document.getElementById('eGrp').value = p.grp || 'Indéterminé';
             document.getElementById('eDob').value = p.dob || '';
@@ -937,6 +949,7 @@
             document.getElementById('eTaille').value = p.taille || '';
             document.getElementById('eBmi').value = p.bmi || '';
             
+            document.getElementById('eDossierRempli').checked = !!p.dossierRempli;
             document.getElementById('eCmdSang').checked = !!p.cmdSang;
             document.getElementById('eCmdMed').checked = !!p.cmdMed;
             document.getElementById('eProtocoleSortie').checked = !!p.protocoleSortie;
@@ -1066,6 +1079,7 @@
                 poids: document.getElementById('ePoids').value,
                 taille: document.getElementById('eTaille').value,
                 bmi: document.getElementById('eBmi').value,
+                dossierRempli: document.getElementById('eDossierRempli').checked,
                 cmdSang: document.getElementById('eCmdSang').checked,
                 cmdMed: document.getElementById('eCmdMed').checked,
                 protocoleSortie: document.getElementById('eProtocoleSortie').checked,
@@ -1091,7 +1105,6 @@
 
             if(!data.nom) {
                 if (patientsDb[bedId] && patientsDb[bedId].isTraceRea) {
-                    remove(ref(db, 'dossiers_patients/' + bedId));
                     closeModal();
                     return;
                 }
@@ -1151,7 +1164,6 @@
             
             if (!patient || !patient.nom) return;
 
-            // Filtrer les lits pour garder UNIQUEMENT ceux sans occupation ni garde-malade
             const emptyBeds = ALL_BEDS.filter(bedId => {
                 const p = patientsDb[bedId];
                 return !p || !p.nom || p.isTraceRea;
@@ -1236,7 +1248,6 @@
             }
         };
 
-        // --- FONCTIONNALITÉ DE RECHERCHE ---
         window.searchPatient = function() {
             const query = document.getElementById('patientSearch').value.toLowerCase().trim();
             const resultsContainer = document.getElementById('searchResults');
@@ -1248,10 +1259,8 @@
             }
 
             let matches = [];
-            // Parcourir la base de données locale des patients
             for (const bedId in patientsDb) {
                 const patient = patientsDb[bedId];
-                // Ignorer les traces de lits gardés vides pour la réa, chercher uniquement le nom
                 if (patient && patient.nom && !patient.isTraceRea && patient.nom.toLowerCase().includes(query)) {
                     matches.push({ bedId: bedId, nom: patient.nom });
                 }
@@ -1271,16 +1280,13 @@
                         <span style="font-size:0.8em; color: var(--primary); font-weight: 600;">${getBedLabel(match.bedId)}</span>
                     `;
                     
-                    // Effet de survol
                     div.onmouseover = () => div.style.backgroundColor = '#f8fafc';
                     div.onmouseout = () => div.style.backgroundColor = 'white';
 
-                    // Au clic : ouvrir le dossier et changer d'étage si nécessaire
                     div.onclick = () => {
                         document.getElementById('patientSearch').value = '';
                         resultsContainer.style.display = 'none';
                         
-                        // Basculer vers le bon onglet (étage)
                         if (match.bedId.startsWith('4')) {
                             document.querySelector('button[onclick="switchFloor(\'floor-4\', this)"]').click();
                         } else if (match.bedId.startsWith('3')) {
@@ -1289,7 +1295,6 @@
                             document.querySelector('button[onclick="switchFloor(\'floor-rea\', this)"]').click();
                         }
                         
-                        // Ouvrir la modal du patient
                         openModal(match.bedId);
                     };
                     resultsContainer.appendChild(div);
@@ -1306,7 +1311,6 @@
             }
         };
 
-        // Fermer le menu déroulant des résultats si on clique ailleurs sur la page
         document.addEventListener('click', function(e) {
             const searchInput = document.getElementById('patientSearch');
             const searchResults = document.getElementById('searchResults');
