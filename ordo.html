@@ -385,7 +385,9 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        
         let patientsDb = {};
+        let allInterventions = [];
 
         function setTodayDate() {
             const today = new Date();
@@ -396,6 +398,7 @@
         }
         setTodayDate();
 
+        // Écoute des dossiers patients
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
             patientsDb = snapshot.val() || {};
             const select = document.getElementById('patientSelect');
@@ -409,6 +412,20 @@
                     select.appendChild(option);
                 }
             }
+        });
+
+        // Écoute des programmes opératoires
+        onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
+            const data = snapshot.val() || {};
+            allInterventions = [];
+            Object.keys(data).forEach(dateStr => {
+                if(Array.isArray(data[dateStr])) {
+                    data[dateStr].forEach(ligne => {
+                        if(ligne) allInterventions.push({ date: dateStr, ...ligne });
+                    });
+                }
+            });
+            allInterventions.sort((a, b) => new Date(b.date) - new Date(a.date));
         });
 
         window.fillPatientData = function() {
@@ -491,7 +508,7 @@
             }
         };
 
-        // Fonction pour générer le texte spécifique d'une lettre
+        // Fonction pour générer le texte spécifique d'une lettre avec remplissage auto
         window.setLettreText = function(type) {
             const body = document.getElementById('prescriptionBody');
             let motif = "";
@@ -520,10 +537,50 @@
                     break;
             }
 
+            // Données par défaut
+            let valAtcd = "antécédents médicaux et chirurgicaux";
+            let valDate = "date de l'intervention";
+            let valDiag = "diagnostic précis";
+            let valGeste = "geste chirurgical réalisé";
+            let genrePatient = "le patient sus-nommé, sus-âgé / la patiente sus-nommée, sus-âgée";
+            let genreOp = "Il a été opéré / Elle a été opérée";
+            let suiteOp = "simples / compliquées...";
+
+            const bedId = document.getElementById('patientSelect').value;
+            
+            // Si un patient est sélectionné, on récupère ses données
+            if (bedId && patientsDb[bedId]) {
+                const p = patientsDb[bedId];
+                
+                valAtcd = (p.atcd && p.atcd.trim() !== '') ? p.atcd : "RAS";
+                valDiag = (p.diagnostic || p.motif || p.diag || "").replace(/IHC/gi, '').trim() || valDiag;
+                
+                let interventionTexte = (p.intervention || '').replace(/IHC/gi, '').trim();
+                let dateIntervention = p.dateIntervention || p.di || "";
+                
+                // Recherche dans le programme opératoire pour plus de précision
+                for (let inv of allInterventions) {
+                    if (inv.bedId === bedId || (inv.patientText && p.nom && inv.patientText.toUpperCase().includes(p.nom.toUpperCase()))) {
+                        if (inv.intervention) interventionTexte = inv.intervention.replace(/IHC/gi, '').trim();
+                        if (inv.date) {
+                            if(inv.date.includes('-')) {
+                                dateIntervention = inv.date.split('-').reverse().join('/');
+                            } else {
+                                dateIntervention = inv.date;
+                            }
+                        }
+                        break; 
+                    }
+                }
+                
+                if (interventionTexte) valGeste = interventionTexte;
+                if (dateIntervention) valDate = dateIntervention;
+            }
+
             body.innerHTML = `<div style="text-align: justify; padding-right: 5px; line-height: 1.5;"><b>Chère consœur, cher confrère,</b><br>
-Permettez-moi de vous adresser <b>[le patient sus-nommé, sus-âgé / la patiente sus-nommée, sus-âgée]</b>, aux antécédents de <b>[antécédents médicaux et chirurgicaux]</b>.<br>
-<b>[Il a été opéré / Elle a été opérée]</b> chez nous le <b>[date de l'intervention]</b> pour <b>[diagnostic précis]</b>. Le geste effectué a consisté en <b>[geste chirurgical réalisé]</b>, aux suites opératoires <b>[simples / compliquées...]</b>.<br>
-Je vous <b>[le / la]</b> confie pour <b>${motif}</b>.<br><br>
+Permettez-moi de vous adresser <b>${genrePatient}</b>, aux antécédents de <b>${valAtcd}</b>.<br>
+<b>${genreOp}</b> chez nous le <b>${valDate}</b> pour <b>${valDiag}</b>. Le geste effectué a consisté en <b>${valGeste}</b>, aux suites opératoires <b>${suiteOp}</b>.<br>
+Je vous l'adresse pour <b>${motif}</b>.<br><br>
 <div style="text-align: right; padding-right: 20px;"><b>Cordialement.</b></div></div>`;
         };
 
