@@ -52,56 +52,45 @@
         .form-group select, .form-group input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: #f8fafc; }
         .form-group input:focus { outline: none; border-color: var(--primary); }
 
-        .btn { padding: 10px 15px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; color: white; display: flex; align-items: center; gap: 5px; }
+        .btn { padding: 10px 15px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn-print { background-color: var(--primary); }
         .btn-pdf { background-color: var(--success); }
         .btn-clear { background-color: #64748b; }
         .btn-add { background-color: var(--primary); margin-top: 4px; }
         
-        /* Boutons pour les bilans */
+        /* Boutons pour les bilans et lettres */
         .btn-bilan { background-color: #f1f5f9; color: var(--primary); border: 1px solid var(--primary); padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
         .btn-bilan:hover { background-color: var(--primary); color: white; }
 
         .btn-group { background-color: #e0e7ff; color: #4338ca; border: 1px solid #6366f1; }
         .btn-group:hover { background-color: #4338ca; color: white; }
-
-        /* État Actif (Sélectionné) */
-        .btn-bilan.active-bilan {
-            background-color: var(--success) !important;
-            color: white !important;
-            border-color: var(--success) !important;
-        }
+        .btn-bilan.active-bilan { background-color: var(--success) !important; color: white !important; border-color: var(--success) !important; }
 
         .custom-drug-section {
-            width: 100%;
-            background: var(--primary-light);
-            padding: 12px;
-            border-radius: 8px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: flex-end;
-            margin-top: 5px;
+            width: 100%; background: var(--primary-light); padding: 12px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 5px;
         }
         
         .bilan-section {
-            width: 100%;
-            background: #fffbeb;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px dashed #fbbf24;
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 5px;
+            width: 100%; background: #fffbeb; padding: 12px; border-radius: 8px; border: 1px dashed #fbbf24; display: none; flex-direction: column; gap: 10px; margin-top: 5px;
         }
-        .bilan-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+        
+        .lettre-section {
+            width: 100%; background: var(--primary-light); padding: 12px; border-radius: 8px; border: 1px dashed var(--primary); display: none; flex-direction: column; gap: 10px; margin-top: 5px; box-sizing: border-box;
         }
+        
+        .bilan-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 
-        /* --- ZONE DE L'ORDONNANCE (Format A5) --- */
+        /* --- BARRE D'OUTILS FORMATAGE TEXTE --- */
+        .format-toolbar {
+            display: flex; gap: 5px; justify-content: center; margin-bottom: 10px; flex-wrap: wrap; align-items: center;
+        }
+        .format-btn {
+            background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-weight: bold; color: var(--text); font-size: 13px;
+        }
+        .format-btn:hover { background: #e2e8f0; }
+        select.format-btn { padding: 5px; font-weight: normal; }
+
+        /* --- ZONE DE L'ORDONNANCE (Format A5 rendu sur page A4 via jsPDF) --- */
         .ordonnance-container { display: flex; justify-content: center; margin-bottom: 50px; }
 
         .a5-paper {
@@ -138,16 +127,7 @@
         #ageField { top: 18.5%; left: 79%; width: 22%; font-weight: bold; font-size: 14px; }
         
         #specialTitle {
-            top: 33%;
-            left: 8%;
-            width: 84%;
-            font-weight: bold;
-            font-size: 19px;
-            text-align: center;
-            text-decoration: underline;
-            background-color: #fef08a;
-            border: none;
-            display: none;
+            top: 33%; left: 8%; width: 84%; font-weight: bold; font-size: 19px; text-align: center; text-decoration: underline; background-color: #fef08a; border: none; display: none;
         }
 
         #prescriptionBody {
@@ -155,22 +135,22 @@
             left: 8%; 
             width: 84%; 
             height: 55%; 
-            resize: none;
             font-family: Arial, sans-serif;
             font-size: 15px;
             line-height: 1.6;
+            overflow-y: hidden;
             white-space: pre-wrap;
+            word-wrap: break-word;
         }
 
         @media print {
             @page { size: A4 portrait; margin: 0; }
             body { background: none; padding: 0; margin: 0; }
-            .header, .controls-bar { display: none !important; }
+            .header, .controls-bar, .format-toolbar { display: none !important; }
             .ordonnance-container { margin: 0; display: block; width: 100%; padding-top: 0; }
             .a5-paper { box-shadow: none; width: 148mm; height: 210mm; margin: 0 auto; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .field { border: none !important; background: transparent !important; }
             #specialTitle { -webkit-print-color-adjust: exact; print-color-adjust: exact; } 
-            textarea { overflow: hidden; }
         }
     </style>
 </head>
@@ -208,6 +188,8 @@
                 <option value="standard">💊 Traitement Standard (Sortie)</option>
                 <option value="pansement">🩹 Changement de Pansement</option>
                 <option value="bilan">🩸 Bilans Biologiques</option>
+                <option value="lettre">✉️ Lettre médicale (Orientation)</option>
+                <option value="dos">📄 Dos d'ordonnance (Pleine page)</option>
             </select>
         </div>
 
@@ -233,6 +215,7 @@
             <button class="btn btn-add" onclick="addCustomDrug()">➕ Ajouter</button>
         </div>
 
+        <!-- Section Bilans -->
         <div class="bilan-section" id="bilanSection">
             <label style="font-size: 0.85em; font-weight: 600; color: var(--warning);">Groupes de bilans (Cliquez pour ajouter/retirer) :</label>
             <div class="bilan-grid">
@@ -268,10 +251,55 @@
                 <button class="btn-bilan" onclick="toggleBilan(this, ['Sérologie (HIV, HBS, HCV)'])">Sérologie (HIV, HBS, HCV)</button>
             </div>
         </div>
+
+        <!-- Section Lettres -->
+        <div class="lettre-section" id="lettreSection">
+            <label style="font-size: 0.85em; font-weight: 600; color: var(--primary);">Sélectionnez le type d'orientation :</label>
+            <div class="bilan-grid">
+                <button class="btn-bilan" onclick="setLettreText('cardiologie')">🫀 Cardiologie</button>
+                <button class="btn-bilan" onclick="setLettreText('oncologie')">🎗️ Oncologie médicale</button>
+                <button class="btn-bilan" onclick="setLettreText('uro')">🚽 Rééducation urinaire</button>
+                <button class="btn-bilan" onclick="setLettreText('fonctionnelle')">🏃 Rééducation fonctionnelle</button>
+                <button class="btn-bilan" onclick="setLettreText('respiratoire')">🫁 Rééducation respiratoire</button>
+                <button class="btn-bilan" onclick="setLettreText('tdm')">☢️ TDM TAP</button>
+                <button class="btn-bilan" onclick="setLettreText('echo')">🩺 Échographie abd-pelv</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRE D'OUTILS FORMATAGE TEXTE -->
+    <div class="format-toolbar">
+        <select class="format-btn" onchange="formatText('fontName', this.value)" title="Changer la police">
+            <option value="Arial">Police: Arial</option>
+            <option value="Times New Roman">Police: Times New Roman</option>
+            <option value="Courier New">Police: Courier</option>
+            <option value="Georgia">Police: Georgia</option>
+            <option value="Verdana">Police: Verdana</option>
+        </select>
+        <select class="format-btn" onchange="formatText('fontSize', this.value)" title="Taille du texte sélectionné">
+            <option value="">Taille sélection...</option>
+            <option value="1">Très petit (1)</option>
+            <option value="2">Petit (2)</option>
+            <option value="3">Normal (3)</option>
+            <option value="4">Moyen-Grand (4)</option>
+            <option value="5">Grand (5)</option>
+            <option value="6">Très grand (6)</option>
+        </select>
+        <button class="format-btn" onclick="formatText('bold')" title="Gras"><b>G</b></button>
+        <button class="format-btn" onclick="formatText('italic')" title="Italique"><i>I</i></button>
+        <button class="format-btn" onclick="formatText('underline')" title="Souligné"><u>S</u></button>
+        
+        <button class="format-btn" onclick="formatText('justifyLeft')" title="Aligner à gauche">⬅️</button>
+        <button class="format-btn" onclick="formatText('justifyCenter')" title="Centrer">↔️</button>
+        <button class="format-btn" onclick="formatText('justifyRight')" title="Aligner à droite">➡️</button>
+        
+        <button class="format-btn" onclick="changeFontSize(1)" title="Agrandir TOUT le texte">A+</button>
+        <button class="format-btn" onclick="changeFontSize(-1)" title="Réduire TOUT le texte">A-</button>
+        <button class="format-btn" onclick="formatText('removeFormat')" title="Effacer le formatage">🚫 Format</button>
     </div>
 
     <!-- BASES DE DONNÉES -->
-    <datalist id="dzMeds">
+        <datalist id="dzMeds">
         <option value="Levothyrox 25 µg">
         <option value="Levothyrox 50 µg">
         <option value="Levothyrox 75 µg">
@@ -304,8 +332,11 @@
         <option value="Phloroglucinol (Spasfon) 80mg">
         <option value="Prednisolone (Solupred) 20mg">
         <option value="Prednisone (Cortancyl) 20mg">
+        <option value="Nutryelt">
+        <option value="Vitamine C">
     </datalist>
-
+    
+    
     <datalist id="dzPosologies">
         <option value="1cp / jour">
         <option value="1cp 02x / jour">
@@ -316,7 +347,7 @@
         <option value="1cp le matin à jeun">
         <option value="1 sachet 03x / jour">
     </datalist>
-
+    
     <datalist id="dzQsp">
         <option value="QSP">
         <option value="QSP 7j">
@@ -329,6 +360,7 @@
         <option value="1 flacon">
         <option value="2 flacons">
     </datalist>
+    
 
     <div class="ordonnance-container">
         <div class="a5-paper" id="ordonnanceDoc">
@@ -336,7 +368,8 @@
             <input type="text" id="nameField" class="field">
             <input type="text" id="ageField" class="field">
             <input type="text" id="specialTitle" class="field" value="PRIÈRE DE FAIRE :" readonly>
-            <textarea id="prescriptionBody" class="field" spellcheck="false"></textarea>
+            
+            <div id="prescriptionBody" class="field" contenteditable="true" spellcheck="false"></div>
         </div>
     </div>
 
@@ -353,7 +386,9 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        
         let patientsDb = {};
+        let allInterventions = [];
 
         function setTodayDate() {
             const today = new Date();
@@ -364,6 +399,7 @@
         }
         setTodayDate();
 
+        // Écoute des dossiers patients
         onValue(ref(db, 'dossiers_patients/'), (snapshot) => {
             patientsDb = snapshot.val() || {};
             const select = document.getElementById('patientSelect');
@@ -379,19 +415,39 @@
             }
         });
 
+        // Écoute des programmes opératoires (pour les détails des interventions)
+        onValue(ref(db, 'programmes_operatoires/'), (snapshot) => {
+            const data = snapshot.val() || {};
+            allInterventions = [];
+            Object.keys(data).forEach(dateStr => {
+                if(Array.isArray(data[dateStr])) {
+                    data[dateStr].forEach(ligne => {
+                        if(ligne) allInterventions.push({ date: dateStr, ...ligne });
+                    });
+                }
+            });
+            allInterventions.sort((a, b) => new Date(b.date) - new Date(a.date));
+        });
+
         window.fillPatientData = function() {
             const bedId = document.getElementById('patientSelect').value;
             if (bedId && patientsDb[bedId]) {
                 const p = patientsDb[bedId];
                 document.getElementById('nameField').value = p.nom.toUpperCase();
                 document.getElementById('ageField').value = p.age ? `${p.age} ans` : '';
+                
+                // Si on a déjà sélectionné un type de lettre, on la met à jour avec les nouvelles infos
+                const choix = document.getElementById('treatmentSelect').value;
+                if (choix === 'lettre') {
+                    // On vide temporairement pour forcer l'utilisateur à re-sélectionner le bouton spécifique (cardiaque, uro...)
+                    document.getElementById('prescriptionBody').innerHTML = '<i>Patient sélectionné. Veuillez re-cliquer sur le type d\'orientation ci-dessus...</i>';
+                }
             } else {
                 document.getElementById('nameField').value = '';
                 document.getElementById('ageField').value = '';
             }
         };
 
-        // Supprime l'état actif des boutons
         function resetBilanButtons() {
             document.querySelectorAll('.btn-bilan').forEach(btn => {
                 btn.classList.remove('active-bilan');
@@ -405,52 +461,133 @@
             const body = document.getElementById('prescriptionBody');
             const specialTitle = document.getElementById('specialTitle');
             const bilanSection = document.getElementById('bilanSection');
+            const lettreSection = document.getElementById('lettreSection');
+            
+            const dateField = document.getElementById('dateField');
+            const nameField = document.getElementById('nameField');
+            const ageField = document.getElementById('ageField');
 
             bilanSection.style.display = 'none';
+            lettreSection.style.display = 'none';
+            
+            dateField.style.display = 'block';
+            nameField.style.display = 'block';
+            ageField.style.display = 'block';
 
             if (choix === 'standard') {
                 specialTitle.style.display = 'none';
                 body.style.top = '36%';
                 body.style.height = '55%';
-                body.value = 
-`- Lovenox 0.4UI .................. QSP
-  1 inj / jour à heure fixe
-
-- Kéforal 1g .......................... QSP 7j
-  1cp 02x/j
-
-- Paracetamol 1g ................. 1bte
-  1cp/6H Si Douleur`;
+                body.innerHTML = `<div>- Lovenox 0.4UI .................. QSP</div>
+<div>&nbsp;&nbsp;1 inj / jour à heure fixe</div><br>
+<div>- Kéforal 1g .......................... QSP 7j</div>
+<div>&nbsp;&nbsp;1cp 02x/j</div><br>
+<div>- Paracetamol 1g ................. 1bte</div>
+<div>&nbsp;&nbsp;1cp/6H Si Douleur</div>`;
 
             } else if (choix === 'pansement') {
                 specialTitle.style.display = 'block';
                 body.style.top = '44%';
                 body.style.height = '47%';
-                body.value = 
-`- Changement de Pansement 1j/2
-+ Ablation de fil à la cicatrisation`;
+                body.innerHTML = `<div>- Changement de Pansement 1j/2</div><div>+ Ablation de fil à la cicatrisation</div>`;
             
             } else if (choix === 'bilan') {
                 specialTitle.style.display = 'block';
                 body.style.top = '44%';
                 body.style.height = '47%';
-                body.value = ''; 
+                body.innerHTML = ''; 
                 bilanSection.style.display = 'flex'; 
+                
+            } else if (choix === 'lettre') {
+                specialTitle.style.display = 'none';
+                body.style.top = '36%';
+                body.style.height = '55%';
+                body.innerHTML = '<i>Veuillez sélectionner un type d\'orientation ci-dessus...</i>';
+                lettreSection.style.display = 'flex';
+                
+            } else if (choix === 'dos') {
+                specialTitle.style.display = 'none';
+                dateField.style.display = 'none';
+                nameField.style.display = 'none';
+                ageField.style.display = 'none';
+                
+                body.style.top = '5%';
+                body.style.height = '90%';
+                body.innerHTML = '';
+                
             } else if (choix === 'vierge') {
                 specialTitle.style.display = 'none';
                 body.style.top = '36%';
                 body.style.height = '55%';
-                body.value = '';
+                body.innerHTML = '';
             }
+        };
+
+        window.setLettreText = function(type) {
+            const body = document.getElementById('prescriptionBody');
+            let motif = "";
+            
+            switch(type) {
+                case 'cardiologie': motif = "un contrôle cardiologique post-opératoire et un éventuel réajustement thérapeutique"; break;
+                case 'oncologie': motif = "une prise en charge oncologique spécialisée et adaptée"; break;
+                case 'uro': motif = "des séances de rééducation vésico-sphinctérienne et périnéale post-opératoire"; break;
+                case 'fonctionnelle': motif = "une prise en charge en rééducation fonctionnelle et motrice post-opératoire"; break;
+                case 'respiratoire': motif = "des séances de kinésithérapie et de rééducation respiratoire post-opératoire"; break;
+                case 'tdm': motif = "la réalisation d'une TDM thoraco-abdomino-pelvienne (TAP) de contrôle post-opératoire"; break;
+                case 'echo': motif = "la réalisation d'une échographie abdomino-pelvienne de contrôle post-opératoire"; break;
+            }
+
+            // Données par défaut si aucun patient n'est sélectionné (sans crochets)
+            let valAtcd = "antécédents médicaux et chirurgicaux";
+            let valDate = "date de l'intervention";
+            let valDiag = "diagnostic précis";
+            let valGeste = "geste chirurgical réalisé";
+            let genrePatient = "le patient sus-nommé, sus-âgé / la patiente sus-nommée, sus-âgée";
+            let genreOp = "Il a été opéré / Elle a été opérée";
+            let suiteOp = "simples / compliquées...";
+
+            const bedId = document.getElementById('patientSelect').value;
+            
+            // Si un patient est sélectionné, on récupère ses données (comme dans le Compte-Rendu)
+            if (bedId && patientsDb[bedId]) {
+                const p = patientsDb[bedId];
+                
+                genrePatient = "le/la patient(e) sus-nommé(e), sus-âgé(e)";
+                genreOp = "Il(elle) a été opéré(e)";
+                
+                valAtcd = (p.atcd && p.atcd.trim() !== '') ? p.atcd : "RAS";
+                valDiag = (p.diagnostic || p.motif || p.diag || "").replace(/IHC/gi, '').trim() || valDiag;
+                
+                let interventionTexte = (p.intervention || '').replace(/IHC/gi, '').trim();
+                let dateIntervention = p.dateIntervention || p.di || "";
+                
+                // Recherche dans le programme opératoire pour plus de précision
+                for (let inv of allInterventions) {
+                    if (inv.bedId === bedId || (inv.patientText && p.nom && inv.patientText.toUpperCase().includes(p.nom.toUpperCase()))) {
+                        if (inv.intervention) interventionTexte = inv.intervention.replace(/IHC/gi, '').trim();
+                        if (inv.date) {
+                            if(inv.date.includes('-')) {
+                                dateIntervention = inv.date.split('-').reverse().join('/');
+                            } else {
+                                dateIntervention = inv.date;
+                            }
+                        }
+                        break; 
+                    }
+                }
+                
+                if (interventionTexte) valGeste = interventionTexte;
+                if (dateIntervention) valDate = dateIntervention;
+            }
+
+            body.innerHTML = `<div style="text-align: justify; padding-right: 5px; line-height: 1.4;"><b>Chère consœur, cher confrère,</b><br><br>Permettez-moi de vous adresser <b>${genrePatient}</b>, aux antécédents de <b>${valAtcd}</b>.<br><br><b>${genreOp}</b> chez nous le <b>${valDate}</b> pour <b>${valDiag}</b>. Le geste effectué a consisté en <b>${valGeste}</b>, aux suites opératoires <b>${suiteOp}</b>.<br><br>Je vous le/la confie pour <b>${motif}</b>.<br><br><div style="text-align: right; padding-right: 20px;"><b>Cordialement.</b></div></div>`;
         };
 
         window.toggleBilan = function(btnElement, testArray) {
             const body = document.getElementById('prescriptionBody');
-            let text = body.value;
+            let text = body.innerText;
             
             const isActive = btnElement.classList.contains('active-bilan');
-            
-            // Récupérer la date de naissance pour la Procalcitonine
             let ddn = "00/00/0000";
             const bedId = document.getElementById('patientSelect').value;
             if (bedId && patientsDb[bedId]) {
@@ -458,11 +595,9 @@
             }
             
             if (isActive) {
-                // Désélection : Retire les tests
                 btnElement.classList.remove('active-bilan');
                 testArray.forEach(test => {
                     if (test === 'Procalcitonine') {
-                        // Supprime la ligne Procalcitonine quelle que soit la date écrite
                         text = text.replace(/- Procalcitonine.*\n?/g, '');
                     } else {
                         const regex = new RegExp(`- ${test.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n?`, 'g');
@@ -470,27 +605,19 @@
                     }
                 });
             } else {
-                // Sélection : Ajoute les tests
                 btnElement.classList.add('active-bilan');
                 testArray.forEach(test => {
                     let testLine = test;
-                    
-                    // Ajout spécifique pour la Procalcitonine
                     if (test === 'Procalcitonine') {
                         testLine = `Procalcitonine ( date de naissance : ${ddn} )`;
                     }
-                    
-                    // On vérifie que la ligne n'est pas déjà présente
                     if (!text.includes(`- ${testLine}`) && (test !== 'Procalcitonine' || !text.includes('- Procalcitonine'))) {
-                        if (text.length > 0 && !text.endsWith('\n')) {
-                            text += '\n';
-                        }
+                        if (text.length > 0 && !text.endsWith('\n')) text += '\n';
                         text += `- ${testLine}\n`;
                     }
                 });
             }
-            
-            body.value = text;
+            body.innerText = text;
         };
 
         window.addCustomDrug = function() {
@@ -502,11 +629,12 @@
 
             const body = document.getElementById('prescriptionBody');
             let dots = " .................. "; 
-            let newEntry = `- ${drug}${dots}${qsp}`;
-            if (posology) newEntry += `\n  ${posology}`;
-            newEntry += `\n\n`;
+            
+            let newEntry = `<div>- <b>${drug}</b>${dots}<b>${qsp}</b></div>`;
+            if (posology) newEntry += `<div>&nbsp;&nbsp;<i>${posology}</i></div>`;
+            newEntry += `<br>`;
 
-            body.value = body.value + newEntry;
+            body.insertAdjacentHTML('beforeend', newEntry);
 
             document.getElementById('customDrug').value = '';
             document.getElementById('customPosology').value = '';
@@ -518,12 +646,34 @@
             document.getElementById('treatmentSelect').value = '';
             document.getElementById('nameField').value = '';
             document.getElementById('ageField').value = '';
-            document.getElementById('prescriptionBody').value = '';
+            document.getElementById('prescriptionBody').innerHTML = '';
+            
             document.getElementById('specialTitle').style.display = 'none';
+            document.getElementById('dateField').style.display = 'block';
+            document.getElementById('nameField').style.display = 'block';
+            document.getElementById('ageField').style.display = 'block';
+            
             document.getElementById('prescriptionBody').style.top = '36%';
+            document.getElementById('prescriptionBody').style.height = '55%';
+            
             document.getElementById('bilanSection').style.display = 'none';
+            document.getElementById('lettreSection').style.display = 'none';
             resetBilanButtons();
             setTodayDate();
+        };
+
+        // --- FONCTIONS DE FORMATAGE DE TEXTE ---
+        window.formatText = function(command, value = null) {
+            const editor = document.getElementById('prescriptionBody');
+            editor.focus();
+            document.execCommand(command, false, value);
+        };
+
+        window.changeFontSize = function(step) {
+            const body = document.getElementById('prescriptionBody');
+            let currentSize = window.getComputedStyle(body, null).getPropertyValue('font-size');
+            let newSize = parseFloat(currentSize) + (step * 2);
+            body.style.fontSize = newSize + 'px';
         };
     </script>
 
@@ -554,23 +704,31 @@
 
             ctx.fillStyle = '#000000';
 
-            // Date 
-            ctx.font = 'italic 30px "Times New Roman", serif';
-            const dateVal = document.getElementById('dateField').value || '';
-            ctx.fillText(dateVal, w * 0.72, h * 0.125);
+            const dateField = document.getElementById('dateField');
+            if (dateField.style.display !== 'none') {
+                ctx.font = 'italic 30px "Times New Roman", serif';
+                const dateVal = dateField.value || '';
+                ctx.fillText(dateVal, w * 0.72, h * 0.125);
+            }
 
-            // Nom 
-            ctx.font = 'bold 32px "Times New Roman", serif';
-            const nameVal = document.getElementById('nameField').value || '';
-            ctx.fillText(nameVal, w * 0.20, h * 0.212);
+            const nameField = document.getElementById('nameField');
+            if (nameField.style.display !== 'none') {
+                ctx.font = 'bold 32px "Times New Roman", serif';
+                const nameVal = nameField.value || '';
+                ctx.fillText(nameVal, w * 0.20, h * 0.212);
+            }
 
-            // Âge (décalé à droite de 2mm supplémentaires)
-            ctx.font = 'bold 30px "Times New Roman", serif';
-            const ageVal = document.getElementById('ageField').value || '';
-            ctx.fillText(ageVal, w * 0.77, h * 0.212);
+            const ageField = document.getElementById('ageField');
+            if (ageField.style.display !== 'none') {
+                ctx.font = 'bold 30px "Times New Roman", serif';
+                const ageVal = ageField.value || '';
+                ctx.fillText(ageVal, w * 0.77, h * 0.212);
+            }
 
             const specialTitle = document.getElementById('specialTitle');
-            let startY = h * 0.38;
+            const prescriptionBody = document.getElementById('prescriptionBody');
+            
+            let startY = (prescriptionBody.style.top === '5%') ? h * 0.08 : h * 0.38;
 
             if (specialTitle && specialTitle.style.display !== 'none') {
                 ctx.fillStyle = '#fef08a';
@@ -593,7 +751,8 @@
 
             ctx.fillStyle = '#000000';
             ctx.font = '28px Arial, sans-serif';
-            const bodyText = document.getElementById('prescriptionBody').value || '';
+            
+            const bodyText = prescriptionBody.innerText || '';
             const lines = bodyText.split('\n');
             const lineHeight = 42;
 
