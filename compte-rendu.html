@@ -135,17 +135,12 @@
             margin-top: 5px;
             color: #000;
             overflow: hidden;
+            min-height: 26px; /* 1 ligne par défaut pour éviter les vides */
             height: auto;
         }
         textarea.t-area:focus {
             border: 1px dashed var(--primary); 
         }
-        
-        .h-1 { min-height: 26px; }
-        .h-2 { min-height: 50px; }
-        .h-3 { min-height: 75px; }
-        .h-4 { min-height: 100px; }
-        .h-6 { min-height: 150px; } 
 
         @media print {
             @page { margin: 10mm; }
@@ -266,7 +261,7 @@
             <!-- DIAGNOSTIC & ATCD -->
             <div style="margin-top: 10px;">
                 <span class="u-b-i">Motif d'hospitalisation</span> <span>(diagnostic) :</span>
-                <textarea id="diagnostic" class="t-area h-1" oninput="updateResume()"></textarea>
+                <textarea id="diagnostic" class="t-area" oninput="updateResume()"></textarea>
             </div>
 
             <div style="margin-top: 10px;">
@@ -275,11 +270,11 @@
                     <span>- Médicaux :</span>
                     <!-- Champ masqué pour ne pas casser ton ancien script JS -->
                     <input type="hidden" id="atcdMed1">
-                    <textarea id="atcdMed2" class="t-area h-1"></textarea>
+                    <textarea id="atcdMed2" class="t-area"></textarea>
                     
                     <span style="display:block; margin-top: 8px;">- Chirurgicaux :</span>
                     <input type="hidden" id="atcdChir1">
-                    <textarea id="atcdChir2" class="t-area h-1"></textarea>
+                    <textarea id="atcdChir2" class="t-area"></textarea>
                 </div>
             </div>
 
@@ -288,20 +283,20 @@
                 <span>BMI :</span> <input type="text" id="bmi" class="dotted" style="width: 80px; margin: 0 5px;"> <span>Kg/m².</span>
             </div>
 
-            <!-- CHAMPS EXTENSIBLES PRINCIPAUX -->
+            <!-- CHAMPS EXTENSIBLES PRINCIPAUX (sans hauteur par defaut) -->
             <div style="margin-top: 10px;">
                 <span class="u-b-i">Résumé clinique :</span>
-                <textarea id="resumeClinique" class="t-area h-3"></textarea>
+                <textarea id="resumeClinique" class="t-area"></textarea>
             </div>
 
             <div style="margin-top: 10px;">
                 <span class="u-b-i">Examens morphologiques</span> <span>(Conclusions des examens radiologiques) :</span>
-                <textarea id="examensMorpho" class="t-area h-6"></textarea>
+                <textarea id="examensMorpho" class="t-area"></textarea>
             </div>
             
             <div style="margin-top: 10px;">
                 <span class="u-b-i">Examens endoscopiques et biopsie :</span>
-                <textarea id="examensEndo" class="t-area h-3"></textarea>
+                <textarea id="examensEndo" class="t-area"></textarea>
             </div>
 
             <div class="row" style="margin-top:5px;">
@@ -313,7 +308,7 @@
                 <div class="row">
                     <input type="text" id="interventionP2" class="dotted flex-grow">
                 </div>
-                <textarea id="interventionDetails" class="t-area h-2"></textarea>
+                <textarea id="interventionDetails" class="t-area"></textarea>
             </div>
 
             <!-- SUITES OPÉRATOIRES -->
@@ -330,7 +325,7 @@
                     <span>- Si complications (préciser type, le délai, et la CAT) :</span>
                     <input type="text" id="compType" class="dotted flex-grow" style="margin-left: 5px;">
                 </div>
-                <textarea id="compDetails" class="t-area h-1"></textarea>
+                <textarea id="compDetails" class="t-area"></textarea>
 
                 <div class="row gap-5" style="margin: 3px 0;">
                     <span>- Reprise chirurgicale : Oui</span><input type="checkbox" id="repriseOui">
@@ -340,7 +335,7 @@
                 <div class="row">
                     <span>- Si reprise, préciser la ou les date, ainsi que le ou les gestes réaliser :</span>
                 </div>
-                <textarea id="repriseDetails" class="t-area h-1"></textarea>
+                <textarea id="repriseDetails" class="t-area"></textarea>
 
                 <div class="row" style="margin: 3px 0;">
                     <span>- Durée de séjour en réanimation :</span>
@@ -350,7 +345,7 @@
                 <div class="row">
                     <span>- Traitements reçus (ATB, anticoagulants, antalgiques) :</span>
                 </div>
-                <textarea id="traitementsRecus" class="t-area h-1"></textarea>
+                <textarea id="traitementsRecus" class="t-area"></textarea>
 
                 <div class="row gap-5" style="margin: 3px 0;">
                     <span>- Alimentation parentérale : Oui</span><input type="checkbox" id="alimOui">
@@ -386,34 +381,17 @@
                 <div class="row">
                     <span>(thrombo-prophylaxie/ antalgiques/ antibiotiques/ si DCD préciser cause ,date et heure) :</span>
                 </div>
-                <textarea id="sortieDetails" class="t-area h-2"></textarea>
+                <textarea id="sortieDetails" class="t-area"></textarea>
             </div>
 
-            <div style="margin-top: 10px;">
-                <div class="row">
-                    <span class="u-b-i">Au total,</span> <span>&nbsp;il s'agit de</span>
-                    <input type="text" id="sumNom" class="dotted flex-grow" style="margin: 0 5px;">
-                    <span>, âgé(e) de</span>
-                    <input type="text" id="sumAge" class="dotted" style="width:40px; text-align:center; margin: 0 5px;"> <span>ans,</span>
-                </div>
-                <div class="row">
-                    <span>Aux ATCD de</span>
-                    <input type="text" id="sumAtcd" class="dotted flex-grow" style="margin: 0 5px;">
-                    <span>, hospitalisé pour :</span>
-                    <input type="text" id="sumDiag" class="dotted flex-grow" style="margin-left: 5px;"> <span>.</span>
-                </div>
-                <div class="row">
-                    <span>Il (elle) a bénéficié de</span>
-                    <input type="text" id="sumGeste" class="dotted flex-grow" style="margin-left: 5px;">
-                </div>
-                <div class="row">
-                    <span>Les suites opératoires ont été</span>
-                    <input type="text" id="sumSuites" class="dotted flex-grow" style="margin-left: 5px;">
-                </div>
-                <div class="row">
+            <div style="margin-top: 15px;">
+                <span class="u-b-i">Conclusion :</span>
+                <textarea id="conclusionFinale" class="t-area"></textarea>
+
+                <div class="row" style="margin-top:10px;">
                     <span>Il sera revu en consultation par (Le chirurgien et en précisant la date)</span>
                 </div>
-                <textarea id="consultationDetails" class="t-area h-1"></textarea>
+                <textarea id="consultationDetails" class="t-area"></textarea>
             </div>
 
         </div>
@@ -436,6 +414,7 @@
         
         let patientsDb = {};
         let allInterventions = [];
+        let saveTimeout = null; 
 
         db.ref('dossiers_patients/').on('value', (snapshot) => {
             patientsDb = snapshot.val() || {};
@@ -469,12 +448,23 @@
         });
 
         window.autoResize = function(el) {
+            if(!el) return;
             el.style.height = 'auto';
             el.style.height = el.scrollHeight + 'px';
         };
         window.resizeAllTextareas = function() {
             document.querySelectorAll('textarea.t-area').forEach(ta => autoResize(ta));
         };
+
+        function applyDraftData(draft) {
+            for (const id in draft) {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (el.type === 'checkbox') el.checked = draft[id];
+                    else el.value = draft[id];
+                }
+            }
+        }
 
         window.saveDraft = function() {
             const bedId = document.getElementById('patientSelect').value;
@@ -490,25 +480,30 @@
                     }
                 }
             });
+            
             localStorage.setItem('crh_draft_' + bedId, JSON.stringify(draft));
+
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                db.ref('crh_drafts/' + bedId).set(draft)
+                  .catch(err => console.error("Erreur Firebase :", err));
+            }, 1000);
         };
 
         window.loadDraft = function(bedId) {
             const draftStr = localStorage.getItem('crh_draft_' + bedId);
             if (draftStr) {
-                try {
-                    const draft = JSON.parse(draftStr);
-                    for (const id in draft) {
-                        const el = document.getElementById(id);
-                        if (el) {
-                            if (el.type === 'checkbox') el.checked = draft[id];
-                            else el.value = draft[id];
-                        }
-                    }
-                } catch (e) {
-                    console.error("Erreur de chargement du brouillon", e);
-                }
+                try { applyDraftData(JSON.parse(draftStr)); } catch (e) { }
             }
+
+            db.ref('crh_drafts/' + bedId).once('value').then(snapshot => {
+                const firebaseDraft = snapshot.val();
+                if (firebaseDraft) {
+                    applyDraftData(firebaseDraft);
+                    localStorage.setItem('crh_draft_' + bedId, JSON.stringify(firebaseDraft));
+                    setTimeout(resizeAllTextareas, 100);
+                }
+            }).catch(err => console.error(err));
         };
 
         document.addEventListener('input', (e) => {
@@ -578,24 +573,24 @@
                 let texteInterventionP2 = interventionTexte;
                 if(dateIntervention) texteInterventionP2 += " le " + dateIntervention.split('-').reverse().join('/');
                 document.getElementById('interventionP2').value = texteInterventionP2;
-
-                document.getElementById('sumNom').value = nomPatient.toUpperCase() + " " + prenomPatient;
-                document.getElementById('sumAge').value = p.age || "";
-                document.getElementById('sumAtcd').value = atcdText.substring(0, 80); 
-                document.getElementById('sumDiag').value = diagnosticTxt;
-                document.getElementById('sumGeste').value = interventionTexte;
                 
                 document.getElementById('suitesSimples').checked = true;
                 document.getElementById('suitesComp').checked = false;
-                document.getElementById('sumSuites').value = "Simples";
                 document.getElementById('bmi').value = p.bmi || "";
                 
                 document.getElementById('examensEndo').value = (p.endo || "").replace(/IHC/gi, '').trim();
+
+                // Construction de la conclusion globale
+                let texteConclusion = `Au total, il s'agit de ${nomPatient.toUpperCase()} ${prenomPatient}, âgé(e) de ${p.age || "..."} ans.\n`;
+                texteConclusion += `Aux ATCD de : ${atcdText}.\nHospitalisé(e) pour : ${diagnosticTxt}.\n`;
+                texteConclusion += `Il (elle) a bénéficié de : ${interventionTexte}.\n`;
+                texteConclusion += `Les suites opératoires ont été : Simples.`;
+                document.getElementById('conclusionFinale').value = texteConclusion;
                 
                 window.updateResume();
                 window.updateConsultation();
                 
-                loadDraft(bedId);
+                loadDraft(bedId); 
                 setTimeout(resizeAllTextareas, 100);
             } else {
                 window.clearForm();
@@ -631,17 +626,19 @@
 
         window.clearForm = function() {
             const bedId = document.getElementById('patientSelect').value;
-            if (bedId) localStorage.removeItem('crh_draft_' + bedId);
+            if (bedId) {
+                localStorage.removeItem('crh_draft_' + bedId);
+                db.ref('crh_drafts/' + bedId).remove().catch(err => console.error(err));
+            }
             document.querySelectorAll('input[type="text"], textarea').forEach(el => el.value = '');
             document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
             document.getElementById('patientSelect').value = "";
             setTimeout(resizeAllTextareas, 50);
         };
 
-        document.getElementById('suitesSimples').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('sumSuites').value = "Simples"; saveDraft(); });
-        document.getElementById('suitesComp').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('sumSuites').value = "Compliquées"; saveDraft(); });
+        document.getElementById('suitesSimples').addEventListener('change', saveDraft);
+        document.getElementById('suitesComp').addEventListener('change', saveDraft);
 
-        // --- GÉNÉRATION PDF MULTIPAGE AUTO-DÉCOUPÉ ---
         window.generatePDF = async function() {
             const btn = document.querySelector('.btn-pdf');
             const originalText = btn.innerHTML;
@@ -654,10 +651,8 @@
                 const documentRender = document.getElementById('documentRender');
                 const textareas = document.querySelectorAll('textarea.t-area');
 
-                // Retirer la bordure temporairement pour le PDF
                 textareas.forEach(ta => ta.style.border = 'none');
 
-                // Capturer tout le long document d'un coup
                 const canvas = await html2canvas(documentRender, { scale: 2, useCORS: true, logging: false });
                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
                 
@@ -665,18 +660,15 @@
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = pdf.internal.pageSize.getHeight();
                 
-                // Calculer la hauteur totale de l'image sur le PDF
                 const imgProps = pdf.getImageProperties(imgData);
                 const imgTotalHeightInMm = (imgProps.height * pdfWidth) / imgProps.width;
 
                 let heightLeft = imgTotalHeightInMm;
                 let position = 0;
 
-                // Ajouter la première page
                 pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgTotalHeightInMm);
                 heightLeft -= pdfHeight;
 
-                // Ajouter des pages supplémentaires si l'image est plus grande qu'une page A4
                 while (heightLeft > 0) {
                     position = position - pdfHeight;
                     pdf.addPage();
@@ -691,8 +683,8 @@
                 pdf.save(`CRH_${nom}_${prenom}.pdf`);
 
             } catch (error) {
-                console.error("Erreur lors de la création du PDF :", error);
-                alert("Une erreur est survenue lors de la création du PDF.");
+                console.error("Erreur :", error);
+                alert("Erreur lors de la création du PDF.");
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
