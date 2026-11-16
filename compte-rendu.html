@@ -55,15 +55,14 @@
         
         .a4-page {
             width: 210mm;
-            height: 297mm;
-            max-height: 297mm;
+            min-height: 297mm; /* Modifié pour permettre l'expansion */
+            height: auto;
             background: white;
             box-shadow: 0 5px 15px rgba(0,0,0,0.15);
             padding: 12mm 15mm;
             box-sizing: border-box;
             position: relative;
             line-height: 25px;
-            overflow: hidden;
         }
 
         /* ENTÊTE AVEC POLICE AGRANDIE */
@@ -134,24 +133,26 @@
             padding: 5px;
             margin-top: 5px;
             color: #000;
-            overflow: hidden;
+            overflow: hidden; /* Cache la barre de défilement (agrandissement auto) */
+            height: auto;
         }
         textarea.t-area:focus {
             border: 1px dashed var(--primary); 
         }
         
-        .h-1 { height: 26px; }
-        .h-2 { height: 50px; }
-        .h-3 { height: 75px; }
-        .h-4 { height: 100px; }
-        .h-6 { height: 150px; } 
+        /* Modifié en min-height pour permettre au champ de s'agrandir */
+        .h-1 { min-height: 26px; }
+        .h-2 { min-height: 50px; }
+        .h-3 { min-height: 75px; }
+        .h-4 { min-height: 100px; }
+        .h-6 { min-height: 150px; } 
 
         @media print {
             @page { size: A4 portrait; margin: 0; }
             html, body { margin: 0 !important; padding: 0 !important; background: #fff; height: 100%; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none !important; }
             .page-container { gap: 0; display: block; }
-            .a4-page { margin: 0 auto !important; box-shadow: none !important; border: none !important; width: 210mm !important; height: 297mm !important; max-height: 297mm !important; page-break-after: always; page-break-inside: avoid; }
+            .a4-page { margin: 0 auto !important; box-shadow: none !important; border: none !important; width: 210mm !important; min-height: 297mm !important; height: auto !important; page-break-after: always; page-break-inside: avoid; }
             textarea.t-area { border: none !important; padding: 0 !important; }
         }
     </style>
@@ -441,6 +442,9 @@
         db.ref('dossiers_patients/').on('value', (snapshot) => {
             patientsDb = snapshot.val() || {};
             const select = document.getElementById('patientSelect');
+            
+            // Conserver le patient sélectionné après mise à jour
+            const selectedVal = select.value;
             select.innerHTML = '<option value="">-- Choisir un patient --</option>';
             
             for (const bedId in patientsDb) {
@@ -452,6 +456,7 @@
                     select.appendChild(option);
                 }
             }
+            if (selectedVal) select.value = selectedVal;
         });
 
         db.ref('programmes_operatoires/').on('value', (snapshot) => {
@@ -467,6 +472,70 @@
             allInterventions.sort((a, b) => new Date(b.date) - new Date(a.date));
         });
 
+        // --- FONCTIONS DE REDIMENSIONNEMENT AUTO ---
+        window.autoResize = function(el) {
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
+        };
+        window.resizeAllTextareas = function() {
+            document.querySelectorAll('textarea.t-area').forEach(ta => autoResize(ta));
+        };
+
+        // --- FONCTIONS DE SAUVEGARDE (BROUILLON) ---
+        window.saveDraft = function() {
+            const bedId = document.getElementById('patientSelect').value;
+            if (!bedId) return; // Ne pas sauvegarder si aucun patient sélectionné
+
+            const draft = {};
+            document.querySelectorAll('#documentRender input, #documentRender textarea, #sexeSelect, #delaiInput').forEach(el => {
+                if (el.id) {
+                    if (el.type === 'checkbox') {
+                        draft[el.id] = el.checked;
+                    } else {
+                        draft[el.id] = el.value;
+                    }
+                }
+            });
+            localStorage.setItem('crh_draft_' + bedId, JSON.stringify(draft));
+        };
+
+        window.loadDraft = function(bedId) {
+            const draftStr = localStorage.getItem('crh_draft_' + bedId);
+            if (draftStr) {
+                try {
+                    const draft = JSON.parse(draftStr);
+                    for (const id in draft) {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            if (el.type === 'checkbox') {
+                                el.checked = draft[id];
+                            } else {
+                                el.value = draft[id];
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Erreur de chargement du brouillon", e);
+                }
+            }
+        };
+
+        // Enregistrement auto à chaque touche ou changement
+        document.addEventListener('input', (e) => {
+            if (e.target.closest('#documentRender') || e.target.id === 'sexeSelect' || e.target.id === 'delaiInput') {
+                saveDraft();
+                if (e.target.tagName.toLowerCase() === 'textarea') {
+                    autoResize(e.target);
+                }
+            }
+        });
+        document.addEventListener('change', (e) => {
+            if (e.target.closest('#documentRender') || e.target.id === 'sexeSelect' || e.target.id === 'delaiInput') {
+                saveDraft();
+            }
+        });
+
+
         window.updateResume = function() {
             let sexe = document.getElementById('sexeSelect').value;
             let age = document.getElementById('ageP1').value || "...";
@@ -481,9 +550,10 @@
             let genreOp = (sexe === "Femme") ? "opérée" : "opéré";
             let genreAge = (sexe === "Femme") ? "âgée" : "âgé";
             
-            // Mise à jour de la phrase avec le nom complet du patient
             let phrase = `Il s'agit ${genrePatient} ${fullName}, ${genreAge} de ${age} ans, ${genreOp} pour : ${diag}, révélé par `;
             document.getElementById('resumeClinique').value = phrase;
+            autoResize(document.getElementById('resumeClinique'));
+            saveDraft(); // Sauvegarder la mise à jour
         };
 
         window.fillPatientData = function() {
@@ -491,6 +561,7 @@
             if (bedId && patientsDb[bedId]) {
                 const p = patientsDb[bedId];
                 
+                // 1. Remplissage par défaut depuis la base de données
                 let fullNameArr = (p.nom || '').trim().split(' ');
                 let nomPatient = fullNameArr[0] || '';
                 let prenomPatient = fullNameArr.slice(1).join(' ') || '';
@@ -545,6 +616,12 @@
                 window.updateResume();
                 window.updateConsultation();
                 
+                // 2. ÉCRASER AVEC LE BROUILLON SI EXISTANT
+                loadDraft(bedId);
+                
+                // Redimensionner les zones de texte pour qu'elles s'adaptent au texte injecté
+                setTimeout(resizeAllTextareas, 100);
+                
             } else {
                 window.clearForm();
             }
@@ -581,29 +658,39 @@
             if(document.getElementById('patientSelect').value) {
                 document.getElementById('assistant').value = medecinChoisi;
                 document.getElementById('consultationDetails').value = `${medecinChoisi} le ${selectedDate.toLocaleDateString('fr-FR', options)}.`;
+                autoResize(document.getElementById('consultationDetails'));
+                saveDraft(); // Sauvegarder la mise à jour
             }
         };
 
         window.clearForm = function() {
+            const bedId = document.getElementById('patientSelect').value;
+            if (bedId) {
+                // Supprimer le brouillon local
+                localStorage.removeItem('crh_draft_' + bedId);
+            }
+            
             document.querySelectorAll('input[type="text"], textarea').forEach(el => el.value = '');
             document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
             document.getElementById('patientSelect').value = "";
+            
+            // Remettre les tailles des zones de texte à la normale
+            setTimeout(resizeAllTextareas, 50);
         };
 
-        document.getElementById('suitesSimples').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('sumSuites').value = "Simples"; });
-        document.getElementById('suitesComp').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('sumSuites').value = "Compliquées"; });
+        document.getElementById('suitesSimples').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('sumSuites').value = "Simples"; saveDraft(); });
+        document.getElementById('suitesComp').addEventListener('change', (e) => { if(e.target.checked) document.getElementById('sumSuites').value = "Compliquées"; saveDraft(); });
 
-        // Fonction de génération PDF (Corrigée et Robuste)
+        // --- GÉNÉRATION PDF AJUSTÉE POUR LES PAGES EXTENSIBLES ---
         window.generatePDF = async function() {
             const btn = document.querySelector('.btn-pdf');
             const originalText = btn.innerHTML;
             
             try {
-                // Changer le texte du bouton pendant le traitement
                 btn.innerHTML = '⏳ Génération en cours...';
                 btn.disabled = true;
 
-                // Remonter tout en haut de la page (Bug connu de html2canvas)
+                // Remonter tout en haut de la page (Bug html2canvas)
                 window.scrollTo(0, 0);
 
                 const jsPDF = window.jspdf.jsPDF;
@@ -618,12 +705,20 @@
 
                 // Capture de la Page 1
                 const canvas1 = await html2canvas(page1, { scale: 2, useCORS: true, logging: false });
-                doc.addImage(canvas1.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
+                const imgData1 = canvas1.toDataURL('image/jpeg', 1.0);
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                // Ajuster la hauteur proportionnellement (si le document s'est agrandi)
+                const imgProps1 = doc.getImageProperties(imgData1);
+                const pdfHeight1 = (imgProps1.height * pdfWidth) / imgProps1.width;
+                doc.addImage(imgData1, 'JPEG', 0, 0, pdfWidth, pdfHeight1);
                 
                 // Ajout et capture de la Page 2
                 doc.addPage();
                 const canvas2 = await html2canvas(page2, { scale: 2, useCORS: true, logging: false });
-                doc.addImage(canvas2.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, 210, 297);
+                const imgData2 = canvas2.toDataURL('image/jpeg', 1.0);
+                const imgProps2 = doc.getImageProperties(imgData2);
+                const pdfHeight2 = (imgProps2.height * pdfWidth) / imgProps2.width;
+                doc.addImage(imgData2, 'JPEG', 0, 0, pdfWidth, pdfHeight2);
 
                 // Remettre les bordures pour l'écran
                 textareas.forEach(ta => ta.style.border = '1px dashed #94a3b8');
